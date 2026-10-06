@@ -1,0 +1,251 @@
+customer_id,customer_name,gender,date_of_birth,city,occupation
+C0001,Sahan Jayasinghe,Male,1967-05-11,Nuwara Eliya,Doctor
+C0002,Sahan Karunaratne,Male,1966-04-12,Matara,IT Professional
+C0003,Tharindu Rajapaksa,Male,1987-10-15,Kurunegala,Teacher
+C0004,Ayesha Gunawardena,Male,1971-08-31,Negombo,Other
+C0005,Ayesha De Silva,Female,1988-09-23,Anuradhapura,Accountant
+C0006,Ayesha Wickramasinghe,Male,1968-06-21,Batticaloa,Doctor
+C0007,Sanduni Wickramasinghe,Male,2004-04-22,Batticaloa,Teacher
+C0008,Tharindu De Silva,Female,1993-11-25,Kandy,Government Officer
+C0009,Nimal Jayasinghe,Female,1982-01-27,Matara,IT Professional
+C0010,Shalini Fernando,Female,2004-10-24,Colombo,Teacher
+C0011,Chamod Jayasinghe,Female,1973-06-01,Kurunegala,Other
+C0012,Tharindu Gunawardena,Female,1991-07-16,Kandy,Teacher
+C0013,Kavindu Jayasinghe,Female,2004-12-27,Nuwara Eliya,Student
+C0014,Chamod Bandara,Male,1983-10-17,Kandy,Doctor
+C0015,Dilani De Silva,Male,1979-06-13,Colombo,Student
+C0016,Isuru Rajapaksa,Female,2001-10-19,Nuwara Eliya,Accountant
+C0017,Anjali Rajapaksa,Male,2003-04-18,Galle,Doctor
+C0018,Kavindu Wickramasinghe,Male,1981-12-07,Matara,IT Professional
+C0019,Ayesha Silva,Male,1973-07-02,Matara,IT Professional
+C0020,Dinesh Fernando,Female,1972-06-24,Nuwara Eliya,Accountant
+C0021,Kasun Fernando,Male,2005-12-05,Galle,Doctor
+C0022,Nadeesha Wickramasinghe,Male,1983-12-31,Batticaloa,Other
+C0023,Kavindu Senanayake,Male,1969-01-24,Galle,Student
+C0024,Anjali Jayasinghe,Female,1979-01-04,Jaffna,Doctor
+C0025,Sahan Abeysekera,Male,1969-08-06,Jaffna,Student
+C0026,Sanduni Gunawardena,Female,1981-03-13,Kandy,Government Officer
+C0027,Ruwan Senanayake,Female,2001-07-10,Jaffna,Other
+C0028,Sahan Perera,Male,2002-07-02,Batticaloa,Government Officer
+C0029,Thilini Abeysekera,Male,1981-01-21,Galle,Manager
+C0030,Chamod Samarasinghe,Male,2000-06-02,Negombo,Accountant
+C0031,Kavindu Senanayake,Female,1966-10-26,Kurunegala,IT Professional
+C0032,Isuru Jayasinghe,Female,1979-04-30,Colombo,Business Owner
+C0033,Ayesha Wickramasinghe,Male,1996-11-23,Galle,Doctor
+C0034,Anjali Rajapaksa,Female,1996-01-23,Colombo,Teacher
+C0035,Dinesh Perera,Female,1982-11-16,Galle,Teacher
+C0036,Ayesha Karunaratne,Female,1980-11-09,Kurunegala,Student
+C0037,Tharindu Wickramasinghe,Male,1965-07-22,Nuwara Eliya,Engineer
+C0038,Ruwan Rajapaksa,Female,1986-12-01,Jaffna,Manager
+C0039,Sara Perera,Female,1996-05-22,Kurunegala,Accountant
+C0040,Thilini Senanayake,Male,1984-06-08,Jaffna,Other
+C0041,Amal Fernando,Female,1996-03-30,Matara,Government Officer
+C0042,Kasun Rajapaksa,Female,1980-10-08,Matara,IT Professional
+C0043,Kasun Samarasinghe,Male,1987-05-01,Batticaloa,Teacher
+C0044,Kavindu Fernando,Female,1965-09-20,Anuradhapura,Government Officer
+C0045,Thilini Senanayake,Male,2001-01-20,Kandy,Doctor
+C0046,Dinesh Samarasinghe,Male,1984-08-07,Batticaloa,Accountant
+C0047,Sanduni Fernando,Female,1977-04-27,Nuwara Eliya,IT Professional
+C0048,Kasun Rajapaksa,Female,2000-05-12,Colombo,Business Owner
+C0049,Ruwan Rajapaksa,Female,1998-03-04,Galle,Government Officer
+C0050,Amal De Silva,Female,2003-10-21,Kandy,Teacher
+C0051,Nimal Gunawardena,Female,1996-04-14,Batticaloa,Engineer
+C0052,Tharindu Perera,Female,1977-04-21,Negombo,Business Owner
+C0053,Chamod Wickramasinghe,Female,1968-05-03,Colombo,Engineer
+C0054,Piumi Senanayake,Female,1990-01-16,Galle,Student
+C0055,Nadeesha Gunawardena,Female,2004-11-17,Galle,IT Professional
+C0056,Nimal Bandara,Female,1978-05-26,Colombo,Engineer
+C0057,Dinesh Senanayake,Female,1986-11-23,Galle,Accountant
+C0058,Anjali Perera,Female,1985-02-04,Negombo,Accountant
+C0059,Isuru Bandara,Female,1971-05-17,Colombo,Doctor
+C0060,Amal Senanayake,Male,1978-12-07,Jaffna,Doctor
+C0061,Kasun Fernando,Male,1987-10-12,Kandy,Other
+C0062,Amal Rajapaksa,Female,1972-06-26,Nuwara Eliya,Manager
+C0063,Nimal Samarasinghe,Female,1994-05-18,Kandy,Engineer
+C0064,Chamod Perera,Female,1985-09-13,Kurunegala,Student
+C0065,Kavindu Wickramasinghe,Female,1966-06-22,Galle,Government Officer
+C0066,Dilani Senanayake,Male,1980-05-27,Matara,Business Owner
+C0067,Dilani Jayasinghe,Female,1971-06-27,Nuwara Eliya,Accountant
+C0068,Shalini Senanayake,Male,2000-12-04,Matara,Manager
+C0069,Sanduni De Silva,Female,1975-04-28,Kurunegala,Other
+C0070,Anjali Jayasinghe,Male,1978-01-30,Kurunegala,Manager
+C0071,Sara Senanayake,Female,1994-09-18,Colombo,Doctor
+C0072,Ayesha Senanayake,Female,1965-01-05,Matara,Manager
+C0073,Dilani Jayasinghe,Male,1976-05-05,Galle,IT Professional
+C0074,Thilini Abeysekera,Female,1977-03-24,Anuradhapura,Accountant
+C0075,Anjali Rajapaksa,Female,1967-04-11,Galle,Other
+C0076,Dinesh Karunaratne,Male,1987-10-01,Matara,Government Officer
+C0077,Ayesha Bandara,Female,1969-07-23,Anuradhapura,Engineer
+C0078,Shalini Silva,Female,2001-09-16,Kurunegala,Government Officer
+C0079,Chamod Abeysekera,Female,2001-02-05,Matara,Doctor
+C0080,Amal Senanayake,Male,1976-08-20,Galle,Manager
+C0081,Nadeesha Senanayake,Female,1979-03-17,Colombo,Business Owner
+C0082,Dinesh Senanayake,Female,1995-07-14,Anuradhapura,Doctor
+C0083,Sahan Jayasinghe,Male,2002-03-28,Negombo,Other
+C0084,Kavindu Gunawardena,Male,1972-10-20,Jaffna,Other
+C0085,Sanduni Karunaratne,Female,1991-11-24,Colombo,Doctor
+C0086,Dilani Jayasinghe,Female,1995-11-19,Nuwara Eliya,Student
+C0087,Nimal Perera,Female,1989-11-18,Jaffna,Teacher
+C0088,Amal Senanayake,Male,1991-09-22,Colombo,Accountant
+C0089,Sara Bandara,Male,1979-10-02,Galle,Engineer
+C0090,Chamod Karunaratne,Male,1967-12-03,Kandy,Accountant
+C0091,Hiruni Fernando,Female,1995-01-10,Colombo,IT Professional
+C0092,Kavindu Karunaratne,Male,1995-11-01,Kandy,Government Officer
+C0093,Sahan Jayasinghe,Female,1967-04-06,Negombo,IT Professional
+C0094,Tharindu De Silva,Female,1996-08-06,Batticaloa,Other
+C0095,Dinesh De Silva,Male,1973-02-15,Galle,Accountant
+C0096,Piumi Jayasinghe,Male,1978-11-22,Colombo,IT Professional
+C0097,Dinesh Senanayake,Male,1974-06-03,Matara,Student
+C0098,Amal De Silva,Male,1981-03-15,Colombo,Business Owner
+C0099,Piumi De Silva,Male,1968-09-27,Galle,Business Owner
+C0100,Ayesha Abeysekera,Female,1985-04-06,Galle,Government Officer
+C0101,Sahan Senanayake,Male,1966-12-19,Jaffna,Other
+C0102,Shalini Bandara,Female,1996-01-11,Galle,Government Officer
+C0103,Thilini Samarasinghe,Male,1980-04-20,Jaffna,Student
+C0104,Piumi De Silva,Female,1967-11-29,Negombo,Other
+C0105,Sahan Karunaratne,Male,1990-08-06,Galle,Teacher
+C0106,Shalini Senanayake,Female,1984-10-29,Anuradhapura,Engineer
+C0107,Ruwan Wickramasinghe,Female,1979-06-30,Nuwara Eliya,Government Officer
+C0108,Hiruni Samarasinghe,Male,1972-05-05,Kandy,Doctor
+C0109,Ruwan Fernando,Female,1997-08-12,Colombo,Business Owner
+C0110,Anjali Wickramasinghe,Female,1976-10-22,Jaffna,Manager
+C0111,Sanduni Abeysekera,Male,1973-01-02,Kurunegala,Other
+C0112,Sanduni Wickramasinghe,Female,1997-01-27,Kandy,Other
+C0113,Thilini Senanayake,Male,1988-09-04,Batticaloa,Engineer
+C0114,Amal Abeysekera,Male,2005-03-15,Batticaloa,Engineer
+C0115,Kasun Gunawardena,Female,2001-10-07,Kurunegala,Doctor
+C0116,Piumi Gunawardena,Female,1996-06-03,Negombo,Accountant
+C0117,Sanduni Jayasinghe,Male,1997-01-17,Kandy,Government Officer
+C0118,Anjali Perera,Female,1991-04-03,Kurunegala,Accountant
+C0119,Piumi Wickramasinghe,Female,1987-03-27,Anuradhapura,IT Professional
+C0120,Ruwan Senanayake,Female,1985-09-28,Negombo,Other
+C0121,Tharindu Karunaratne,Female,1975-03-09,Anuradhapura,Teacher
+C0122,Dinesh De Silva,Male,1978-03-29,Kurunegala,Engineer
+C0123,Isuru Perera,Male,1981-10-16,Jaffna,Accountant
+C0124,Ruwan Silva,Male,1984-03-28,Negombo,Government Officer
+C0125,Nimal Karunaratne,Male,1972-11-11,Kandy,Doctor
+C0126,Kasun Gunawardena,Female,1996-01-07,Kandy,Engineer
+C0127,Sara Bandara,Female,1985-05-25,Batticaloa,Engineer
+C0128,Dilani Perera,Male,1969-06-22,Batticaloa,Engineer
+C0129,Piumi Wickramasinghe,Male,2000-01-23,Colombo,Doctor
+C0130,Ruwan Fernando,Male,1968-12-31,Matara,Doctor
+C0131,Dinesh Karunaratne,Male,1976-06-10,Colombo,Government Officer
+C0132,Nadeesha Perera,Female,1998-10-13,Jaffna,Engineer
+C0133,Anjali Rajapaksa,Female,1992-06-03,Kandy,IT Professional
+C0134,Sahan Karunaratne,Female,1965-09-07,Kandy,Manager
+C0135,Amal Samarasinghe,Female,1976-12-12,Colombo,Doctor
+C0136,Anjali Wickramasinghe,Male,1996-05-28,Negombo,Teacher
+C0137,Sara Fernando,Female,1993-04-26,Kurunegala,Teacher
+C0138,Ruwan Silva,Female,1982-02-02,Kandy,Accountant
+C0139,Nimal Jayasinghe,Male,1999-04-29,Kurunegala,IT Professional
+C0140,Shalini Senanayake,Female,1977-09-12,Matara,Accountant
+C0141,Anjali Bandara,Female,1978-05-25,Jaffna,IT Professional
+C0142,Anjali Karunaratne,Female,1972-10-03,Jaffna,Doctor
+C0143,Nimal Gunawardena,Male,2004-05-24,Kandy,Accountant
+C0144,Shalini De Silva,Female,1986-06-10,Matara,Manager
+C0145,Piumi Rajapaksa,Female,1989-11-22,Nuwara Eliya,IT Professional
+C0146,Amal Fernando,Male,1966-10-29,Kandy,Other
+C0147,Sanduni Fernando,Female,1986-10-14,Negombo,Other
+C0148,Ruwan Perera,Female,2006-01-06,Batticaloa,Other
+C0149,Nadeesha Silva,Male,1992-10-26,Anuradhapura,Government Officer
+C0150,Shalini De Silva,Female,1993-08-15,Nuwara Eliya,Engineer
+C0151,Tharindu Perera,Male,1993-01-21,Colombo,Business Owner
+C0152,Shalini Rajapaksa,Female,2000-08-18,Anuradhapura,Student
+C0153,Nadeesha Rajapaksa,Female,1965-12-31,Anuradhapura,IT Professional
+C0154,Sanduni Wickramasinghe,Female,1979-01-10,Matara,Teacher
+C0155,Ruwan Fernando,Male,1970-03-22,Batticaloa,Doctor
+C0156,Kavindu Wickramasinghe,Male,1970-05-31,Colombo,Manager
+C0157,Ayesha De Silva,Male,1982-03-21,Jaffna,Business Owner
+C0158,Kavindu Fernando,Male,1965-08-21,Kandy,Business Owner
+C0159,Shalini Gunawardena,Female,2004-05-05,Nuwara Eliya,Engineer
+C0160,Ayesha Fernando,Female,1971-10-09,Negombo,Business Owner
+C0161,Nimal Samarasinghe,Male,1992-11-02,Kurunegala,Government Officer
+C0162,Kasun Bandara,Female,1994-11-06,Negombo,Manager
+C0163,Piumi Jayasinghe,Male,1996-10-18,Nuwara Eliya,Government Officer
+C0164,Amal Fernando,Male,1972-02-04,Nuwara Eliya,Business Owner
+C0165,Ruwan Silva,Male,1988-09-16,Jaffna,Manager
+C0166,Anjali Rajapaksa,Female,2004-03-06,Galle,Government Officer
+C0167,Nimal Samarasinghe,Male,2002-07-09,Anuradhapura,Doctor
+C0168,Ruwan Karunaratne,Male,1990-07-22,Jaffna,Business Owner
+C0169,Kasun Jayasinghe,Female,1976-07-10,Colombo,Manager
+C0170,Dinesh Samarasinghe,Male,1984-02-19,Galle,Manager
+C0171,Hiruni Rajapaksa,Male,1965-01-10,Negombo,Other
+C0172,Ayesha Silva,Female,1970-08-23,Nuwara Eliya,Business Owner
+C0173,Kasun Bandara,Male,1993-12-08,Colombo,IT Professional
+C0174,Ruwan Wickramasinghe,Male,1974-07-23,Colombo,Teacher
+C0175,Nadeesha Bandara,Female,1988-06-16,Batticaloa,Accountant
+C0176,Amal Perera,Female,1979-10-30,Kurunegala,IT Professional
+C0177,Sara De Silva,Male,1990-11-10,Galle,Doctor
+C0178,Dinesh Fernando,Female,1985-08-30,Anuradhapura,Business Owner
+C0179,Dilani Karunaratne,Female,1970-11-07,Kandy,IT Professional
+C0180,Sahan Rajapaksa,Male,1997-04-12,Galle,Manager
+C0181,Kasun Wickramasinghe,Male,1977-10-15,Colombo,Engineer
+C0182,Kasun Wickramasinghe,Female,1976-01-17,Negombo,IT Professional
+C0183,Sanduni Wickramasinghe,Female,1970-05-25,Kurunegala,Accountant
+C0184,Sahan Fernando,Female,1987-04-11,Anuradhapura,Business Owner
+C0185,Shalini Abeysekera,Female,1979-10-23,Jaffna,Student
+C0186,Tharindu Abeysekera,Male,1994-07-17,Batticaloa,Doctor
+C0187,Kasun Jayasinghe,Female,1972-03-30,Kandy,Doctor
+C0188,Kavindu Perera,Male,2001-10-08,Kurunegala,Business Owner
+C0189,Dilani Rajapaksa,Male,1986-07-13,Nuwara Eliya,Business Owner
+C0190,Ayesha Abeysekera,Male,1976-07-27,Galle,Business Owner
+C0191,Tharindu Karunaratne,Female,1992-06-14,Negombo,Other
+C0192,Chamod Gunawardena,Male,1996-03-16,Nuwara Eliya,Other
+C0193,Nadeesha Samarasinghe,Male,1971-09-10,Anuradhapura,IT Professional
+C0194,Hiruni De Silva,Female,1986-05-01,Nuwara Eliya,Business Owner
+C0195,Piumi Jayasinghe,Female,1995-06-20,Negombo,Other
+C0196,Anjali Senanayake,Female,1996-11-15,Batticaloa,Accountant
+C0197,Nadeesha Rajapaksa,Male,1974-03-23,Kurunegala,Student
+C0198,Kasun Bandara,Female,1974-07-09,Anuradhapura,Business Owner
+C0199,Kasun Gunawardena,Female,1977-10-07,Galle,Doctor
+C0200,Shalini De Silva,Female,1991-01-29,Batticaloa,Business Owner
+C0201,Isuru Fernando,Male,1989-01-01,Jaffna,Other
+C0202,Sara Gunawardena,Female,1988-06-26,Matara,Teacher
+C0203,Anjali Samarasinghe,Female,1990-01-16,Galle,IT Professional
+C0204,Sahan Jayasinghe,Female,2000-08-02,Negombo,Engineer
+C0205,Anjali Abeysekera,Female,1998-10-25,Kurunegala,Teacher
+C0206,Anjali Wickramasinghe,Male,1978-07-16,Jaffna,Engineer
+C0207,Thilini Gunawardena,Male,1988-05-13,Nuwara Eliya,Student
+C0208,Kasun Abeysekera,Male,1990-02-20,Matara,IT Professional
+C0209,Sanduni Abeysekera,Male,1996-09-03,Nuwara Eliya,Teacher
+C0210,Kasun Fernando,Female,1995-10-20,Kandy,Engineer
+C0211,Hiruni Gunawardena,Male,1990-01-08,Jaffna,IT Professional
+C0212,Sahan Fernando,Female,2000-10-31,Anuradhapura,Accountant
+C0213,Nadeesha Silva,Male,1974-06-14,Colombo,Student
+C0214,Hiruni Wickramasinghe,Male,1995-11-11,Colombo,Student
+C0215,Amal Rajapaksa,Female,2004-02-20,Nuwara Eliya,Government Officer
+C0216,Shalini Bandara,Male,1983-05-29,Galle,IT Professional
+C0217,Nimal Fernando,Female,1970-11-14,Nuwara Eliya,IT Professional
+C0218,Nadeesha Samarasinghe,Female,1998-05-03,Jaffna,Doctor
+C0219,Nadeesha Wickramasinghe,Male,1967-08-02,Kandy,Other
+C0220,Sahan Perera,Male,1971-01-08,Negombo,Accountant
+C0221,Tharindu Abeysekera,Male,1976-06-09,Kandy,Doctor
+C0222,Thilini Samarasinghe,Male,1978-04-04,Kandy,Student
+C0223,Ayesha Jayasinghe,Female,2004-12-18,Negombo,Government Officer
+C0224,Nimal Bandara,Female,1984-05-24,Galle,Other
+C0225,Ayesha Rajapaksa,Female,2000-04-07,Anuradhapura,IT Professional
+C0226,Nadeesha Wickramasinghe,Female,1976-07-25,Colombo,Accountant
+C0227,Anjali De Silva,Male,1972-02-13,Kandy,Government Officer
+C0228,Sahan De Silva,Male,1981-02-03,Kurunegala,Business Owner
+C0229,Dilani Silva,Male,1997-10-30,Negombo,Manager
+C0230,Hiruni Bandara,Male,1993-02-24,Jaffna,Manager
+C0231,Nimal Perera,Female,1980-11-14,Batticaloa,Other
+C0232,Ayesha Wickramasinghe,Male,1987-01-07,Kurunegala,Government Officer
+C0233,Ruwan Samarasinghe,Female,1976-09-03,Kandy,Government Officer
+C0234,Sahan Karunaratne,Female,1992-02-09,Colombo,Doctor
+C0235,Nadeesha Silva,Male,1973-05-26,Kurunegala,Engineer
+C0236,Sanduni Bandara,Female,1996-08-21,Galle,Doctor
+C0237,Sara Rajapaksa,Male,1993-01-24,Jaffna,Student
+C0238,Chamod Fernando,Male,1968-08-26,Kandy,IT Professional
+C0239,Dinesh Rajapaksa,Female,1979-10-23,Anuradhapura,Business Owner
+C0240,Sanduni Fernando,Male,1998-03-01,Kandy,Other
+C0241,Nimal Bandara,Female,1970-10-22,Batticaloa,Engineer
+C0242,Kasun De Silva,Female,1965-03-02,Nuwara Eliya,Government Officer
+C0243,Sahan Fernando,Male,1999-01-01,Kandy,Accountant
+C0244,Ruwan Silva,Male,1983-04-04,Galle,Engineer
+C0245,Anjali Karunaratne,Male,1974-12-20,Matara,IT Professional
+C0246,Sanduni Rajapaksa,Male,1998-07-21,Negombo,Student
+C0247,Dinesh Gunawardena,Female,1984-06-29,Kurunegala,Government Officer
+C0248,Hiruni De Silva,Male,1979-10-02,Anuradhapura,Other
+C0249,Shalini Karunaratne,Male,2001-06-28,Matara,Student
+C0250,Sahan Bandara,Male,1986-01-17,Batticaloa,IT Professional

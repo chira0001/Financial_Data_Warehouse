@@ -1,0 +1,11 @@
+branch_id,branch_name,city,province
+B001,Colombo Branch,Colombo,Western
+B002,Kandy Branch,Kandy,Central
+B003,Galle Branch,Galle,Southern
+B004,Jaffna Branch,Jaffna,Northern
+B005,Negombo Branch,Negombo,Western
+B006,Kurunegala Branch,Kurunegala,North Western
+B007,Matara Branch,Matara,Southern
+B008,Nuwara Eliya Branch,Nuwara Eliya,Central
+B009,Batticaloa Branch,Batticaloa,Eastern
+B010,Anuradhapura Branch,Anuradhapura,North Central
