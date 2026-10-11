@@ -1,48 +1,120 @@
+
 import requests
 import mysql.connector
 from datetime import datetime
 
-conn = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    password="1234",
-    database="banking_warehouse"
+host = "localhost"
+user = "root"
+password = "1234"
+database = "banking_warehouse"
+tableName = "stg_exchange_rates"
+
+start_year = 2026
+end_year = datetime.now().year
+
+url = "https://api.frankfurter.dev/v2/rates"
+
+conn = None
+cursor = None
+
+createTableQuery = f"""
+CREATE TABLE IF NOT EXISTS `{database}`.`{tableName}` (
+    id INT NOT NULL AUTO_INCREMENT UNIQUE,
+    rate_date DATE NOT NULL,
+    base_currency CHAR(3) NOT NULL,
+    target_currency CHAR(3) NOT NULL,
+    rate DECIMAL(18, 6) NOT NULL
 )
+"""
 
-cursor = conn.cursor()
+query = f"""
+INSERT IGNORE INTO `{database}`.`{tableName}`
+(rate_date, base_currency, target_currency, rate)
+VALUES (%s, %s, %s, %s)
+"""
 
-start_year = 2020
-end_year = 2026
+try:
+    conn = mysql.connector.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=database
+    )
 
-for year in range(start_year, end_year + 1):
+    cursor = conn.cursor()
 
-    start_date = f"{year}-01-01"
-    end_date = f"{year}-12-31"
+    # Create table if it does not exist
+    cursor.execute(createTableQuery)
 
-    print(f"Fetching {year}...")
+    # Clear old staging data before the reload
+    cursor.execute(f"TRUNCATE TABLE `{database}`.`{tableName}`")
 
-    url = f"https://api.frankfurter.dev/v1/{start_date}..{end_date}"
+    with requests.Session() as session:
+        for year in range(start_year, end_year + 1):
+            start_date = f"{year}-01-01"
 
-    response = requests.get(url)
-    data = response.json()
+            end_date = min(
+                datetime.now().date(),
+                datetime(year, 12, 31).date()
+            ).isoformat()
 
-    if "rates" not in data:
-        continue
+            print(f"Fetching rates for {year}...")
 
-    for date, currencies in data["rates"].items():
-        for currency, rate in currencies.items():
+            params = {
+                "base": "LKR",
+                "from": start_date,
+                "to": end_date
+            }
 
-            query = """
-            INSERT IGNORE INTO stg_exchange_rates
-            (rate_date, base_currency, target_currency, rate)
-            VALUES (%s, %s, %s, %s)
-            """
+            response = session.get(
+                url,
+                params=params,
+                timeout=30
+            )
+            response.raise_for_status()
 
-            cursor.execute(query, (date, "EUR", currency, rate))
+            data = response.json()
 
-    conn.commit()
+            if not isinstance(data, list):
+                raise ValueError(
+                    f"Unexpected API response: {data}"
+                )
 
-print("All historical data loaded!")
+            rows = []
 
-cursor.close()
-conn.close()
+            for item in data:
+                rows.append((
+                    item["date"],
+                    "LKR",
+                    item["quote"],
+                    item["rate"]
+                ))
+
+            if rows:
+                cursor.executemany(query, rows)
+                conn.commit()
+
+            print(
+                f"Loaded {len(rows)} exchange rates for {year}."
+            )
+
+    print("All exchange rate data loaded successfully!")
+
+except (
+    requests.RequestException,
+    mysql.connector.Error,
+    ValueError,
+    KeyError,
+    TypeError
+) as e:
+    if conn and conn.is_connected():
+        conn.rollback()
+
+    print(f"ETL failed: {e}")
+
+finally:
+    if cursor:
+        cursor.close()
+
+    if conn and conn.is_connected():
+        conn.close()
