@@ -35,7 +35,7 @@ FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 IGNORE 1 ROWS
-(transaction_id, account_id, transaction_date, transaction_type, amount, channel, description);
+(transaction_id, account_id, transaction_date, transaction_type, amount, channel, description, currency);
 
 TRUNCATE warehouse.bronze_branches;
 LOAD DATA LOCAL INFILE

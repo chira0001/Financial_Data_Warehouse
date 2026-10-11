@@ -38,7 +38,8 @@ BEGIN
 		transaction_type varchar(50),
 		amount varchar(50),
 		channel	varchar(50),
-		description varchar(100)
+		description varchar(100),
+        currency char(3)
 	);
 
 	CREATE TABLE IF NOT EXISTS warehouse.bronze_branches(
