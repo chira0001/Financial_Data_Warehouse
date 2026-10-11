@@ -6,8 +6,8 @@ from datetime import datetime
 host = "localhost"
 user = "root"
 password = "1234"
-database = "banking_warehouse"
-tableName = "stg_exchange_rates"
+database = "warehouse"
+tableName = "bronze_exchange_rates"
 
 start_year = 2026
 end_year = datetime.now().year
@@ -42,11 +42,7 @@ try:
     )
 
     cursor = conn.cursor()
-
-    # Create table if it does not exist
     cursor.execute(createTableQuery)
-
-    # Clear old staging data before the reload
     cursor.execute(f"TRUNCATE TABLE `{database}`.`{tableName}`")
 
     with requests.Session() as session:
