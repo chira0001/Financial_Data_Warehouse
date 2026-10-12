@@ -105,3 +105,14 @@ insert into warehouse.silver_loans
     DATE(loan_end_date)   AS loan_end_date,
     loan_status
 FROM warehouse.bronze_loans;
+
+truncate warehouse.silver_loan_payments;
+insert into warehouse.silver_loan_payments
+	select
+		payment_id,
+		loan_id,
+		date(payment_date) as payment_date,
+		payment_amount,
+		payment_method,
+		payment_status
+	from warehouse.bronze_loan_payments;

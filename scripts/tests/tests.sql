@@ -172,6 +172,16 @@ select distinct loan_status from warehouse.bronze_loans;
 select * from warehouse.silver_loans;
 select * from warehouse.bronze_loan_payments;
 
+select
+	payment_id,
+    loan_id,
+    date(payment_date) as payment_date,
+	payment_amount,
+    payment_method,
+    payment_status
+from warehouse.bronze_loan_payments;
+
+
 
 
     

@@ -56,3 +56,12 @@ create table if not exists warehouse.silver_loans(
     loan_status varchar(30)
 );
 
+create table if not exists warehouse.silver_loan_payments(
+	payment_id int primary key,
+    loan_id int,
+    payment_date date,
+    payment_amount decimal(15, 2),
+    payment_method varchar(30),
+    payment_status varchar(30)
+);
+
