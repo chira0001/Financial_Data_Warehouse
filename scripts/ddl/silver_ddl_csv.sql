@@ -21,10 +21,15 @@ create table if not exists warehouse.silver_banking_transactions(
     account_id varchar(50),
     transaction_date date,
     transaction_type varchar(50),
+    amount decimal(18, 2),
+    currency char(3),
     lkr_amount decimal(18, 2),
     channel varchar(50),
     description varchar(50)
 );
+ALTER TABLE warehouse.silver_banking_transactions
+    ADD COLUMN IF NOT EXISTS amount decimal(18, 2),
+    ADD COLUMN IF NOT EXISTS currency char(3);
 CREATE INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions (currency);
 
 create table if not exists warehouse.silver_branches(
