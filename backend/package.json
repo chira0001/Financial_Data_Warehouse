@@ -12,5 +12,8 @@
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "mysql2": "^3.14.4"
+  },
+  "devDependencies": {
+    "docx": "^9.12.0"
   }
 }

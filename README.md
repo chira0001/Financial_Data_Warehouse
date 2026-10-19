@@ -165,3 +165,21 @@ For a backend smoke test:
 ```powershell
 Invoke-WebRequest http://127.0.0.1:4000/api/health
 ```
+
+## Academic Deliverables
+
+- [Final report](docs/FINAL_REPORT.md): submission-ready business, technical, modelling, implementation, and demonstration document.
+- [Final report Word document](docs/FINAL_REPORT.docx): editable Microsoft Word version of the final report.
+- [Project report](docs/PROJECT_REPORT.md): business context, technologies, architecture, ETL, quality, and demonstration plan.
+- [Project report Word document](docs/PROJECT_REPORT.docx): editable Microsoft Word version of the project report.
+- [Dimensional model](docs/DIMENSIONAL_MODEL.md): logical star schema, physical tables, keys, and fact grain.
+- [Twenty business queries](scripts/queries/business_queries.sql): analytical questions covering transactions, customers, branches, currencies, loans, payments, and data quality.
+- [Group 1 queries](scripts/queries/group_01_queries.sql), [Group 2 queries](scripts/queries/group_02_queries.sql), [Group 3 queries](scripts/queries/group_03_queries.sql), [Group 4 queries](scripts/queries/group_04_queries.sql), and [Group 5 queries](scripts/queries/group_05_queries.sql): four queries allocated to each group member.
+
+Generate the query result output from the populated warehouse with:
+
+```powershell
+mysql -u root -p warehouse < scripts/queries/business_queries.sql > docs/business_query_results.txt
+```
+
+The result file must be generated after loading the real warehouse so the report contains actual query results rather than invented values.
