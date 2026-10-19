@@ -1,8 +1,4 @@
-SET @silver_started_at = NOW();
-CALL warehouse.sp_log_etl_run('SILVER', 'RUNNING', @silver_started_at, NULL, 'Silver load started');
-START TRANSACTION;
-
-DELETE FROM warehouse.silver_accounts;
+truncate warehouse.silver_accounts;
 insert into warehouse.silver_accounts
 	select
 		account_id,
@@ -13,7 +9,7 @@ insert into warehouse.silver_accounts
 		balance
 	from warehouse.bronze_accounts;
     
-DELETE FROM warehouse.silver_exchange_rates;
+truncate warehouse.silver_exchange_rates;
 insert into warehouse.silver_exchange_rates
     select
 		id,
@@ -22,14 +18,12 @@ insert into warehouse.silver_exchange_rates
 		rate
 	from warehouse.bronze_exchange_rates;
     
-DELETE FROM warehouse.silver_banking_transactions;
+truncate warehouse.silver_banking_transactions;
 INSERT INTO warehouse.silver_banking_transactions (
     transction_id,
     account_id,
     transaction_date,
     transaction_type,
-    amount,
-    currency,
     lkr_amount,
     channel,
     description
@@ -64,9 +58,7 @@ SELECT
     t.account_id,
     t.transaction_date,
     t.transaction_type,
-    CAST(t.amount AS DECIMAL(18, 2)),
-    t.currency,
-    warehouse.fn_lkr_amount(t.amount, t.currency, er.rate) AS lkr_amount,
+    COALESCE(ROUND(t.amount * er.rate, 2), 0) AS lkr_amount,
     t.channel,
     t.description
 FROM parsed_transactions t
@@ -75,7 +67,7 @@ LEFT JOIN exchange_rate_intervals er
     AND t.transaction_date >= er.valid_from
     AND t.transaction_date < er.valid_to;
 
-DELETE FROM warehouse.silver_branches;
+truncate warehouse.silver_branches;
 insert into warehouse.silver_branches
 	select 
 		branch_id,
@@ -84,7 +76,7 @@ insert into warehouse.silver_branches
 		province
 	from warehouse.bronze_branches;
     
-DELETE FROM warehouse.silver_customers;
+truncate warehouse.silver_customers;
 insert into warehouse.silver_customers
 	select
 		customer_id,
@@ -100,7 +92,7 @@ insert into warehouse.silver_customers
 		occupation
 	from warehouse.bronze_customers;
     
-DELETE FROM warehouse.silver_loans;
+truncate warehouse.silver_loans;
 insert into warehouse.silver_loans
     SELECT 
     loan_id,
@@ -114,7 +106,7 @@ insert into warehouse.silver_loans
     loan_status
 FROM warehouse.bronze_loans;
 
-DELETE FROM warehouse.silver_loan_payments;
+truncate warehouse.silver_loan_payments;
 insert into warehouse.silver_loan_payments
 	select
 		payment_id,
@@ -124,6 +116,3 @@ insert into warehouse.silver_loan_payments
 		payment_method,
 		payment_status
 	from warehouse.bronze_loan_payments;
-
-COMMIT;
-CALL warehouse.sp_log_etl_run('SILVER', 'SUCCESS', @silver_started_at, NOW(), 'Silver load completed');

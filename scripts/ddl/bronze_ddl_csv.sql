@@ -17,8 +17,9 @@ Call the warehouse.bronze_layer_tables() stored procedure to create all required
 Note: Existing tables are not modified if they already exist. Any changes to their schemas must be handled separately.
 */
 
+CALL warehouse.bronze_layer_tables();
+
 DELIMITER &&
-DROP PROCEDURE IF EXISTS warehouse.bronze_layer_tables&&
 create procedure warehouse.bronze_layer_tables() 
 BEGIN
 	CREATE TABLE IF NOT EXISTS warehouse.bronze_accounts(
@@ -87,5 +88,3 @@ BEGIN
 	);
 END&&
 DELIMITER ;
-
-CALL warehouse.bronze_layer_tables();

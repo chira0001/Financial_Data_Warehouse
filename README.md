@@ -1,186 +1,42 @@
-# Financial Data Warehouse
+# Financial_Data_Warehouse
 
-Synthetic banking data warehouse with a MySQL Bronze/Silver/Gold pipeline, a Node.js API, and a Vite React operations dashboard.
+BANKING DATA WAREHOUSE - SYNTHETIC CSV SOURCES
 
-All included datasets are synthetic and intended for academic use. They do not contain real customer or bank data.
+All datasets in this package are synthetic and created for an academic data warehousing project.
+They do not contain real customer or bank data.
 
-## Project Structure
+SOURCE 1 - Core Banking System (represented as CSV extracts)
+- customers.csv       : customer master data
+- accounts.csv        : bank account data
+- branches.csv        : branch master data
 
-```text
-Financial_Data_Warehouse/
-├── backend/                 Node.js + Express + MySQL API
-├── scripts/
-│   ├── ddl/                 Bronze, Silver, Gold, routines, and views
-│   ├── data_load/           Layer load scripts
-│   └── tests/               Warehouse and Gold validation queries
-├── sources/
-│   ├── API/                 Foreign-exchange API loader
-│   ├── CSV/                 Core banking and transaction extracts
-│   └── MySQL-DB/            Loan source database dump
-└── visualization/           Vite + React warehouse control room
-```
+SOURCE 2 - Banking Transaction System
+- banking_transactions.csv : transaction-level data for Jan-Sep 2026
 
-## Data Sources
+SOURCE 3 - Foreign Exchange REST API Extract
+- foreign_exchange_rates.csv : API-style historical USD exchange-rate data for EUR, GBP, JPY and LKR
 
-1. Core banking CSV extracts: customers, accounts, and branches.
-2. Banking transaction CSV extract covering January to September 2026.
-3. Loan and loan-payment source database in [Bank_Loans.sql](sources/MySQL-DB/Bank_Loans.sql).
-4. Foreign-exchange rates retrieved from the Frankfurter REST API by [fetch_rates.py](sources/API/fetch_rates.py).
+Suggested warehouse:
+Dimensions:
+- dim_customer
+- dim_account
+- dim_branch
+- dim_date
+- dim_currency
 
-## Warehouse Layers
+Facts:
+- fact_transaction
+- fact_exchange_rate
 
-### Bronze
+Suggested staging tables:
+- stg_customer
+- stg_account
+- stg_branch
+- stg_transaction
+- stg_exchange_rate
 
-Raw landing tables preserve source values before transformation:
-
-`bronze_customers`, `bronze_accounts`, `bronze_branches`, `bronze_banking_transactions`, `bronze_exchange_rates`, `bronze_loans`, and `bronze_loan_payments`.
-
-### Silver
-
-Cleaned and typed tables parse dates, preserve transaction currency and amount, calculate reporting currency, split customer names, and standardize loan relationships.
-
-### Gold
-
-The analytical star schema contains:
-
-- Dimensions: `dim_customer`, `dim_account`, `dim_branch`, `dim_date`, `dim_currency`
-- Facts: `fact_transaction`, `fact_exchange_rate`, `fact_loan`, `fact_loan_payment`
-- Views: `vw_transaction_detail`, `vw_daily_transaction_summary`, `vw_loan_portfolio`
-
-Database functions, procedures, and ETL audit logging are defined in [routines.sql](scripts/ddl/routines.sql). Triggers and automatic database events are intentionally not used because the warehouse is batch-loaded and should not refresh Gold while source data is incomplete.
-
-## Prerequisites
-
-- MySQL 8.0 or later
-- Node.js 18 or later
-- Python 3 with `requests` and `mysql-connector-python` for the FX loader
-- MySQL client available on `PATH`, or use MySQL Workbench to run the SQL files
-
-## Database Setup
-
-From the repository root, create the databases:
-
-```powershell
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS warehouse;"
-mysql -u root -p -e "CREATE DATABASE IF NOT EXISTS banking_loan_source;"
-```
-
-Load the loan source database:
-
-```powershell
-mysql -u root -p < sources/MySQL-DB/Bank_Loans.sql
-```
-
-Create warehouse tables and database objects in this order:
-
-```powershell
-mysql -u root -p warehouse < scripts/ddl/bronze_ddl_csv.sql
-mysql -u root -p warehouse < scripts/ddl/routines.sql
-mysql -u root -p warehouse < scripts/ddl/silver_ddl_csv.sql
-mysql -u root -p warehouse < scripts/ddl/gold_ddl.sql
-mysql -u root -p warehouse < scripts/ddl/reporting_views.sql
-```
-
-Before loading, update the CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) for your machine. Configure the database connection in [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
-
-```powershell
-python sources/API/fetch_rates.py
-```
-
-Load the layers manually when needed:
-
-```powershell
-mysql -u root -p warehouse < scripts/data_load/bronze_data_load.sql
-mysql -u root -p warehouse < scripts/data_load/silver_data_load.sql
-mysql -u root -p warehouse < scripts/data_load/gold_data_load.sql
-```
-
-Run validation queries:
-
-```powershell
-mysql -u root -p warehouse < scripts/tests/tests.sql
-mysql -u root -p warehouse < scripts/tests/gold_tests.sql
-```
-
-## Backend API
-
-The backend reads warehouse data and runs the existing ETL scripts for the dashboard.
-
-```powershell
-cd backend
-Copy-Item .env.example .env
-```
-
-Set `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`, and `FRONTEND_ORIGIN` in `backend/.env`, then run:
-
-```powershell
-npm install
-npm run dev
-```
-
-The API runs at `http://127.0.0.1:4000` and provides:
-
-- `GET /api/health`
-- `GET /api/warehouse/overview`
-- `GET /api/warehouse/transactions?search=`
-- `GET /api/warehouse/loans`
-- `GET /api/warehouse/quality`
-- `POST /api/query-groups/:groupId/run` where `groupId` is `1` through `5`
-- `POST /api/pipeline/run`
-
-The pipeline endpoint executes Bronze, Silver, and Gold loading in order and returns an error if MySQL or any ETL statement fails.
-
-## React Visualization
-
-In a second terminal:
-
-```powershell
-cd visualization
-npm install
-npm run dev
-```
-
-Open `http://127.0.0.1:5173`. Vite proxies `/api` requests to the backend at port 4000.
-
-The dashboard includes:
-
-- Warehouse overview and layer health
-- Transaction explorer
-- Loan portfolio
-- Data-quality results
-- ETL run history
-- Run pipeline control
-
-The UI renders only records returned by the warehouse API. If MySQL is unavailable or the warehouse has no data, it displays an error or empty state instead of sample records.
-
-## Validation
-
-```powershell
-cd visualization
-npm run lint
-npm run build
-```
-
-For a backend smoke test:
-
-```powershell
-Invoke-WebRequest http://127.0.0.1:4000/api/health
-```
-
-## Academic Deliverables
-
-- [Final report](docs/FINAL_REPORT.md): submission-ready business, technical, modelling, implementation, and demonstration document.
-- [Final report Word document](docs/FINAL_REPORT.docx): editable Microsoft Word version of the final report.
-- [Project report](docs/PROJECT_REPORT.md): business context, technologies, architecture, ETL, quality, and demonstration plan.
-- [Project report Word document](docs/PROJECT_REPORT.docx): editable Microsoft Word version of the project report.
-- [Dimensional model](docs/DIMENSIONAL_MODEL.md): logical star schema, physical tables, keys, and fact grain.
-- [Twenty business queries](scripts/queries/business_queries.sql): analytical questions covering transactions, customers, branches, currencies, loans, payments, and data quality.
-- [Group 1 queries](scripts/queries/group_01_queries.sql), [Group 2 queries](scripts/queries/group_02_queries.sql), [Group 3 queries](scripts/queries/group_03_queries.sql), [Group 4 queries](scripts/queries/group_04_queries.sql), and [Group 5 queries](scripts/queries/group_05_queries.sql): four queries allocated to each group member.
-
-Generate the query result output from the populated warehouse with:
-
-```powershell
-mysql -u root -p warehouse < scripts/queries/business_queries.sql > docs/business_query_results.txt
-```
-
-The result file must be generated after loading the real warehouse so the report contains actual query results rather than invented values.
+Important:
+For the final report, describe Source 3 as data retrieved from a REST API and then saved as CSV
+for staging/reproducibility if your lecturer requires CSV inputs. If your lecturer specifically
+requires a live REST API as one of the three sources, keep the API step in your ETL and use this CSV
+as a backup/test extract.
