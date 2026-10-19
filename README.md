@@ -67,3 +67,27 @@ Important:
 For the final report, describe Source 3 as data retrieved from a REST API and loaded into Bronze
 for reproducible warehouse processing. If CSV input is required, export the API response as a
 backup/test extract while retaining the API step in the ETL.
+
+Visualization API:
+
+The React application uses the Node API in `backend/` to read MySQL and run the ETL pipeline.
+Copy `backend/.env.example` to `backend/.env`, set the MySQL credentials, then run:
+
+```powershell
+cd backend
+npm install
+npm run dev
+```
+
+In another terminal, run the frontend:
+
+```powershell
+cd visualization
+npm install
+npm run dev
+```
+
+The frontend proxies `/api` requests to `http://127.0.0.1:4000`. The Run pipeline button
+executes the Bronze, Silver, and Gold load scripts through the API and refreshes the views.
+Without a successful MySQL connection, the UI shows an error or empty state and never uses
+sample records.
