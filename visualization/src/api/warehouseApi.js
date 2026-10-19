@@ -10,5 +10,6 @@ export const warehouseApi = {
   transactions: (search = '') => request(`/api/warehouse/transactions?search=${encodeURIComponent(search)}`),
   loans: () => request('/api/warehouse/loans'),
   quality: () => request('/api/warehouse/quality'),
+  runQueryGroup: (groupId) => request(`/api/query-groups/${groupId}/run`, { method: 'POST' }),
   runPipeline: () => request('/api/pipeline/run', { method: 'POST' }),
 }

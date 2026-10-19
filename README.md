@@ -125,6 +125,7 @@ The API runs at `http://127.0.0.1:4000` and provides:
 - `GET /api/warehouse/transactions?search=`
 - `GET /api/warehouse/loans`
 - `GET /api/warehouse/quality`
+- `POST /api/query-groups/:groupId/run` where `groupId` is `1` through `5`
 - `POST /api/pipeline/run`
 
 The pipeline endpoint executes Bronze, Silver, and Gold loading in order and returns an error if MySQL or any ETL statement fails.

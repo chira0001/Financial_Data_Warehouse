@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { config } from './config.js'
 import { checkDatabase, pool } from './db.js'
-import { runPipeline } from './sql.js'
+import { runPipeline, runQueryGroup } from './sql.js'
 
 const app = express()
 let pipelineRunning = false
@@ -150,6 +150,19 @@ app.get('/api/warehouse/quality', async (_request, response) => {
       }] })
   } catch (error) {
     handleError(response, error)
+  }
+})
+
+app.post('/api/query-groups/:groupId/run', async (request, response) => {
+  let connection
+  try {
+    connection = await pool.getConnection()
+    const results = await runQueryGroup(connection, request.params.groupId)
+    response.json({ groupId: request.params.groupId, results })
+  } catch (error) {
+    handleError(response, error)
+  } finally {
+    connection?.release()
   }
 })
 

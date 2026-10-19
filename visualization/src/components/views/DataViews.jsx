@@ -40,3 +40,33 @@ export function QualityView() {
   const passed = state.checks.filter((check) => check.result === 'Passed').length
   return <div className="view-stack"><div className="quality-summary"><div><span className="eyebrow">Validation status</span><h2>{state.error ? 'Validation unavailable.' : state.checks.length ? 'Trust, with receipts.' : 'Quality awaits a load.'}</h2><p>Gold checks run after every full refresh and leave an auditable trail in the warehouse.</p></div><div className="quality-score"><strong>{state.score == null ? '—' : state.score}</strong><span>/ 100</span><div className={`score-ring ${state.score == null ? 'empty-ring' : ''}`}><i /></div></div></div><section className="panel checks-panel"><SectionHeader eyebrow="Validation suite" title={state.checks.length ? `${passed} checks passed` : 'No checks recorded'} action="Run checks" />{state.checks.length === 0 ? <div className="empty-data"><strong>{state.loading ? 'Loading quality results' : 'No warehouse quality results yet'}</strong><span>{state.error || 'Run the Gold validation procedure after loading the warehouse.'}</span></div> : <div className="checks-list">{state.checks.map((check) => <div className="check-row" key={check.label}><div className={`check-icon ${check.result === 'Passed' ? 'passed' : 'review'}`}>{check.result === 'Passed' ? '✓' : '!'}</div><div className="check-copy"><strong>{check.label}</strong><span>{check.detail}</span></div><div className="check-bar"><i style={{ width: `${check.score}%` }} /></div><b className="check-score">{check.score}%</b><StatusPill tone={check.result === 'Passed' ? 'success' : 'warning'}>{check.result}</StatusPill></div>)}</div>}</section></div>
 }
+
+const queryGroups = [
+  { id: 1, title: 'Transaction operations', range: 'Q01-Q04', description: 'Volume, monthly movement, transaction types, and channels.' },
+  { id: 2, title: 'Currency and customers', range: 'Q05-Q08', description: 'Currency activity, branches, top customers, and account types.' },
+  { id: 3, title: 'Portfolio summaries', range: 'Q09-Q12', description: 'Branch balances, occupations, loan types, and statuses.' },
+  { id: 4, title: 'Rates and payments', range: 'Q13-Q16', description: 'High-interest facilities, payment status, methods, and monthly totals.' },
+  { id: 5, title: 'Risk and quality', range: 'Q17-Q20', description: 'Customer exposure, overdue loans, quality gaps, and maturities.' },
+]
+
+function QueryResult({ rows, index }) {
+  if (!rows.length) return <div className="query-result-empty">Q{String(index + 1).padStart(2, '0')} returned no rows.</div>
+  const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))]
+  return <div className="query-result"><span className="query-result-label">Q{String(index + 1).padStart(2, '0')} · {rows.length} row{rows.length === 1 ? '' : 's'}</span><div className="query-result-table"><div className="query-result-head">{columns.map((column) => <span key={column}>{column.replaceAll('_', ' ')}</span>)}</div>{rows.slice(0, 50).map((row, rowIndex) => <div className="query-result-row" key={rowIndex}>{columns.map((column) => <span key={column}>{row[column] == null ? '—' : String(row[column])}</span>)}</div>)}</div>{rows.length > 50 && <small className="query-truncated">Showing first 50 rows.</small>}</div>
+}
+
+export function QueryGroupsView() {
+  const [groupState, setGroupState] = useState({})
+
+  const runGroup = async (groupId) => {
+    setGroupState((current) => ({ ...current, [groupId]: { loading: true, error: '', results: [] } }))
+    try {
+      const data = await warehouseApi.runQueryGroup(groupId)
+      setGroupState((current) => ({ ...current, [groupId]: { loading: false, error: '', results: data.results || [] } }))
+    } catch (error) {
+      setGroupState((current) => ({ ...current, [groupId]: { loading: false, error: error.message, results: [] } }))
+    }
+  }
+
+  return <div className="view-stack"><div className="query-intro"><div><span className="eyebrow">SQL / Gold warehouse</span><h2>Five perspectives, one source of truth.</h2><p>Run each member's four-query group independently. Results appear here only when returned by MySQL.</p></div><span className="query-count">20 questions<br /><b>5 groups</b></span></div><div className="query-group-grid">{queryGroups.map((group) => { const state = groupState[group.id] || { loading: false, error: '', results: [] }; return <section className="query-group-card panel" key={group.id}><div className="query-group-top"><span className="query-group-number">0{group.id}</span><span className="query-range">{group.range}</span></div><h3>{group.title}</h3><p>{group.description}</p><button className="query-run-button" onClick={() => runGroup(group.id)} disabled={state.loading}>{state.loading ? 'Running group...' : `Run ${group.range}`}<span>{state.loading ? '◌' : '▶'}</span></button>{state.error && <div className="query-error">Warehouse result unavailable: {state.error}</div>}{state.results.length > 0 && <div className="query-results">{state.results.map((rows, index) => <QueryResult key={index} rows={rows} index={index} />)}</div>}{!state.loading && !state.error && state.results.length === 0 && <div className="query-not-run">Not run yet</div>}</section> })}</div></div>
+}

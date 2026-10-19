@@ -4,6 +4,7 @@ function Topbar({ activeView, isRunning, onRun }) {
     transactions: ['Transaction explorer', 'Trace currency, channel, and reporting value'],
     loans: ['Loan portfolio', 'Follow balances from source to Gold'],
     quality: ['Quality center', 'Checks that keep analytics trustworthy'],
+    queries: ['Business queries', 'Run each group against the Gold warehouse'],
   }
   const [title, subtitle] = titles[activeView]
 
