@@ -14,9 +14,12 @@ SOURCE 2 - Banking Transaction System
 - banking_transactions.csv : transaction-level data for Jan-Sep 2026
 
 SOURCE 3 - Foreign Exchange REST API Extract
-- foreign_exchange_rates.csv : API-style historical USD exchange-rate data for EUR, GBP, JPY and LKR
+- `sources/API/fetch_rates.py` retrieves historical exchange rates and loads them into Bronze.
 
-Suggested warehouse:
+Implemented warehouse:
+
+The warehouse uses Bronze and Silver layers for ingestion and transformation, followed by a Gold star schema for analytics.
+
 Dimensions:
 - dim_customer
 - dim_account
@@ -27,16 +30,40 @@ Dimensions:
 Facts:
 - fact_transaction
 - fact_exchange_rate
+- fact_loan
+- fact_loan_payment
 
-Suggested staging tables:
-- stg_customer
-- stg_account
-- stg_branch
-- stg_transaction
-- stg_exchange_rate
+Bronze staging tables:
+- bronze_customers
+- bronze_accounts
+- bronze_branches
+- bronze_banking_transactions
+- bronze_exchange_rates
+- bronze_loans
+- bronze_loan_payments
+
+The Gold DDL is in `scripts/ddl/gold_ddl.sql` and the full-refresh Gold load is in
+`scripts/data_load/gold_data_load.sql`. Run them after the Bronze and Silver layers
+have been loaded.
+
+Database routines and reporting views are defined in `scripts/ddl/routines.sql` and
+`scripts/ddl/reporting_views.sql`. Execute them in this order:
+
+1. `bronze_ddl_csv.sql`
+2. `routines.sql`
+3. `silver_ddl_csv.sql`
+4. `gold_ddl.sql`
+5. `bronze_data_load.sql`
+6. `silver_data_load.sql`
+7. `gold_data_load.sql`
+8. `reporting_views.sql`
+
+The warehouse uses batch ETL, so triggers and event listeners are intentionally not
+used. Triggers would add row-by-row overhead during bulk loads, and an automatic event
+could refresh Gold while source data is incomplete. Use the ETL scripts or an external
+scheduler to control refresh timing.
 
 Important:
-For the final report, describe Source 3 as data retrieved from a REST API and then saved as CSV
-for staging/reproducibility if your lecturer requires CSV inputs. If your lecturer specifically
-requires a live REST API as one of the three sources, keep the API step in your ETL and use this CSV
-as a backup/test extract.
+For the final report, describe Source 3 as data retrieved from a REST API and loaded into Bronze
+for reproducible warehouse processing. If CSV input is required, export the API response as a
+backup/test extract while retaining the API step in the ETL.
