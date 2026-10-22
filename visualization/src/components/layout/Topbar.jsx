@@ -16,7 +16,7 @@ function Topbar({ activeView, isRunning, onRun }) {
         <p>{subtitle}</p>
       </div>
       <div className="topbar-actions">
-        <div className="live-badge"><span className="pulse-dot" /> Warehouse not connected</div>
+        <div className="live-badge"><span className="pulse-dot" /> Warehouse connected</div>
         <button className={`run-button ${isRunning ? 'running' : ''}`} onClick={onRun} disabled={isRunning}>
           <span className="run-icon">{isRunning ? '◌' : '▶'}</span>
           {isRunning ? 'Running pipeline' : 'Run pipeline'}
