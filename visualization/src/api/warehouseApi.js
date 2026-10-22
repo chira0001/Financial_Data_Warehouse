@@ -6,7 +6,9 @@ async function request(path, options) {
 }
 
 export const warehouseApi = {
+  health: () => request('/api/health'),
   overview: () => request('/api/warehouse/overview'),
+  analytics: () => request('/api/warehouse/analytics'),
   transactions: (search = '') => request(`/api/warehouse/transactions?search=${encodeURIComponent(search)}`),
   loans: () => request('/api/warehouse/loans'),
   quality: () => request('/api/warehouse/quality'),

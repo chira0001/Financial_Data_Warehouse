@@ -95,6 +95,75 @@ app.get('/api/warehouse/overview', async (_request, response) => {
   }
 })
 
+app.get('/api/warehouse/analytics', async (_request, response) => {
+  try {
+    const [summary, monthlyTrend, transactionTypes, loanProducts, regions, channels] = await Promise.all([
+      query(`
+        SELECT
+          (SELECT COUNT(*) FROM warehouse.fact_transaction) AS transaction_count,
+          (SELECT COALESCE(SUM(lkr_amount), 0) FROM warehouse.fact_transaction) AS reporting_volume,
+          (SELECT COALESCE(SUM(loan_amount), 0) FROM warehouse.fact_loan) AS loan_principal,
+          (SELECT COUNT(DISTINCT branch_key) FROM warehouse.fact_transaction WHERE branch_key IS NOT NULL) AS active_branches
+      `),
+      query(`
+        SELECT DATE_FORMAT(monthly.month_start, '%b %Y') AS label,
+          monthly.transaction_count, monthly.reporting_volume
+        FROM (
+          SELECT DATE_SUB(date_dim.full_date, INTERVAL DAYOFMONTH(date_dim.full_date) - 1 DAY) AS month_start,
+            COUNT(*) AS transaction_count, SUM(fact.lkr_amount) AS reporting_volume
+          FROM warehouse.fact_transaction fact
+          JOIN warehouse.dim_date date_dim ON date_dim.date_key = fact.date_key
+          GROUP BY YEAR(date_dim.full_date), MONTH(date_dim.full_date), month_start
+          ORDER BY month_start DESC LIMIT 12
+        ) monthly
+        ORDER BY monthly.month_start
+      `),
+      query(`
+        SELECT transaction_type AS label, COUNT(*) AS transaction_count,
+          COALESCE(SUM(lkr_amount), 0) AS reporting_volume
+        FROM warehouse.fact_transaction
+        GROUP BY transaction_type
+        ORDER BY reporting_volume DESC
+      `),
+      query(`
+        SELECT loan_type AS label, COUNT(*) AS loan_count,
+          COALESCE(SUM(loan_amount), 0) AS principal
+        FROM warehouse.fact_loan
+        GROUP BY loan_type
+        ORDER BY principal DESC
+      `),
+      query(`
+        SELECT COALESCE(branch.province, 'Unassigned') AS label,
+          COUNT(*) AS transaction_count, COALESCE(SUM(fact.lkr_amount), 0) AS reporting_volume
+        FROM warehouse.fact_transaction fact
+        LEFT JOIN warehouse.dim_branch branch ON branch.branch_key = fact.branch_key
+        GROUP BY branch.province
+        ORDER BY reporting_volume DESC
+        LIMIT 8
+      `),
+      query(`
+        SELECT COALESCE(channel, 'Unspecified') AS label, COUNT(*) AS transaction_count,
+          COALESCE(SUM(lkr_amount), 0) AS reporting_volume
+        FROM warehouse.fact_transaction
+        GROUP BY channel
+        ORDER BY transaction_count DESC
+        LIMIT 6
+      `),
+    ])
+
+    response.json({
+      summary: summary[0],
+      monthlyTrend,
+      transactionTypes,
+      loanProducts,
+      regions,
+      channels,
+    })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
 app.get('/api/warehouse/transactions', async (request, response) => {
   try {
     const search = `%${request.query.search || ''}%`
