@@ -3104,7 +3104,252 @@ CREATE INDEX idx_payments_status ON loan_payments(payment_status);
 CREATE INDEX idx_payments_method ON loan_payments(payment_method);
 
 -- ----------------------------------------------------------------------------
--- SECTION 2: AUDIT & COMPLIANCE LOGGING TABLES
+-- ============================================================================
+-- SECTION 2: EXTENDED PRODUCTION OPERATIONAL TABLES & CATALOG
+-- ============================================================================
+
+-- 2.1 Loan Products Master Catalog
+CREATE TABLE IF NOT EXISTS loan_products (
+    product_id VARCHAR(10) PRIMARY KEY,
+    product_code VARCHAR(20) NOT NULL UNIQUE,
+    product_name VARCHAR(100) NOT NULL,
+    loan_category VARCHAR(50) NOT NULL,
+    min_amount DECIMAL(15,2) NOT NULL,
+    max_amount DECIMAL(15,2) NOT NULL,
+    base_interest_rate DECIMAL(5,2) NOT NULL,
+    max_tenure_months INT NOT NULL,
+    is_collateral_required BOOLEAN NOT NULL DEFAULT FALSE,
+    processing_fee_percentage DECIMAL(4,2) DEFAULT 1.00,
+    INDEX idx_prod_category (loan_category),
+    INDEX idx_prod_rate (base_interest_rate)
+);
+
+INSERT INTO loan_products (product_id, product_code, product_name, loan_category, min_amount, max_amount, base_interest_rate, max_tenure_months, is_collateral_required, processing_fee_percentage) VALUES
+('PRD01', 'PERS-STD', 'Standard Personal Flexi Loan', 'Personal', 50000.00, 5000000.00, 13.50, 60, FALSE, 1.00),
+('PRD02', 'HOME-PRM', 'Prime Residential Housing Loan', 'Housing', 500000.00, 25000000.00, 11.25, 240, TRUE, 0.75),
+('PRD03', 'AUTO-DRV', 'DrivePlus Commercial & Personal Vehicle Loan', 'Vehicle', 250000.00, 10000000.00, 14.00, 84, TRUE, 1.25),
+('PRD04', 'EDU-SCH', 'Higher Education & Scholar Loan', 'Education', 100000.00, 5000000.00, 8.50, 84, FALSE, 0.50),
+('PRD05', 'BIZ-GROW', 'SME Business Expansion & Working Capital Loan', 'Business', 500000.00, 20000000.00, 12.75, 120, TRUE, 1.50);
+
+-- 2.2 Loan Officers & Credit Staff
+CREATE TABLE IF NOT EXISTS loan_officers (
+    officer_id INT PRIMARY KEY,
+    employee_code VARCHAR(20) NOT NULL UNIQUE,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone_number VARCHAR(20) NOT NULL,
+    branch_id VARCHAR(10) NOT NULL,
+    role_title VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Active',
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+    INDEX idx_officer_branch (branch_id),
+    INDEX idx_officer_status (status)
+);
+
+INSERT INTO loan_officers (officer_id, employee_code, first_name, last_name, email, phone_number, branch_id, role_title, status) VALUES
+(101, 'EMP0101', 'Sunil', 'Perera', 'sunil.perera@bank.lk', '+94 77 123 4567', 'B001', 'Branch Loan Manager', 'Active'),
+(102, 'EMP0102', 'Kamal', 'Silva', 'kamal.silva@bank.lk', '+94 77 234 5678', 'B001', 'Senior Loan Officer', 'Active'),
+(103, 'EMP0103', 'Dilani', 'Jayasinghe', 'dilani.j@bank.lk', '+94 77 345 6789', 'B002', 'Branch Loan Manager', 'Active'),
+(104, 'EMP0104', 'Ruwan', 'Wickrama', 'ruwan.w@bank.lk', '+94 77 456 7890', 'B003', 'Senior Loan Officer', 'Active'),
+(105, 'EMP0105', 'Ayesha', 'Fernando', 'ayesha.f@bank.lk', '+94 77 567 8901', 'B004', 'Credit Analyst', 'Active'),
+(106, 'EMP0106', 'Pradeep', 'Bandara', 'pradeep.b@bank.lk', '+94 77 678 9012', 'B005', 'Senior Loan Officer', 'Active'),
+(107, 'EMP0107', 'Nadeesha', 'Dissanayake', 'nadeesha.d@bank.lk', '+94 77 789 0123', 'B006', 'Credit Analyst', 'Active'),
+(108, 'EMP0108', 'Chathura', 'Gunaratne', 'chathura.g@bank.lk', '+94 77 890 1234', 'B007', 'Recovery Officer', 'Active'),
+(109, 'EMP0109', 'Sangeeth', 'Senanayake', 'sangeeth.s@bank.lk', '+94 77 901 2345', 'B008', 'Branch Loan Manager', 'Active'),
+(110, 'EMP0110', 'Buddhika', 'Alwis', 'buddhika.a@bank.lk', '+94 77 012 3456', 'B009', 'Recovery Officer', 'Active'),
+(111, 'EMP0111', 'Malinda', 'Mendis', 'malinda.m@bank.lk', '+94 77 112 2334', 'B010', 'Branch Loan Manager', 'Active');
+
+-- 2.3 Loan Applications / Underwriting Pipeline
+CREATE TABLE IF NOT EXISTS loan_applications (
+    application_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    product_id VARCHAR(10) NOT NULL,
+    assigned_officer_id INT,
+    applied_amount DECIMAL(15,2) NOT NULL,
+    requested_tenure_months INT NOT NULL,
+    application_date DATE NOT NULL,
+    credit_score INT NOT NULL,
+    approval_status VARCHAR(30) NOT NULL DEFAULT 'Submitted',
+    approved_amount DECIMAL(15,2),
+    approval_date DATE,
+    decision_notes VARCHAR(500),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    FOREIGN KEY (product_id) REFERENCES loan_products(product_id),
+    FOREIGN KEY (assigned_officer_id) REFERENCES loan_officers(officer_id),
+    INDEX idx_app_customer (customer_id),
+    INDEX idx_app_product (product_id),
+    INDEX idx_app_officer (assigned_officer_id),
+    INDEX idx_app_status (approval_status),
+    INDEX idx_app_date (application_date)
+);
+
+INSERT INTO loan_applications (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, approved_amount, approval_date, decision_notes) VALUES
+(7001, 1, 'PRD01', 101, 3500000.00, 36, '2023-01-10', 740, 'Approved', 3233200.00, '2023-01-20', 'Solid credit history and repayment capacity confirmed.'),
+(7002, 2, 'PRD02', 102, 1500000.00, 240, '2021-02-01', 780, 'Approved', 1300000.00, '2021-02-15', 'Primary residential title verified and cleared by legal team.'),
+(7003, 3, 'PRD03', 103, 3500000.00, 60, '2020-12-05', 690, 'Approved', 3415800.00, '2020-12-18', 'Vehicle proforma invoice appraised and approved.'),
+(7004, 4, 'PRD04', 104, 3000000.00, 84, '2021-01-05', 720, 'Approved', 2993400.00, '2021-01-15', 'University enrolment proof validated, guarantor verified.'),
+(7005, 5, 'PRD05', 105, 1200000.00, 120, '2020-04-01', 650, 'Approved', 1171300.00, '2020-04-12', 'Audited SME balance sheet accepted with hypothecation.'),
+(7006, 6, 'PRD01', 106, 2900000.00, 36, '2024-08-25', 710, 'Approved', 2850100.00, '2024-09-08', 'Approved within personal loan risk threshold.'),
+(7007, 7, 'PRD02', 107, 1250000.00, 240, '2020-01-12', 760, 'Approved', 1180200.00, '2020-01-24', 'Mortgage deed registered with Land Registry.'),
+(7008, 8, 'PRD03', 108, 4000000.00, 60, '2024-09-10', 730, 'Approved', 3818200.00, '2024-09-22', 'Commercial van facility approved.'),
+(7009, 9, 'PRD04', 109, 1800000.00, 84, '2023-09-20', 705, 'Approved', 1767200.00, '2023-10-05', 'Postgraduate degree sponsorship approved.'),
+(7010, 10, 'PRD05', 110, 700000.00, 120, '2023-12-15', 640, 'Approved', 600800.00, '2024-01-05', 'Working capital line cleared by regional credit committee.'),
+(7011, 11, 'PRD01', 111, 4500000.00, 36, '2020-06-05', 715, 'Approved', 4252700.00, '2020-06-20', 'Approved on executive salary assignment.'),
+(7012, 12, 'PRD02', 101, 3800000.00, 240, '2024-03-10', 775, 'Approved', 3675700.00, '2024-03-25', 'Condominium purchase facility sanctioned.');
+
+-- 2.4 Loan Collateral & Asset Securities
+CREATE TABLE IF NOT EXISTS loan_collaterals (
+    collateral_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    collateral_type VARCHAR(50) NOT NULL,
+    collateral_description VARCHAR(255) NOT NULL,
+    valuation_amount DECIMAL(15,2) NOT NULL,
+    valuation_date DATE NOT NULL,
+    valuer_name VARCHAR(100) NOT NULL,
+    document_reference VARCHAR(100),
+    status VARCHAR(30) NOT NULL DEFAULT 'Pledged',
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_collateral_loan (loan_id),
+    INDEX idx_collateral_type (collateral_type),
+    INDEX idx_collateral_status (status)
+);
+
+INSERT INTO loan_collaterals (collateral_id, loan_id, collateral_type, collateral_description, valuation_amount, valuation_date, valuer_name, document_reference, status) VALUES
+(8001, 1002, 'Real Estate', 'Residential Land & 2-Story House, Matara (Lot 45A)', 2200000.00, '2021-02-10', 'Chartered Valuers Lanka Ltd', 'DEED-MAT-2021-45', 'Pledged'),
+(8002, 1003, 'Vehicle', 'Toyota Hilux Double Cab 2020, Reg WP-CAG-8921', 4500000.00, '2020-12-10', 'Automobile Association of Ceylon', 'CR-WP-8921', 'Pledged'),
+(8003, 1005, 'Commercial Property', 'Commercial Warehouse & Workshop, Anuradhapura', 2500000.00, '2020-04-05', 'Central Valuations Pvt Ltd', 'DEED-ANU-2020-112', 'Pledged'),
+(8004, 1007, 'Real Estate', 'Prime Residential Property, Batticaloa', 1900000.00, '2020-01-18', 'Chartered Valuers Lanka Ltd', 'DEED-BAT-2020-78', 'Pledged'),
+(8005, 1008, 'Vehicle', 'Isuzu D-Max Crew Cab 2022, Reg SP-DA-4412', 5200000.00, '2024-09-18', 'Speed Valuations Ltd', 'CR-SP-4412', 'Pledged'),
+(8006, 1010, 'Fixed Deposit', 'Lien on 5-Year Term Deposit #FD-990812', 1000000.00, '2024-01-05', 'Internal Branch Lien', 'LIEN-B010-9908', 'Pledged'),
+(8007, 1012, 'Real Estate', 'Luxury Apartment Unit 4B, Colombo 03', 6000000.00, '2024-03-15', 'CBRE Property Valuation', 'DEED-COL-2024-904', 'Pledged');
+
+-- 2.5 Loan Guarantors & Co-Signers
+CREATE TABLE IF NOT EXISTS loan_guarantors (
+    guarantor_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    guarantor_name VARCHAR(100) NOT NULL,
+    nic_number VARCHAR(20) NOT NULL,
+    relationship_to_borrower VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    monthly_income DECIMAL(15,2) NOT NULL,
+    employer_name VARCHAR(100),
+    guarantee_amount DECIMAL(15,2),
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_guarantor_loan (loan_id),
+    INDEX idx_guarantor_nic (nic_number)
+);
+
+INSERT INTO loan_guarantors (guarantor_id, loan_id, guarantor_name, nic_number, relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount) VALUES
+(9001, 1001, 'Jayantha Jayasinghe', '196512345678', 'Brother', '+94 71 223 3445', 250000.00, 'State Pharmaceuticals Corp', 3233200.00),
+(9002, 1004, 'Professor Nimal Rajapaksa', '197023456789', 'Father', '+94 71 334 4556', 320000.00, 'University of Colombo', 2993400.00),
+(9003, 1006, 'Chandana Wickramasinghe', '197234567890', 'Spouse', '+94 71 445 5667', 180000.00, 'Commercial Bank of Ceylon', 2850100.00),
+(9004, 1009, 'Damayanthi Gunawardena', '197545678901', 'Mother', '+94 71 556 6778', 210000.00, 'Ministry of Education', 1767200.00),
+(9005, 1011, 'Ananda Bandara', '196856789012', 'Business Partner', '+94 71 667 7889', 450000.00, 'Lanka Agro Exports Ltd', 4252700.00);
+
+-- 2.6 Loan Disbursements Execution
+CREATE TABLE IF NOT EXISTS loan_disbursements (
+    disbursement_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    disbursement_date DATE NOT NULL,
+    disbursed_amount DECIMAL(15,2) NOT NULL,
+    disbursement_method VARCHAR(50) NOT NULL,
+    reference_number VARCHAR(100) NOT NULL UNIQUE,
+    authorized_by_officer_id INT,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    FOREIGN KEY (authorized_by_officer_id) REFERENCES loan_officers(officer_id),
+    INDEX idx_disbursement_loan (loan_id),
+    INDEX idx_disbursement_date (disbursement_date),
+    INDEX idx_disbursement_officer (authorized_by_officer_id)
+);
+
+INSERT INTO loan_disbursements (disbursement_id, loan_id, disbursement_date, disbursed_amount, disbursement_method, reference_number, authorized_by_officer_id) VALUES
+(3001, 1001, '2023-01-31', 3233200.00, 'Account Transfer', 'TXN-DISB-1001-A', 101),
+(3002, 1002, '2021-02-23', 1300000.00, 'Pay Order', 'TXN-DISB-1002-PO', 102),
+(3003, 1003, '2020-12-22', 3415800.00, 'Pay Order', 'TXN-DISB-1003-PO', 103),
+(3004, 1004, '2021-01-18', 2993400.00, 'Account Transfer', 'TXN-DISB-1004-A', 104),
+(3005, 1005, '2020-04-18', 1171300.00, 'Account Transfer', 'TXN-DISB-1005-A', 105),
+(3006, 1006, '2024-09-14', 2850100.00, 'Account Transfer', 'TXN-DISB-1006-A', 106),
+(3007, 1007, '2020-01-27', 1180200.00, 'Pay Order', 'TXN-DISB-1007-PO', 107),
+(3008, 1008, '2024-09-27', 3818200.00, 'Pay Order', 'TXN-DISB-1008-PO', 108),
+(3009, 1009, '2023-10-10', 1767200.00, 'Account Transfer', 'TXN-DISB-1009-A', 109),
+(3010, 1010, '2024-01-10', 600800.00, 'Account Transfer', 'TXN-DISB-1010-A', 110);
+
+-- 2.7 Loan Repayment Schedule & Amortization Installments
+CREATE TABLE IF NOT EXISTS loan_repayment_schedules (
+    schedule_id INT PRIMARY KEY AUTO_INCREMENT,
+    loan_id INT NOT NULL,
+    installment_number INT NOT NULL,
+    due_date DATE NOT NULL,
+    installment_amount DECIMAL(15,2) NOT NULL,
+    principal_component DECIMAL(15,2) NOT NULL,
+    interest_component DECIMAL(15,2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    paid_date DATE NULL,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_schedule_loan (loan_id),
+    INDEX idx_schedule_due_date (due_date),
+    INDEX idx_schedule_status (status)
+);
+
+INSERT INTO loan_repayment_schedules (loan_id, installment_number, due_date, installment_amount, principal_component, interest_component, status, paid_date) VALUES
+(1001, 1, '2023-02-28', 99540.00, 81250.00, 18290.00, 'Paid', '2023-02-27'),
+(1001, 2, '2023-03-31', 99540.00, 81710.00, 17830.00, 'Paid', '2023-03-30'),
+(1001, 3, '2023-04-30', 99540.00, 82170.00, 17370.00, 'Paid', '2023-04-28'),
+(1002, 1, '2021-03-23', 10980.00, 2205.00, 8775.00, 'Paid', '2021-03-20'),
+(1002, 2, '2021-04-23', 10980.00, 2220.00, 8760.00, 'Paid', '2021-04-22'),
+(1003, 1, '2021-01-22', 84450.00, 36790.00, 47660.00, 'Paid', '2021-01-20'),
+(1005, 1, '2020-05-18', 17050.00, 5035.00, 12015.00, 'Overdue', NULL),
+(1010, 1, '2024-02-10', 8250.00, 2810.00, 5440.00, 'Overdue', NULL);
+
+-- 2.8 Loan Fees, Charges & Penalties
+CREATE TABLE IF NOT EXISTS loan_fees_and_penalties (
+    fee_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    fee_type VARCHAR(50) NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    assessed_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Unpaid',
+    settled_date DATE NULL,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_fee_loan (loan_id),
+    INDEX idx_fee_status (status),
+    INDEX idx_fee_date (assessed_date)
+);
+
+INSERT INTO loan_fees_and_penalties (fee_id, loan_id, fee_type, amount, assessed_date, status, settled_date) VALUES
+(4001, 1001, 'Documentation Fee', 25000.00, '2023-01-31', 'Settled', '2023-01-31'),
+(4002, 1002, 'Valuation & Legal Fee', 35000.00, '2021-02-23', 'Settled', '2021-02-23'),
+(4003, 1005, 'Late Payment Penalty', 5000.00, '2020-06-01', 'Unpaid', NULL),
+(4004, 1010, 'Late Payment Penalty', 3500.00, '2024-03-01', 'Unpaid', NULL),
+(4005, 1015, 'Late Payment Penalty', 8000.00, '2021-01-01', 'Unpaid', NULL);
+
+-- 2.9 Delinquency Recovery & Debt Collections Log
+CREATE TABLE IF NOT EXISTS loan_recovery_actions (
+    action_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    officer_id INT NOT NULL,
+    action_date DATE NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    officer_notes VARCHAR(500) NOT NULL,
+    borrower_commitment VARCHAR(255),
+    next_followup_date DATE,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    FOREIGN KEY (officer_id) REFERENCES loan_officers(officer_id),
+    INDEX idx_recovery_loan (loan_id),
+    INDEX idx_recovery_officer (officer_id),
+    INDEX idx_recovery_date (action_date),
+    INDEX idx_recovery_followup (next_followup_date)
+);
+
+INSERT INTO loan_recovery_actions (action_id, loan_id, officer_id, action_date, action_type, officer_notes, borrower_commitment, next_followup_date) VALUES
+(6001, 1005, 108, '2024-05-15', 'Telephone Call', 'Contacted borrower regarding 60+ days overdue installment.', 'Promised to settle via Cash by end of month', '2024-06-01'),
+(6002, 1005, 108, '2024-06-05', 'Physical Field Visit', 'Visited commercial workshop in Anuradhapura. Business operating under cash constraints.', 'Agreed to enter formal restructuring discussion', '2024-06-20'),
+(6003, 1010, 110, '2024-07-10', 'SMS Reminder', 'Automated and manual delinquency alert dispatched to borrower phone.', 'No response received', '2024-07-20'),
+(6004, 1010, 110, '2024-07-25', 'Telephone Call', 'Spoke with account holder. Promised payment next week.', 'Promised LKR 50,000 partial payment', '2024-08-05'),
+(6005, 1015, 108, '2024-08-12', 'Legal Demand Notice', 'Formal 14-day Letter of Demand issued by Bank Legal Department.', 'Awaiting legal response from attorney', '2024-08-30');
+
+-- 2.10 Loan Facility Lifecycle Audit Log
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS loan_audit_log (
     audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
