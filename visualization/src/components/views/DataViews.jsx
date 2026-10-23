@@ -23,6 +23,53 @@ function RankedBars({ rows, valueKey, valueFormatter = (value) => Number(value).
   })}</div>
 }
 
+const loanStatusColors = ['#006b7a', '#5c3d99', '#b54708', '#087f5b', '#a61b4d', '#755000']
+
+function LoanStatusPie({ rows }) {
+  const slices = rows
+    .map((row) => ({ ...row, count: Number(row.loan_count || 0) }))
+    .filter((row) => row.count > 0)
+    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
+  const total = slices.reduce((sum, row) => sum + row.count, 0)
+  const segments = slices.reduce((result, row, index) => {
+    const startAngle = result.angle
+    const endAngle = startAngle + (row.count / total) * 360
+    const start = {
+      x: 100 + 86 * Math.cos((startAngle * Math.PI) / 180),
+      y: 100 + 86 * Math.sin((startAngle * Math.PI) / 180),
+    }
+    const end = {
+      x: 100 + 86 * Math.cos((endAngle * Math.PI) / 180),
+      y: 100 + 86 * Math.sin((endAngle * Math.PI) / 180),
+    }
+    const path = row.count === total
+      ? ''
+      : `M 100 100 L ${start.x} ${start.y} A 86 86 0 ${endAngle - startAngle > 180 ? 1 : 0} 1 ${end.x} ${end.y} Z`
+    return {
+      angle: endAngle,
+      segments: [...result.segments, { ...row, color: loanStatusColors[index % loanStatusColors.length], path }],
+    }
+  }, { angle: -90, segments: [] }).segments
+
+  return <div className="loan-status-chart">
+    <svg className="loan-status-pie" viewBox="0 0 200 200" role="img" aria-label={`Pie chart showing ${total.toLocaleString()} loan facilities by status`}>
+      {segments.map((segment) => segment.path
+        ? <path key={segment.label} d={segment.path} fill={segment.color}>
+          <title>{`${segment.label}: ${transactionCountFormatter.format(segment.count)} loans (${((segment.count / total) * 100).toFixed(1)}%)`}</title>
+        </path>
+        : <circle key={segment.label} cx="100" cy="100" r="86" fill={segment.color}>
+          <title>{`${segment.label}: ${transactionCountFormatter.format(segment.count)} loans (100%)`}</title>
+        </circle>)}
+    </svg>
+    <div className="loan-status-legend">{segments.map((segment) => <div className="loan-status-legend-row" key={segment.label}>
+      <i style={{ background: segment.color }} />
+      <b>{segment.label}</b>
+      <span>{((segment.count / total) * 100).toFixed(1)}%</span>
+      <small>{transactionCountFormatter.format(segment.count)} loans</small>
+    </div>)}</div>
+  </div>
+}
+
 const transactionTypeColors = ['#2b7182', '#6f8f3f', '#c96b3d', '#8064a2', '#bd4a4a', '#b6a34a']
 const chartCurrencyFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })
 
@@ -291,7 +338,7 @@ export function LoansView() {
       </div>
       <div className="summary-grid">
         <section className="panel summary-panel"><SectionHeader eyebrow="Product exposure / fact_loan" title="Principal by loan product" /><RankedBars rows={state.products} valueKey="principal" valueFormatter={formatCurrency} />{state.products[0] && <p className="summary-note">{state.products[0].label} is the largest product, accounting for {principal ? ((Number(state.products[0].principal) / principal) * 100).toFixed(1) : '0.0'}% of principal across all facilities.</p>}</section>
-        <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio health / loan status" title="Facilities by status" /><RankedBars rows={state.statuses} valueKey="loan_count" valueFormatter={(value) => `${value.toLocaleString()} loans`} />{state.statuses[0] && <p className="summary-note">{state.statuses[0].label} is the most common status across all facilities.</p>}</section>
+        <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio health / loan status" title="Facilities by status" /><LoanStatusPie rows={state.statuses} />{state.statuses[0] && <p className="summary-note">{state.statuses[0].label} is the most common status across all facilities.</p>}</section>
       </div>
     </>}
   </div>

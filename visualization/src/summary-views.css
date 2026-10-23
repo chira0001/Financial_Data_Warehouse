@@ -28,6 +28,20 @@
 .summary-panel { min-width: 0; padding: 21px; }
 .summary-wide { grid-column: 1 / -1; }
 .summary-bars { display: grid; gap: 15px; margin-top: 24px; }
+.portfolio-banner { border-color: #385a69; background: linear-gradient(105deg, #102a38, #183b4a); color: #f8fafc; }
+.portfolio-banner .eyebrow, .portfolio-banner p, .portfolio-total span { color: #d7e3e9; }
+.portfolio-banner h2 { color: #ffffff; }
+.portfolio-total strong { color: #d4f26a; }
+.portfolio-total b { color: #e2f59a; }
+.loan-status-chart { display: flex; min-height: 210px; align-items: center; justify-content: center; gap: 28px; padding: 15px 0 4px; }
+.loan-status-pie { display: block; flex: 0 0 180px; width: 180px; height: 180px; }
+.loan-status-pie path { stroke: var(--panel); stroke-width: 1.5; }
+.loan-status-legend { display: grid; min-width: 150px; gap: 12px; }
+.loan-status-legend-row { display: grid; grid-template-columns: 9px minmax(55px, 1fr) auto; align-items: center; gap: 8px; }
+.loan-status-legend-row i { width: 9px; height: 9px; border-radius: 2px; }
+.loan-status-legend-row b { overflow: hidden; color: var(--ink); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.loan-status-legend-row span, .loan-status-legend-row small { color: var(--muted); font: 9px "DM Mono", monospace; text-align: right; white-space: nowrap; }
+.loan-status-legend-row small { grid-column: 2 / -1; }
 .summary-bar-row { display: grid; grid-template-columns: minmax(70px, .9fr) minmax(70px, 1.5fr) auto; align-items: center; gap: 11px; }
 .summary-bar-row > span { overflow: hidden; color: var(--muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
 .summary-bar-track { height: 7px; background: #e7e9e2; }
@@ -192,6 +206,9 @@
   .summary-metric strong { font-size: 18px; }
   .summary-panel { padding: 16px; }
   .summary-bar-row { grid-template-columns: minmax(65px, .8fr) minmax(45px, 1fr) auto; gap: 8px; }
+  .loan-status-chart { flex-wrap: wrap; gap: 18px; }
+  .loan-status-pie { flex-basis: 150px; width: 150px; height: 150px; }
+  .loan-status-legend { min-width: min(100%, 150px); }
   .branch-map-layout { grid-template-columns: 1fr; gap: 18px; }
   .branch-map { width: min(100%, 400px); }
   .branch-glance-list { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 280px; }
