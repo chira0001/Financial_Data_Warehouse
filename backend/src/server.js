@@ -38,24 +38,28 @@ app.get('/api/warehouse/overview', async (_request, response) => {
         UNION ALL SELECT 'Gold', COUNT(*), 9 FROM warehouse.fact_transaction
       `),
       query(`
-        SELECT currency_code AS code, currency_code AS name, COUNT(*) AS value
-        FROM warehouse.dim_currency
-        GROUP BY currency_code
-        ORDER BY value DESC
-        LIMIT 8
+        SELECT UPPER(TRIM(currency.currency_code)) AS code,
+          COUNT(fact.transaction_key) AS value
+        FROM warehouse.dim_currency currency
+        LEFT JOIN warehouse.fact_transaction fact ON fact.currency_key = currency.currency_key
+        WHERE currency.currency_code IS NOT NULL AND TRIM(currency.currency_code) <> ''
+        GROUP BY UPPER(TRIM(currency.currency_code))
+        ORDER BY value DESC, code ASC
       `),
       query(`
-        SELECT DATE_FORMAT(date_dim.full_date, '%b') AS label, COUNT(*) AS value
+        SELECT DATE_FORMAT(MIN(date_dim.full_date), '%b %y') AS label, COUNT(*) AS value
         FROM warehouse.fact_transaction fact
         JOIN warehouse.dim_date date_dim ON date_dim.date_key = fact.date_key
         GROUP BY YEAR(date_dim.full_date), MONTH(date_dim.full_date), DATE_FORMAT(date_dim.full_date, '%b')
         ORDER BY YEAR(date_dim.full_date), MONTH(date_dim.full_date)
       `),
       query(`
-        SELECT DATE_FORMAT(started_at, '%H:%i:%s') AS time, layer_name AS layer,
-          status, message, TIMESTAMPDIFF(SECOND, started_at, COALESCE(completed_at, NOW())) AS duration
+        SELECT layer_name AS layer, status, COUNT(*) AS run_count,
+          ROUND(AVG(TIMESTAMPDIFF(SECOND, started_at, COALESCE(completed_at, NOW()))), 1) AS average_duration,
+          DATE_FORMAT(MAX(started_at), '%Y-%m-%d %H:%i:%s') AS latest_run
         FROM warehouse.etl_run_log
-        ORDER BY started_at DESC LIMIT 8
+        GROUP BY layer_name, status
+        ORDER BY layer_name, status
       `),
     ])
 
@@ -68,6 +72,10 @@ app.get('/api/warehouse/overview', async (_request, response) => {
     const metrics = transactionMetrics[0]
     const quality = qualityMetrics[0]
     const score = quality.total ? Math.round(((quality.total - quality.failed) / quality.total) * 1000) / 10 : null
+    const totalRuns = runs.reduce((total, run) => total + Number(run.run_count), 0)
+    const pipelineLatency = totalRuns
+      ? runs.reduce((total, run) => total + Number(run.average_duration) * Number(run.run_count), 0) / totalRuns
+      : null
 
     response.json({
       connected: true,
@@ -75,7 +83,7 @@ app.get('/api/warehouse/overview', async (_request, response) => {
         transactions: metrics.count,
         reportingVolume: metrics.reporting_volume,
         qualityScore: score,
-        pipelineLatency: runs[0]?.duration ?? null,
+        pipelineLatency: pipelineLatency == null ? null : Math.round(pipelineLatency),
       },
       layers: ['Bronze', 'Silver', 'Gold'].map((label) => ({
         id: label.toLowerCase(),
@@ -114,7 +122,6 @@ app.get('/api/warehouse/analytics', async (_request, response) => {
           FROM warehouse.fact_transaction fact
           JOIN warehouse.dim_date date_dim ON date_dim.date_key = fact.date_key
           GROUP BY YEAR(date_dim.full_date), MONTH(date_dim.full_date), month_start
-          ORDER BY month_start DESC LIMIT 12
         ) monthly
         ORDER BY monthly.month_start
       `),
@@ -139,7 +146,6 @@ app.get('/api/warehouse/analytics', async (_request, response) => {
         LEFT JOIN warehouse.dim_branch branch ON branch.branch_key = fact.branch_key
         GROUP BY branch.province
         ORDER BY reporting_volume DESC
-        LIMIT 8
       `),
       query(`
         SELECT COALESCE(channel, 'Unspecified') AS label, COUNT(*) AS transaction_count,
@@ -147,7 +153,6 @@ app.get('/api/warehouse/analytics', async (_request, response) => {
         FROM warehouse.fact_transaction
         GROUP BY channel
         ORDER BY transaction_count DESC
-        LIMIT 6
       `),
     ])
 
@@ -164,18 +169,107 @@ app.get('/api/warehouse/analytics', async (_request, response) => {
   }
 })
 
+app.get('/api/warehouse/transaction-summary', async (request, response) => {
+  try {
+    const searchText = typeof request.query.search === 'string' ? request.query.search.trim() : ''
+    const search = `%${searchText}%`
+    const filter = `
+      (? = '' OR fact.transaction_id LIKE ? OR account.account_id LIKE ? OR currency.currency_code LIKE ?)
+    `
+    const parameters = [searchText, search, search, search]
+    const [summary, byType, byCurrency] = await Promise.all([
+      query(`
+        SELECT COUNT(*) AS transaction_count,
+          COALESCE(SUM(fact.lkr_amount), 0) AS reporting_volume,
+          COALESCE(AVG(fact.lkr_amount), 0) AS average_transaction
+        FROM warehouse.fact_transaction fact
+        LEFT JOIN warehouse.dim_account account ON account.account_key = fact.account_key
+        LEFT JOIN warehouse.dim_currency currency ON currency.currency_key = fact.currency_key
+        WHERE ${filter}
+      `, parameters),
+      query(`
+        SELECT COALESCE(fact.transaction_type, 'Unspecified') AS label,
+          COUNT(*) AS transaction_count, COALESCE(SUM(fact.lkr_amount), 0) AS reporting_volume
+        FROM warehouse.fact_transaction fact
+        LEFT JOIN warehouse.dim_account account ON account.account_key = fact.account_key
+        LEFT JOIN warehouse.dim_currency currency ON currency.currency_key = fact.currency_key
+        WHERE ${filter}
+        GROUP BY fact.transaction_type
+        ORDER BY reporting_volume DESC
+      `, parameters),
+      query(`
+        SELECT branch.branch_key,
+          COALESCE(branch.branch_name, 'Unassigned branch') AS branch_name,
+          COALESCE(branch.city, 'Unknown location') AS city,
+          COALESCE(branch.province, 'Unassigned') AS province,
+          COALESCE(currency.currency_code, 'Unspecified') AS currency_code,
+          COUNT(*) AS transaction_count
+        FROM warehouse.fact_transaction fact
+        LEFT JOIN warehouse.dim_account account ON account.account_key = fact.account_key
+        LEFT JOIN warehouse.dim_currency currency ON currency.currency_key = fact.currency_key
+        LEFT JOIN warehouse.dim_branch branch ON branch.branch_key = fact.branch_key
+        WHERE ${filter}
+        GROUP BY branch.branch_key, COALESCE(branch.branch_name, 'Unassigned branch'),
+          COALESCE(branch.city, 'Unknown location'), COALESCE(branch.province, 'Unassigned'),
+          COALESCE(currency.currency_code, 'Unspecified')
+        ORDER BY transaction_count DESC, branch_name ASC, currency_code ASC
+      `, parameters),
+    ])
+
+    response.json({ summary: summary[0], byType, byCurrency, search: searchText })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
+app.get('/api/warehouse/loan-summary', async (_request, response) => {
+  try {
+    const [summary, products, statuses] = await Promise.all([
+      query(`
+        SELECT COUNT(*) AS facility_count,
+          COALESCE(SUM(loan.loan_amount), 0) AS principal,
+          COALESCE(AVG(loan.interest_rate), 0) AS average_rate,
+          COALESCE(SUM(payments.total_paid), 0) AS payments_tracked
+        FROM warehouse.fact_loan loan
+        LEFT JOIN (
+          SELECT loan_id, SUM(payment_amount) AS total_paid
+          FROM warehouse.fact_loan_payment
+          GROUP BY loan_id
+        ) payments ON payments.loan_id = loan.loan_id
+      `),
+      query(`
+        SELECT COALESCE(loan_type, 'Unspecified') AS label,
+          COUNT(*) AS loan_count, COALESCE(SUM(loan_amount), 0) AS principal
+        FROM warehouse.fact_loan
+        GROUP BY loan_type
+        ORDER BY principal DESC
+      `),
+      query(`
+        SELECT COALESCE(loan_status, 'Unspecified') AS label,
+          COUNT(*) AS loan_count, COALESCE(SUM(loan_amount), 0) AS principal
+        FROM warehouse.fact_loan
+        GROUP BY loan_status
+        ORDER BY loan_count DESC
+      `),
+    ])
+
+    response.json({ summary: summary[0], products, statuses })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
 app.get('/api/warehouse/transactions', async (request, response) => {
   try {
     const search = `%${request.query.search || ''}%`
-    const limit = Math.min(Number(request.query.limit || 100), 500)
     const rows = await query(`
       SELECT transaction_id AS id, transaction_date AS date, account_id AS account,
         transaction_type AS type, currency_code AS currency, amount, lkr_amount AS lkr,
         channel, CASE WHEN currency_code = 'LKR' THEN 'Native' ELSE 'Matched' END AS status
       FROM warehouse.vw_transaction_detail
       WHERE transaction_id LIKE ? OR account_id LIKE ? OR currency_code LIKE ?
-      ORDER BY transaction_date DESC, transaction_id DESC LIMIT ?
-    `, [search, search, search, limit])
+      ORDER BY transaction_date DESC, transaction_id DESC
+    `, [search, search, search])
     response.json({ rows })
   } catch (error) {
     handleError(response, error)
@@ -189,7 +283,7 @@ app.get('/api/warehouse/loans', async (_request, response) => {
         loan_amount AS amount, CONCAT(interest_rate, '%') AS rate, loan_status AS status,
         total_payments AS paid, loan_end_date AS maturity
       FROM warehouse.vw_loan_portfolio
-      ORDER BY loan_id DESC LIMIT 500
+      ORDER BY loan_id DESC
     `)
     response.json({ rows })
   } catch (error) {

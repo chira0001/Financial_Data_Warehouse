@@ -9,6 +9,8 @@ export const warehouseApi = {
   health: () => request('/api/health'),
   overview: () => request('/api/warehouse/overview'),
   analytics: () => request('/api/warehouse/analytics'),
+  transactionSummary: (search = '') => request(`/api/warehouse/transaction-summary?search=${encodeURIComponent(search)}`),
+  loanSummary: () => request('/api/warehouse/loan-summary'),
   transactions: (search = '') => request(`/api/warehouse/transactions?search=${encodeURIComponent(search)}`),
   loans: () => request('/api/warehouse/loans'),
   quality: () => request('/api/warehouse/quality'),

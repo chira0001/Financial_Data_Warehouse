@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { warehouseApi } from '../../api/warehouseApi'
 import SectionHeader from '../shared/SectionHeader'
 import StatusPill from '../shared/StatusPill'
+import { sriLankaBoundaryPaths, sriLankaMapBounds, sriLankaMapFrame } from '../../data/sriLankaMap'
 
 const formatCurrency = (value) => `LKR ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+const transactionCountFormatter = new Intl.NumberFormat()
 
 function EmptyResults({ message, loading, error }) {
   return <div className="empty-data"><strong>{loading ? 'Loading warehouse data' : error ? 'Warehouse request failed' : 'No warehouse data available'}</strong><span>{error || message}</span></div>
@@ -21,88 +23,208 @@ function RankedBars({ rows, valueKey, valueFormatter = (value) => Number(value).
   })}</div>
 }
 
+const branchCoordinates = {
+  Colombo: { latitude: 6.9271, longitude: 79.8612 },
+  Kandy: { latitude: 7.2906, longitude: 80.6337 },
+  Galle: { latitude: 6.0535, longitude: 80.221 },
+  Jaffna: { latitude: 9.6615, longitude: 80.0255 },
+  Negombo: { latitude: 7.2083, longitude: 79.8358 },
+  Kurunegala: { latitude: 7.4863, longitude: 80.3623 },
+  Matara: { latitude: 5.9549, longitude: 80.555 },
+  'Nuwara Eliya': { latitude: 6.9497, longitude: 80.7891 },
+  Batticaloa: { latitude: 7.731, longitude: 81.6747 },
+  Anuradhapura: { latitude: 8.3114, longitude: 80.4037 },
+}
+
+function projectBranch(city) {
+  const location = branchCoordinates[city]
+  if (!location) return null
+  return {
+    x: sriLankaMapFrame.left + ((location.longitude - sriLankaMapBounds.west) / (sriLankaMapBounds.east - sriLankaMapBounds.west)) * sriLankaMapFrame.width,
+    y: sriLankaMapFrame.top + ((sriLankaMapBounds.north - location.latitude) / (sriLankaMapBounds.north - sriLankaMapBounds.south)) * sriLankaMapFrame.height,
+  }
+}
+
+function groupBranchActivity(rows) {
+  const branches = new Map()
+  rows.forEach((row) => {
+    const key = row.branch_key == null ? `unassigned-${row.branch_name}` : String(row.branch_key)
+    if (!branches.has(key)) {
+      branches.set(key, {
+        key,
+        branchName: row.branch_name,
+        city: row.city,
+        province: row.province,
+        currencies: [],
+      })
+    }
+    const branch = branches.get(key)
+    branch.currencies.push({
+      code: row.currency_code,
+      count: Number(row.transaction_count || 0),
+    })
+  })
+
+  return [...branches.values()].map((branch) => {
+    const currencies = branch.currencies.sort((left, right) =>
+      right.count - left.count || left.code.localeCompare(right.code))
+    return {
+      ...branch,
+      currencies,
+      total: currencies.reduce((sum, currency) => sum + currency.count, 0),
+      currencyCount: currencies.length,
+    }
+  }).sort((left, right) => right.total - left.total || left.branchName.localeCompare(right.branchName))
+}
+
+function BranchDetailDialog({ branch, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  const maximum = Math.max(...branch.currencies.map((currency) => currency.count), 0)
+  const averageTransactions = branch.currencyCount ? Math.round(branch.total / branch.currencyCount) : 0
+
+  return <div className="branch-dialog-backdrop" onMouseDown={(event) => {
+    if (event.target === event.currentTarget) onClose()
+  }}>
+    <section className="branch-dialog" role="dialog" aria-modal="true" aria-labelledby="branch-dialog-title">
+      <button className="branch-dialog-close" type="button" aria-label="Close branch summary" onClick={onClose}>×</button>
+      <span className="eyebrow">Branch currency activity / {branch.province}</span>
+      <h2 id="branch-dialog-title">{branch.branchName}</h2>
+      <p className="branch-dialog-location">{branch.city}, Sri Lanka</p>
+      <div className="branch-dialog-metrics">
+        <article><span>Transactions</span><strong>{transactionCountFormatter.format(branch.total)}</strong></article>
+        <article><span>Currencies used</span><strong>{branch.currencyCount.toLocaleString()}</strong></article>
+        <article><span>Average per currency</span><strong>{transactionCountFormatter.format(averageTransactions)}</strong></article>
+      </div>
+      <h3>Transactions by currency</h3>
+      <div className="branch-detail-chart" role="img" aria-label={`${branch.currencyCount} currencies used by ${branch.branchName}, ranked by transaction count`}>
+        {branch.currencies.map((currency) => <div className="branch-detail-row" key={currency.code}>
+          <b>{currency.code}</b>
+          <div className="branch-detail-track" aria-hidden="true"><i style={{ width: `${maximum ? (currency.count / maximum) * 100 : 0}%` }} /></div>
+          <strong>{transactionCountFormatter.format(currency.count)}</strong>
+        </div>)}
+      </div>
+    </section>
+  </div>
+}
+
+function BranchActivityMap({ rows }) {
+  const [selectedBranch, setSelectedBranch] = useState(null)
+  const branches = groupBranchActivity(rows)
+  const mappedBranches = branches.map((branch) => ({ ...branch, point: projectBranch(branch.city) }))
+  const multiCurrencyBranches = branches.filter((branch) => branch.currencyCount > 1)
+  const maximum = Math.max(...branches.map((branch) => branch.total), 0)
+
+  return <>
+    <div className="branch-map-layout">
+      <div className="branch-map" aria-label="Map of Sri Lanka showing transaction activity at branches">
+        <svg className="sri-lanka-map" viewBox="0 0 430 570" role="img" aria-label="Sri Lanka map with branch locations">
+          <g className="sri-lanka-map-shadow" aria-hidden="true">
+            {sriLankaBoundaryPaths.map((path) => <path d={path} key={path} />)}
+          </g>
+          <g className="sri-lanka-map-shape" aria-hidden="true">
+            {sriLankaBoundaryPaths.map((path) => <path d={path} key={path} />)}
+          </g>
+          {mappedBranches.filter((branch) => branch.point).map((branch) => {
+            const radius = 5 + (maximum ? Math.sqrt(branch.total / maximum) * 5 : 0)
+            return <g className="branch-map-marker" key={branch.key} transform={`translate(${branch.point.x} ${branch.point.y})`}>
+              <circle className="branch-map-marker-halo" r={radius + 4} />
+              <circle className="branch-map-marker-dot" r={radius} />
+              <text className="branch-map-marker-label" x="12" y="4">{branch.city}</text>
+              <title>{`${branch.branchName}: ${transactionCountFormatter.format(branch.total)} transactions across ${branch.currencyCount} currencies`}</title>
+            </g>
+          })}
+        </svg>
+        {mappedBranches.filter((branch) => branch.point).map((branch) => <button
+          key={branch.key}
+          className="branch-map-hit-area"
+          style={{
+            left: `${(branch.point.x / 430) * 100}%`,
+            top: `${(branch.point.y / 570) * 100}%`,
+          }}
+          type="button"
+          aria-label={`Open ${branch.branchName} summary: ${transactionCountFormatter.format(branch.total)} transactions across ${branch.currencyCount} currencies`}
+          onClick={() => setSelectedBranch(branch)}
+        />)}
+      </div>
+      <aside className="branch-quick-glance">
+        <span className="eyebrow">Quick glance</span>
+        <h3>Multi-currency branches</h3>
+        {multiCurrencyBranches.length ? <div className="branch-glance-list">
+          {multiCurrencyBranches.map((branch) => <button className="branch-glance-card" type="button" key={branch.key} onClick={() => setSelectedBranch(branch)}>
+            <span><b>{branch.branchName}</b><small>{branch.currencyCount} currencies · {transactionCountFormatter.format(branch.total)} transactions</small></span>
+            <span className="branch-glance-currencies">{branch.currencies.slice(0, 3).map((currency) => <i key={currency.code}>{currency.code} {transactionCountFormatter.format(currency.count)}</i>)}</span>
+            <strong>Details →</strong>
+          </button>)}
+        </div> : <p className="branch-glance-empty">No branches have activity in multiple currencies.</p>}
+      </aside>
+    </div>
+    <div className="branch-map-footer"><span><i /> Branch marker size reflects transaction count</span>    <span>Click a marker or summary to view details</span>
+    <a href="https://www.naturalearthdata.com/" target="_blank" rel="noreferrer">Map boundary: Natural Earth</a>
+      </div>
+    {selectedBranch && <BranchDetailDialog branch={selectedBranch} onClose={() => setSelectedBranch(null)} />}
+  </>
+}
+
 export function TransactionsView() {
   const [query, setQuery] = useState('')
-  const [state, setState] = useState({ rows: [], loading: true, error: '' })
+  const [state, setState] = useState({ summary: null, byType: [], byCurrency: [], loading: true, error: '' })
   useEffect(() => {
     let active = true
-    warehouseApi.transactions(query).then((data) => {
-      if (active) setState({ rows: data.rows || [], loading: false, error: '' })
+    warehouseApi.transactionSummary(query).then((data) => {
+      if (active) setState({ summary: data.summary, byType: data.byType || [], byCurrency: data.byCurrency || [], loading: false, error: '' })
     }).catch((error) => {
-      if (active) setState({ rows: [], loading: false, error: error.message })
+      if (active) setState((current) => ({ ...current, loading: false, error: error.message }))
     })
     return () => { active = false }
   }, [query])
 
-  const totalVolume = state.rows.reduce((total, row) => total + Number(row.lkr || 0), 0)
-  const averageValue = state.rows.length ? totalVolume / state.rows.length : 0
-  const byType = Object.values(state.rows.reduce((groups, row) => {
-    const label = row.type || 'Unspecified'
-    groups[label] = groups[label] || { label, count: 0, volume: 0 }
-    groups[label].count += 1
-    groups[label].volume += Number(row.lkr || 0)
-    return groups
-  }, {})).sort((a, b) => b.volume - a.volume)
-  const byCurrency = Object.values(state.rows.reduce((groups, row) => {
-    const label = row.currency || 'Unspecified'
-    groups[label] = groups[label] || { label, count: 0, volume: 0 }
-    groups[label].count += 1
-    groups[label].volume += Number(row.lkr || 0)
-    return groups
-  }, {})).sort((a, b) => b.volume - a.volume)
+  const totalCount = Number(state.summary?.transaction_count || 0)
+  const totalVolume = Number(state.summary?.reporting_volume || 0)
+  const averageValue = Number(state.summary?.average_transaction || 0)
 
   return <div className="view-stack">
-    <div className="view-toolbar"><label className="search-field"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search transaction, account, currency..." /></label><span className="result-count">{state.rows.length} matching records · up to 100 analyzed</span></div>
+    <div className="view-toolbar"><label className="search-field"><span>⌕</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search transaction, account, currency..." /></label><span className="result-count">{totalCount.toLocaleString()} matching records · full-table summary</span></div>
     <div className="summary-metric-grid">
-      <article className="summary-metric"><span>Matched transactions</span><strong>{state.rows.length.toLocaleString()}</strong><small>{query ? `Search: “${query}”` : 'Latest warehouse records'}</small></article>
+      <article className="summary-metric"><span>Matched transactions</span><strong>{totalCount.toLocaleString()}</strong><small>{query ? `Search: “${query}”` : 'Every transaction in Gold'}</small></article>
       <article className="summary-metric"><span>Reporting value</span><strong>{formatCurrency(totalVolume)}</strong><small>Total across matched records</small></article>
       <article className="summary-metric"><span>Average transaction</span><strong>{formatCurrency(averageValue)}</strong><small>Mean reporting value per record</small></article>
     </div>
-    {state.rows.length === 0 ? <EmptyResults loading={state.loading} error={state.error} message="Load fact_transaction to summarize transaction activity." /> : <div className="summary-grid">
-      <section className="panel summary-panel"><SectionHeader eyebrow="Transaction mix / type" title="Value by transaction type" /><RankedBars rows={byType} valueKey="volume" valueFormatter={formatCurrency} />{byType[0] && <p className="summary-note">{byType[0].label} leads with {byType[0].count.toLocaleString()} transactions in the matched records.</p>}</section>
-      <section className="panel summary-panel"><SectionHeader eyebrow="Currency mix / reporting value" title="Activity by currency" /><RankedBars rows={byCurrency} valueKey="count" valueFormatter={(value) => `${value.toLocaleString()} txns`} />{byCurrency[0] && <p className="summary-note">{byCurrency[0].label} is the most frequent currency in this result set.</p>}</section>
-      <section className="panel summary-panel summary-wide"><SectionHeader eyebrow="Recent activity / fact_transaction" title="Latest transaction highlights" /><div className="highlight-list">{state.rows.slice(0, 5).map((row) => <article className="highlight-card" key={row.id}><div><strong>{row.type || 'Transaction'}</strong><span>{row.date} · Account {row.account || '—'}</span></div><strong>{formatCurrency(row.lkr)}</strong></article>)}</div></section>
+    {state.error ? <EmptyResults loading={state.loading} error={state.error} message="Load fact_transaction to summarize transaction activity." /> : state.loading && !state.summary ? <EmptyResults loading={state.loading} message="Summarizing all fact_transaction records." /> : totalCount === 0 ? <EmptyResults loading={state.loading} message="No transactions match this search." /> : <div className="summary-grid">
+      <section className="panel summary-panel"><SectionHeader eyebrow="Transaction mix / type" title="Value by transaction type" /><RankedBars rows={state.byType} valueKey="reporting_volume" valueFormatter={formatCurrency} />{state.byType[0] && <p className="summary-note">{state.byType[0].label} leads with {Number(state.byType[0].transaction_count).toLocaleString()} transactions across the full matching set.</p>}</section>
+      <section className="panel summary-panel summary-wide"><SectionHeader eyebrow="Currency mix / branch" title="Branch activity across currencies" /><BranchActivityMap rows={state.byCurrency} />{state.byCurrency[0] && <p className="summary-note">The busiest branch and currency combination is {state.byCurrency[0].currency_code} at {state.byCurrency[0].branch_name}, with {Number(state.byCurrency[0].transaction_count).toLocaleString()} matching transactions.</p>}</section>
     </div>}
   </div>
 }
 
 export function LoansView() {
-  const [state, setState] = useState({ rows: [], loading: true, error: '' })
+  const [state, setState] = useState({ summary: null, products: [], statuses: [], loading: true, error: '' })
   useEffect(() => {
-    warehouseApi.loans().then((data) => setState({ rows: data.rows || [], loading: false, error: '' })).catch((error) => setState({ rows: [], loading: false, error: error.message }))
+    warehouseApi.loanSummary().then((data) => setState({ summary: data.summary, products: data.products || [], statuses: data.statuses || [], loading: false, error: '' })).catch((error) => setState((current) => ({ ...current, loading: false, error: error.message })))
   }, [])
 
-  const principal = state.rows.reduce((total, row) => total + Number(row.amount || 0), 0)
-  const paid = state.rows.reduce((total, row) => total + Number(row.paid || 0), 0)
-  const averageRate = state.rows.length ? state.rows.reduce((total, row) => total + (Number.parseFloat(row.rate || 0) || 0), 0) / state.rows.length : 0
-  const products = Object.values(state.rows.reduce((groups, row) => {
-    const label = row.type || 'Unspecified'
-    groups[label] = groups[label] || { label, count: 0, principal: 0 }
-    groups[label].count += 1
-    groups[label].principal += Number(row.amount || 0)
-    return groups
-  }, {})).sort((a, b) => b.principal - a.principal)
-  const statuses = Object.values(state.rows.reduce((groups, row) => {
-    const label = row.status || 'Unspecified'
-    groups[label] = groups[label] || { label, count: 0, principal: 0 }
-    groups[label].count += 1
-    groups[label].principal += Number(row.amount || 0)
-    return groups
-  }, {})).sort((a, b) => b.count - a.count)
-  const largestLoans = [...state.rows].sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0)).slice(0, 4)
+  const facilityCount = Number(state.summary?.facility_count || 0)
+  const principal = Number(state.summary?.principal || 0)
+  const paid = Number(state.summary?.payments_tracked || 0)
+  const averageRate = Number(state.summary?.average_rate || 0)
 
   return <div className="view-stack">
-    <div className="portfolio-banner"><div><span className="eyebrow">Gold / fact_loan</span><h2>Portfolio at a glance</h2><p>Exposure, repayment progress, pricing, and status summarized from the loan facts.</p></div><div className="portfolio-total"><span>Principal tracked</span><strong>{state.rows.length ? formatCurrency(principal) : '—'}</strong><b>{state.rows.length.toLocaleString()} facilities analyzed</b></div></div>
-    {state.rows.length === 0 ? <EmptyResults loading={state.loading} error={state.error} message="Load fact_loan and fact_loan_payment to summarize the portfolio." /> : <>
+    <div className="portfolio-banner"><div><span className="eyebrow">Gold / fact_loan</span><h2>Portfolio at a glance</h2><p>Exposure, repayment progress, pricing, and status summarized across every loan record.</p></div><div className="portfolio-total"><span>Principal tracked</span><strong>{facilityCount ? formatCurrency(principal) : '—'}</strong><b>{facilityCount.toLocaleString()} facilities analyzed</b></div></div>
+    {state.error ? <EmptyResults loading={state.loading} error={state.error} message="Load fact_loan and fact_loan_payment to summarize the portfolio." /> : state.loading && !state.summary ? <EmptyResults loading={state.loading} message="Summarizing all fact_loan records." /> : facilityCount === 0 ? <EmptyResults loading={state.loading} message="No loan records are available." /> : <>
       <div className="summary-metric-grid">
-        <article className="summary-metric"><span>Facilities</span><strong>{state.rows.length.toLocaleString()}</strong><small>Active and historical loans</small></article>
+        <article className="summary-metric"><span>Facilities</span><strong>{facilityCount.toLocaleString()}</strong><small>All active and historical loans</small></article>
         <article className="summary-metric"><span>Payments tracked</span><strong>{formatCurrency(paid)}</strong><small>{principal ? `${((paid / principal) * 100).toFixed(1)}% of principal value` : 'No principal recorded'}</small></article>
         <article className="summary-metric"><span>Average interest rate</span><strong>{averageRate.toFixed(2)}%</strong><small>Across loaded facilities</small></article>
       </div>
       <div className="summary-grid">
-        <section className="panel summary-panel"><SectionHeader eyebrow="Product exposure / fact_loan" title="Principal by loan product" /><RankedBars rows={products} valueKey="principal" valueFormatter={formatCurrency} />{products[0] && <p className="summary-note">{products[0].label} is the largest product, accounting for {((products[0].principal / principal) * 100).toFixed(1)}% of principal.</p>}</section>
-        <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio health / loan status" title="Facilities by status" /><RankedBars rows={statuses} valueKey="count" valueFormatter={(value) => `${value.toLocaleString()} loans`} />{statuses[0] && <p className="summary-note">{statuses[0].label} is the most common status across the portfolio.</p>}</section>
-        <section className="panel summary-panel summary-wide"><SectionHeader eyebrow="Exposure watch / largest principal" title="Largest facilities" /><div className="highlight-list">{largestLoans.map((loan) => <article className="highlight-card" key={loan.id}><div><strong>{loan.type || 'Loan'} · #{loan.id}</strong><span>{loan.status || 'Unspecified'} · Customer {loan.customer || '—'} · {loan.rate || '—'} rate</span></div><strong>{formatCurrency(loan.amount)}</strong></article>)}</div></section>
+        <section className="panel summary-panel"><SectionHeader eyebrow="Product exposure / fact_loan" title="Principal by loan product" /><RankedBars rows={state.products} valueKey="principal" valueFormatter={formatCurrency} />{state.products[0] && <p className="summary-note">{state.products[0].label} is the largest product, accounting for {principal ? ((Number(state.products[0].principal) / principal) * 100).toFixed(1) : '0.0'}% of principal across all facilities.</p>}</section>
+        <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio health / loan status" title="Facilities by status" /><RankedBars rows={state.statuses} valueKey="loan_count" valueFormatter={(value) => `${value.toLocaleString()} loans`} />{state.statuses[0] && <p className="summary-note">{state.statuses[0].label} is the most common status across all facilities.</p>}</section>
       </div>
     </>}
   </div>
@@ -203,7 +325,11 @@ function QueryLineChart({ points, maxValue, xLabel, ariaLabel }) {
       })}
       <path className="query-line-path" d={linePath} />
       {points.map((point) => <circle className="query-line-point" key={`${point.label}-${point.x}`} cx={point.x} cy={point.y} r="4"><title>{point.detail}</title></circle>)}
-      {points.map((point) => <text className="query-line-x-tick" key={`label-${point.label}-${point.x}`} x={point.x} y="187" textAnchor="middle">{point.label}</text>)}
+      {points.map((point, index) => {
+        const labelInterval = Math.max(1, Math.ceil(points.length / 12))
+        if (index % labelInterval !== 0 && index !== points.length - 1) return null
+        return <text className="query-line-x-tick" key={`label-${point.label}-${point.x}`} x={point.x} y="187" textAnchor="middle">{point.label}</text>
+      })}
       <text className="query-line-axis-label" x="410" y="212" textAnchor="middle">{xLabel}</text>
     </svg>
   </div>
@@ -222,11 +348,8 @@ function QueryResult({ rows, index, groupId }) {
   const primaryMeasure = measures.find((column) => /amount|balance|exposure|principal|payment|volume|total/i.test(column))
     || measures.find((column) => /count/i.test(column))
     || measures[0]
-  const displayRows = primaryMeasure
-    ? [...rows].sort((a, b) => Number(b[primaryMeasure] || 0) - Number(a[primaryMeasure] || 0)).slice(0, 8)
-    : []
   const timeSeries = columns.some((column) => /^(calendar_)?(year|month|date|full_date|transaction_date)$/i.test(column))
-  const performanceRows = timeSeries ? rows.slice(0, 12) : displayRows
+  const performanceRows = rows
   const total = primaryMeasure ? rows.reduce((sum, row) => sum + Number(row[primaryMeasure] || 0), 0) : 0
   const histogramMeasure = { 13: 'interest_rate', 17: 'exposure', 18: 'loan_amount' }[queryNumber]
   const showDistributionLine = histogramMeasure && measures.includes(histogramMeasure) && rows.length > 1
@@ -255,8 +378,7 @@ function QueryResult({ rows, index, groupId }) {
     {rows.length === 1 && measures.length > 0 ? <div className="query-metric-grid">{measures.slice(0, 4).map((measure) => <article className="query-metric" key={measure}><span>{measure.replaceAll('_', ' ')}</span><strong>{formatQueryValue(rows[0][measure], measure)}</strong></article>)}</div> : primaryMeasure ? <>
       {!showDistributionLine && !showMaturityLine && <div className="query-summary"><strong>{formatQueryValue(total, primaryMeasure)}</strong><span>combined {primaryMeasure.replaceAll('_', ' ')} across {rows.length.toLocaleString()} results</span></div>}
       {showDistributionLine ? <><h4 className="query-chart-title">Distribution of {histogramMeasure.replaceAll('_', ' ')}</h4><DistributionLineChart rows={rows} valueKey={histogramMeasure} queryNumber={queryNumber} /><p className="histogram-note">{rows.length.toLocaleString()} records summarized as points across {histogramMeasure.replaceAll('_', ' ')} ranges.</p></> : showMaturityLine ? <><h4 className="query-chart-title">Upcoming maturity schedule</h4><MaturityLineChart rows={rows} /><p className="histogram-note">{rows.length.toLocaleString()} active loans grouped by expected maturity month.</p></> : <><h4 className="query-chart-title">{timeSeries ? 'Performance over time' : `Top results by ${primaryMeasure.replaceAll('_', ' ')}`}</h4><QueryLineChart points={performancePoints} maxValue={performanceMax} xLabel={timeSeries ? 'Period' : categories[0]?.replaceAll('_', ' ') || 'Result rank'} ariaLabel={`Line chart of ${primaryMeasure.replaceAll('_', ' ')} performance`} /></>}
-      {rows.length > performanceRows.length && !showDistributionLine && !showMaturityLine && <small className="query-truncated">Line chart shows {performanceRows.length} of {rows.length.toLocaleString()} results.</small>}
-    </> : <div className="query-category-cards">{rows.slice(0, 8).map((row, rowIndex) => <article key={rowIndex}><span>{categoryLabel(row, rowIndex)}</span><strong>{columns.filter((column) => column !== categories[0] && !/(^|_)(id|key)(_|$)|date/i.test(column)).map((column) => row[column] == null ? null : `${column.replaceAll('_', ' ')}: ${row[column]}`).filter(Boolean).slice(0, 2).join(' · ') || 'Category result'}</strong></article>)}</div>}
+    </> : <div className="query-category-cards">{rows.map((row, rowIndex) => <article key={rowIndex}><span>{categoryLabel(row, rowIndex)}</span><strong>{columns.filter((column) => column !== categories[0] && !/(^|_)(id|key)(_|$)|date/i.test(column)).map((column) => row[column] == null ? null : `${column.replaceAll('_', ' ')}: ${row[column]}`).filter(Boolean).slice(0, 2).join(' · ') || 'Category result'}</strong></article>)}</div>}
   </div>
 }
 
