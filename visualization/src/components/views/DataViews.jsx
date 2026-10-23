@@ -29,69 +29,7 @@ export function LoansView() {
     warehouseApi.loans().then((data) => setState({ rows: data.rows || [], loading: false, error: '' })).catch((error) => setState({ rows: [], loading: false, error: error.message }))
   }, [])
 
-  return (
-    <div className="view-stack">
-      <div className="portfolio-banner">
-        <div>
-          <span className="eyebrow">Gold / fact_loan</span>
-          <h2>Portfolio at a glance</h2>
-          <p>Loan relationships are surfaced with their current dimension links and payment history.</p>
-        </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <a
-            href="http://localhost:5174"
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 18px',
-              borderRadius: '8px',
-              background: '#0284c7',
-              color: '#ffffff',
-              fontSize: '13px',
-              fontWeight: '600',
-              textDecoration: 'none',
-              boxShadow: '0 2px 8px rgba(2, 132, 199, 0.4)',
-              cursor: 'pointer',
-            }}
-          >
-            <span>Launch Customer Loan Portal</span>
-            <span style={{ fontSize: '15px' }}>↗</span>
-          </a>
-          <div className="portfolio-total">
-            <span>Principal tracked</span>
-            <strong>{state.rows.length ? `LKR ${state.rows.reduce((total, row) => total + Number(row.amount || 0), 0).toLocaleString()}` : '—'}</strong>
-            <b>{state.rows.length ? 'Loaded from warehouse' : 'Awaiting warehouse data'}</b>
-          </div>
-        </div>
-      </div>
-      <section className="panel data-panel">
-        <SectionHeader eyebrow="Loan portfolio" title="Active and historical facilities" action="Export portfolio" />
-        {state.rows.length === 0 ? (
-          <EmptyTable loading={state.loading} error={state.error} message="Load fact_loan and fact_loan_payment from the warehouse to inspect facilities." />
-        ) : (
-          <div className="data-table loan-table">
-            <div className="data-head">
-              <span>Loan ID</span><span>Customer</span><span>Product</span><span>Principal</span><span>Rate</span><span>Paid to date</span><span>Status</span>
-            </div>
-            {state.rows.map((row) => (
-              <div className="data-row" key={row.id}>
-                <span className="mono strong">{row.id}</span>
-                <span className="mono">{row.customer}</span>
-                <span>{row.type}</span>
-                <span className="amount">LKR {Number(row.amount).toLocaleString()}</span>
-                <span className="mono">{row.rate}</span>
-                <span className="amount">LKR {Number(row.paid).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                <StatusPill tone={row.status === 'Overdue' ? 'danger' : row.status === 'Closed' ? 'native' : 'success'}>{row.status}</StatusPill>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
-  )
+  return <div className="view-stack"><div className="portfolio-banner"><div><span className="eyebrow">Gold / fact_loan</span><h2>Portfolio at a glance</h2><p>Loan relationships are surfaced with their current dimension links and payment history.</p></div><div className="portfolio-total"><span>Principal tracked</span><strong>{state.rows.length ? `LKR ${state.rows.reduce((total, row) => total + Number(row.amount || 0), 0).toLocaleString()}` : '—'}</strong><b>{state.rows.length ? 'Loaded from warehouse' : 'Awaiting warehouse data'}</b></div></div><section className="panel data-panel"><SectionHeader eyebrow="Loan portfolio" title="Active and historical facilities" action="Export portfolio" />{state.rows.length === 0 ? <EmptyTable loading={state.loading} error={state.error} message="Load fact_loan and fact_loan_payment from the warehouse to inspect facilities." /> : <div className="data-table loan-table"><div className="data-head"><span>Loan ID</span><span>Customer</span><span>Product</span><span>Principal</span><span>Rate</span><span>Paid to date</span><span>Status</span></div>{state.rows.map((row) => <div className="data-row" key={row.id}><span className="mono strong">{row.id}</span><span className="mono">{row.customer}</span><span>{row.type}</span><span className="amount">LKR {Number(row.amount).toLocaleString()}</span><span className="mono">{row.rate}</span><span className="amount">LKR {Number(row.paid).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span><StatusPill tone={row.status === 'Overdue' ? 'danger' : row.status === 'Closed' ? 'native' : 'success'}>{row.status}</StatusPill></div>)}</div>}</section></div>
 }
 
 export function QualityView() {
