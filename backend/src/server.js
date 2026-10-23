@@ -7,7 +7,7 @@ import { runPipeline, runQueryGroup } from './sql.js'
 const app = express()
 let pipelineRunning = false
 
-app.use(cors({ origin: config.frontendOrigin }))
+app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 
 const query = async (sql, params = []) => {
@@ -179,6 +179,197 @@ app.post('/api/pipeline/run', async (_request, response) => {
   } finally {
     connection.release()
     pipelineRunning = false
+  }
+})
+
+// --- Customer Loan Portal Endpoints ---
+app.get('/api/customer/loans/products', (_request, response) => {
+  response.json({
+    products: [
+      {
+        id: 'personal',
+        name: 'Personal Loan',
+        tagline: 'Instant financial support for travel, emergency, wedding or medical needs.',
+        minAmount: 50000,
+        maxAmount: 2500000,
+        rate: 12.5,
+        minTenure: 12,
+        maxTenure: 60,
+        badge: 'Fast Approval',
+        features: ['No guarantor needed up to LKR 500K', 'Instant 24-hr pre-approval', 'Flexible repayment schedule'],
+        color: '#3b82f6',
+      },
+      {
+        id: 'housing',
+        name: 'Housing & Home Loan',
+        tagline: 'Build, buy, or renovate your dream sanctuary with Sri Lanka’s lowest long-term rates.',
+        minAmount: 500000,
+        maxAmount: 25000000,
+        rate: 8.1,
+        minTenure: 36,
+        maxTenure: 240,
+        badge: 'Lowest Interest',
+        features: ['Up to 20 years repayment tenure', 'Zero early settlement penalty', 'Free legal & valuation guidance'],
+        color: '#10b981',
+      },
+      {
+        id: 'vehicle',
+        name: 'Vehicle & Auto Loan',
+        tagline: 'Drive your preferred car, commercial vehicle or hybrid with quick leasing solutions.',
+        minAmount: 250000,
+        maxAmount: 10000000,
+        rate: 10.5,
+        minTenure: 12,
+        maxTenure: 84,
+        badge: 'Popular',
+        features: ['Up to 80% vehicle financing', 'Speedy registration & approval', 'Special subsidized green rates for EVs'],
+        color: '#8b5cf6',
+      },
+      {
+        id: 'education',
+        name: 'Education Loan',
+        tagline: 'Empower your future with undergraduate & postgraduate funding locally and abroad.',
+        minAmount: 100000,
+        maxAmount: 5000000,
+        rate: 6.87,
+        minTenure: 12,
+        maxTenure: 96,
+        badge: 'Subsidized Rate',
+        features: ['Grace period during course study', 'Covers tuition fees & living expenses', 'Convenient parent co-borrower terms'],
+        color: '#06b6d4',
+      },
+      {
+        id: 'business',
+        name: 'Business & SME Facility',
+        tagline: 'Fuel your enterprise growth, working capital, inventory, or machinery upgrade.',
+        minAmount: 500000,
+        maxAmount: 15000000,
+        rate: 11.0,
+        minTenure: 12,
+        maxTenure: 120,
+        badge: 'Growth Booster',
+        features: ['Collateral-free credit lines for SMEs', 'Cash-flow structured repayments', 'Dedicated relationship officer'],
+        color: '#f59e0b',
+      },
+    ],
+  })
+})
+
+app.post('/api/customer/loans/apply', async (request, response) => {
+  try {
+    const {
+      customerId,
+      accountId,
+      customerName,
+      loanType,
+      loanAmount,
+      tenureMonths,
+      interestRate,
+      purpose,
+      monthlyIncome,
+    } = request.body
+
+    const parsedAmount = Number(loanAmount) || 500000
+    const parsedRate = Number(interestRate) || 10.5
+    const tenure = Number(tenureMonths) || 36
+    const numericCusId = Number(String(customerId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 200) + 1
+    const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 300) + 100
+
+    const [maxRows] = await pool.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
+    const newLoanId = (maxRows[0]?.max_id || 2000) + 1
+
+    await pool.query(`
+      INSERT INTO banking_loan_source.loans
+        (loan_id, customer_id, account_id, loan_type, loan_amount, interest_rate, loan_start_date, loan_end_date, loan_status)
+      VALUES (?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), 'Active')
+    `, [newLoanId, numericCusId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
+
+    response.json({
+      success: true,
+      loanId: newLoanId,
+      referenceNo: `LN-${new Date().getFullYear()}-${newLoanId}`,
+      message: 'Loan facility approved and recorded successfully!',
+      details: {
+        loanId: newLoanId,
+        customerName: customerName || `Customer #${numericCusId}`,
+        loanType: loanType || 'Personal',
+        loanAmount: parsedAmount,
+        interestRate: parsedRate,
+        tenureMonths: tenure,
+        status: 'Active',
+        startDate: new Date().toISOString().split('T')[0],
+      },
+    })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
+app.get('/api/customer/loans/lookup/:query', async (request, response) => {
+  try {
+    const rawParam = request.params.query.trim()
+    const numParam = Number(rawParam.replace(/\D/g, '')) || 0
+
+    const loans = await query(`
+      SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+             l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+             COALESCE(SUM(p.payment_amount), 0) AS total_paid
+      FROM banking_loan_source.loans l
+      LEFT JOIN banking_loan_source.loan_payments p ON p.loan_id = l.loan_id
+      WHERE l.loan_id = ? OR l.customer_id = ?
+      GROUP BY l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+               l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status
+      ORDER BY l.loan_id DESC
+    `, [numParam, numParam])
+
+    if (!loans.length) {
+      return response.status(404).json({ error: 'No loan records found for this identifier' })
+    }
+
+    const loanIdList = loans.map((l) => l.loan_id)
+    const [payments] = await pool.query(`
+      SELECT payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
+      FROM banking_loan_source.loan_payments
+      WHERE loan_id IN (?)
+      ORDER BY payment_date DESC LIMIT 50
+    `, [loanIdList])
+
+    response.json({
+      loans: loans.map((l) => ({
+        ...l,
+        balance_remaining: Math.max(0, Number(l.loan_amount) - Number(l.total_paid)),
+        progress_pct: Math.min(100, Math.round((Number(l.total_paid) / Number(l.loan_amount)) * 100)),
+      })),
+      payments,
+    })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
+app.post('/api/customer/loans/pay', async (request, response) => {
+  try {
+    const { loanId, paymentAmount, paymentMethod } = request.body
+    const parsedAmount = Number(paymentAmount)
+    const targetLoanId = Number(loanId)
+
+    const [maxPayRows] = await pool.query('SELECT COALESCE(MAX(payment_id), 3000) AS max_id FROM banking_loan_source.loan_payments')
+    const newPaymentId = (maxPayRows[0]?.max_id || 3000) + 1
+
+    await pool.query(`
+      INSERT INTO banking_loan_source.loan_payments
+        (payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status)
+      VALUES (?, ?, CURDATE(), ?, ?, 'Paid')
+    `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
+
+    response.json({
+      success: true,
+      paymentId: newPaymentId,
+      receiptNo: `RCP-${new Date().getFullYear()}-${newPaymentId}`,
+      message: 'Installment payment recorded successfully!',
+    })
+  } catch (error) {
+    handleError(response, error)
   }
 })
 

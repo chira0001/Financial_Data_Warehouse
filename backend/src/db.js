@@ -1,3 +1,4 @@
+import fs from 'node:fs'
 import mysql from 'mysql2/promise'
 import { config } from './config.js'
 
@@ -8,6 +9,8 @@ export const pool = mysql.createPool({
   decimalNumbers: true,
   dateStrings: true,
   multipleStatements: true,
+  flags: '+LOCAL_FILES',
+  infileStreamFactory: (path) => fs.createReadStream(path),
 })
 
 export async function checkDatabase() {
