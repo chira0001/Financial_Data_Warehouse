@@ -177,7 +177,7 @@ app.get('/api/warehouse/transaction-summary', async (request, response) => {
       (? = '' OR fact.transaction_id LIKE ? OR account.account_id LIKE ? OR currency.currency_code LIKE ?)
     `
     const parameters = [searchText, search, search, search]
-    const [summary, byType, byCurrency] = await Promise.all([
+    const [summary, byType, byCurrency, transactionTypes] = await Promise.all([
       query(`
         SELECT COUNT(*) AS transaction_count,
           COALESCE(SUM(fact.lkr_amount), 0) AS reporting_volume,
@@ -188,14 +188,18 @@ app.get('/api/warehouse/transaction-summary', async (request, response) => {
         WHERE ${filter}
       `, parameters),
       query(`
-        SELECT COALESCE(fact.transaction_type, 'Unspecified') AS label,
+        SELECT fact.branch_key,
+          COALESCE(branch.branch_name, 'Unassigned branch') AS branch_name,
+          COALESCE(fact.transaction_type, 'Unspecified') AS label,
           COUNT(*) AS transaction_count, COALESCE(SUM(fact.lkr_amount), 0) AS reporting_volume
         FROM warehouse.fact_transaction fact
         LEFT JOIN warehouse.dim_account account ON account.account_key = fact.account_key
         LEFT JOIN warehouse.dim_currency currency ON currency.currency_key = fact.currency_key
+        LEFT JOIN warehouse.dim_branch branch ON branch.branch_key = fact.branch_key
         WHERE ${filter}
-        GROUP BY fact.transaction_type
-        ORDER BY reporting_volume DESC
+        GROUP BY fact.branch_key, COALESCE(branch.branch_name, 'Unassigned branch'),
+          COALESCE(fact.transaction_type, 'Unspecified')
+        ORDER BY reporting_volume DESC, branch_name ASC, label ASC
       `, parameters),
       query(`
         SELECT branch.branch_key,
@@ -214,9 +218,14 @@ app.get('/api/warehouse/transaction-summary', async (request, response) => {
           COALESCE(currency.currency_code, 'Unspecified')
         ORDER BY transaction_count DESC, branch_name ASC, currency_code ASC
       `, parameters),
+      query(`
+        SELECT DISTINCT COALESCE(transaction_type, 'Unspecified') AS label
+        FROM warehouse.fact_transaction
+        ORDER BY label ASC
+      `),
     ])
 
-    response.json({ summary: summary[0], byType, byCurrency, search: searchText })
+    response.json({ summary: summary[0], byType, byCurrency, transactionTypes, search: searchText })
   } catch (error) {
     handleError(response, error)
   }

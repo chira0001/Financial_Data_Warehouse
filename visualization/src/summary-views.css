@@ -35,6 +35,16 @@
 .summary-bar-row:nth-child(3n + 2) .summary-bar-track i { background: var(--lime); }
 .summary-bar-row:nth-child(3n) .summary-bar-track i { background: var(--amber); }
 .summary-bar-row strong { color: var(--ink); font: 9px "DM Mono", monospace; white-space: nowrap; }
+.branch-type-chart-scroll { width: 100%; overflow-x: auto; margin-top: 18px; }
+.branch-type-chart { display: block; width: 100%; min-width: 720px; height: auto; }
+.branch-type-gridline { stroke: var(--line); stroke-width: 1; }
+.branch-type-axis-tick { fill: var(--faint); font: 9px "DM Mono", monospace; }
+.branch-type-branch-label { fill: var(--muted); font: 9px "IBM Plex Sans", sans-serif; }
+.branch-type-bar { transition: opacity .15s ease; }
+.branch-type-bar:hover { opacity: .75; }
+.branch-type-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 18px; margin-top: 12px; }
+.branch-type-legend span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 9px; }
+.branch-type-legend i { width: 9px; height: 9px; border-radius: 1px; }
 .branch-map-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(250px, .85fr); gap: 22px; margin-top: 22px; }
 .branch-map { position: relative; width: min(100%, 400px); min-width: 0; margin: 0 auto; overflow: hidden; aspect-ratio: 430 / 570; border: 1px solid var(--line); background: #f2f7f6; }
 .sri-lanka-map { display: block; width: 100%; height: 100%; }

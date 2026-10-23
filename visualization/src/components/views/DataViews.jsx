@@ -23,6 +23,73 @@ function RankedBars({ rows, valueKey, valueFormatter = (value) => Number(value).
   })}</div>
 }
 
+const transactionTypeColors = ['#2b7182', '#6f8f3f', '#c96b3d', '#8064a2', '#bd4a4a', '#b6a34a']
+const chartCurrencyFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })
+
+function BranchTransactionTypeChart({ rows, transactionTypes }) {
+  const types = transactionTypes.length
+    ? transactionTypes.map((type) => type.label)
+    : [...new Set(rows.map((row) => row.label))]
+  const branches = new Map()
+
+  rows.forEach((row) => {
+    const key = row.branch_key == null ? `unassigned-${row.branch_name}` : String(row.branch_key)
+    if (!branches.has(key)) branches.set(key, { key, name: row.branch_name, values: new Map() })
+    branches.get(key).values.set(row.label, Number(row.reporting_volume || 0))
+  })
+
+  const groups = [...branches.values()]
+    .map((branch) => ({
+      ...branch,
+      total: types.reduce((sum, type) => sum + (branch.values.get(type) || 0), 0),
+    }))
+    .sort((left, right) => right.total - left.total || left.name.localeCompare(right.name))
+  const maximum = Math.max(...groups.flatMap((branch) => types.map((type) => branch.values.get(type) || 0)), 0)
+  const barWidth = 12
+  const barGap = 5
+  const groupGap = 72
+  const groupWidth = types.length * barWidth + Math.max(types.length - 1, 0) * barGap + groupGap
+  const width = Math.max(720, groups.length * groupWidth + 90)
+  const height = 270
+  const padding = { top: 18, right: 20, bottom: 54, left: 62 }
+  const plotWidth = width - padding.left - padding.right
+  const plotHeight = height - padding.top - padding.bottom
+  const groupSlotWidth = groups.length ? plotWidth / groups.length : plotWidth
+  const clusterWidth = types.length * barWidth + Math.max(types.length - 1, 0) * barGap
+
+  return <div className="branch-type-chart-scroll">
+    <svg className="branch-type-chart" style={{ width: `${width}px` }} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`Grouped column chart showing reporting value by transaction type for ${groups.length} branches`}>
+      {[0, 0.5, 1].map((ratio) => {
+        const y = padding.top + plotHeight * ratio
+        const value = maximum * (1 - ratio)
+        return <g key={ratio}>
+          <line className="branch-type-gridline" x1={padding.left} x2={width - padding.right} y1={y} y2={y} />
+          <text className="branch-type-axis-tick" x={padding.left - 8} y={y + 4} textAnchor="end">{chartCurrencyFormatter.format(value)}</text>
+        </g>
+      })}
+      {groups.map((branch, branchIndex) => {
+        const clusterStart = padding.left + branchIndex * groupSlotWidth + (groupSlotWidth - clusterWidth) / 2
+        return <g key={branch.key}>
+          {types.map((type, typeIndex) => {
+            const value = branch.values.get(type) || 0
+            const barHeight = maximum ? (value / maximum) * plotHeight : 0
+            const x = clusterStart + typeIndex * (barWidth + barGap)
+            const y = padding.top + plotHeight - barHeight
+            const color = transactionTypeColors[typeIndex % transactionTypeColors.length]
+            return <rect className="branch-type-bar" key={type} x={x} y={y} width={barWidth} height={barHeight} fill={color}>
+              <title>{`${branch.name} · ${type}: ${formatCurrency(value)} reporting value`}</title>
+            </rect>
+          })}
+          <text className="branch-type-branch-label" x={padding.left + branchIndex * groupSlotWidth + groupSlotWidth / 2} y={height - 13} textAnchor="middle">{branch.name}</text>
+        </g>
+      })}
+    </svg>
+    <div className="branch-type-legend" aria-label="Transaction type legend">
+      {types.map((type, index) => <span key={type}><i style={{ background: transactionTypeColors[index % transactionTypeColors.length] }} />{type}</span>)}
+    </div>
+  </div>
+}
+
 const branchCoordinates = {
   Colombo: { latitude: 6.9271, longitude: 79.8612 },
   Kandy: { latitude: 7.2906, longitude: 80.6337 },
@@ -174,11 +241,11 @@ function BranchActivityMap({ rows }) {
 
 export function TransactionsView() {
   const [query, setQuery] = useState('')
-  const [state, setState] = useState({ summary: null, byType: [], byCurrency: [], loading: true, error: '' })
+  const [state, setState] = useState({ summary: null, byType: [], byCurrency: [], transactionTypes: [], loading: true, error: '' })
   useEffect(() => {
     let active = true
     warehouseApi.transactionSummary(query).then((data) => {
-      if (active) setState({ summary: data.summary, byType: data.byType || [], byCurrency: data.byCurrency || [], loading: false, error: '' })
+      if (active) setState({ summary: data.summary, byType: data.byType || [], byCurrency: data.byCurrency || [], transactionTypes: data.transactionTypes || [], loading: false, error: '' })
     }).catch((error) => {
       if (active) setState((current) => ({ ...current, loading: false, error: error.message }))
     })
@@ -197,7 +264,7 @@ export function TransactionsView() {
       <article className="summary-metric"><span>Average transaction</span><strong>{formatCurrency(averageValue)}</strong><small>Mean reporting value per record</small></article>
     </div>
     {state.error ? <EmptyResults loading={state.loading} error={state.error} message="Load fact_transaction to summarize transaction activity." /> : state.loading && !state.summary ? <EmptyResults loading={state.loading} message="Summarizing all fact_transaction records." /> : totalCount === 0 ? <EmptyResults loading={state.loading} message="No transactions match this search." /> : <div className="summary-grid">
-      <section className="panel summary-panel"><SectionHeader eyebrow="Transaction mix / type" title="Value by transaction type" /><RankedBars rows={state.byType} valueKey="reporting_volume" valueFormatter={formatCurrency} />{state.byType[0] && <p className="summary-note">{state.byType[0].label} leads with {Number(state.byType[0].transaction_count).toLocaleString()} transactions across the full matching set.</p>}</section>
+      <section className="panel summary-panel summary-wide"><SectionHeader eyebrow="Transaction mix / type · branch" title="Value by transaction type" /><BranchTransactionTypeChart rows={state.byType} transactionTypes={state.transactionTypes} />{state.byType[0] && <p className="summary-note">{state.byType[0].label} at {state.byType[0].branch_name} has the highest reporting value at {formatCurrency(state.byType[0].reporting_volume)}.</p>}</section>
       <section className="panel summary-panel summary-wide"><SectionHeader eyebrow="Currency mix / branch" title="Branch activity across currencies" /><BranchActivityMap rows={state.byCurrency} />{state.byCurrency[0] && <p className="summary-note">The busiest branch and currency combination is {state.byCurrency[0].currency_code} at {state.byCurrency[0].branch_name}, with {Number(state.byCurrency[0].transaction_count).toLocaleString()} matching transactions.</p>}</section>
     </div>}
   </div>
