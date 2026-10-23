@@ -18,9 +18,16 @@ export default function LoanProducts({ products, onSelectProduct, onCalculatePro
             style={{ '--product-color': product.color }}
           >
             <div className="product-top">
-              <span className="product-badge" style={{ color: product.color, border: `1px solid ${product.color}40` }}>
-                {product.badge}
-              </span>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <span className="product-badge" style={{ color: product.color, border: `1px solid ${product.color}40` }}>
+                  {product.badge}
+                </span>
+                {product.productCode && (
+                  <span style={{ fontSize: '11px', fontFamily: 'monospace', color: '#64748b', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                    {product.productCode}
+                  </span>
+                )}
+              </div>
               <div className="product-rate-pill">
                 {product.rate}% <small>p.a. fixed</small>
               </div>
