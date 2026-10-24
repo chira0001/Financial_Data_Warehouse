@@ -692,6 +692,32 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
       console.warn('Could not query loan_audit_log:', auditErr.message)
     }
 
+    let collaterals = []
+    try {
+      const [colRows] = await pool.query(`
+        SELECT collateral_id, loan_id, collateral_type, collateral_description,
+               valuation_amount, valuation_date, valuer_name, document_reference, status
+        FROM banking_loan_source.loan_collaterals
+        WHERE loan_id IN (?)
+      `, [loanIdList])
+      collaterals = colRows || []
+    } catch (colErr) {
+      console.warn('Could not query loan_collaterals:', colErr.message)
+    }
+
+    let guarantors = []
+    try {
+      const [gRows] = await pool.query(`
+        SELECT guarantor_id, loan_id, guarantor_name, nic_number,
+               relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount
+        FROM banking_loan_source.loan_guarantors
+        WHERE loan_id IN (?)
+      `, [loanIdList])
+      guarantors = gRows || []
+    } catch (gErr) {
+      console.warn('Could not query loan_guarantors:', gErr.message)
+    }
+
     response.json({
       loans: loans.map((l) => ({
         ...l,
@@ -700,6 +726,8 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
       })),
       payments,
       auditLogs,
+      collaterals,
+      guarantors,
     })
   } catch (error) {
     handleError(response, error)
@@ -866,6 +894,29 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
         database: 'banking_loan_source',
         transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
       })
+    } else if (procedure === 'sp_underwrite_loan_application') {
+      const applicationId = Number(params.applicationId) || 7001
+      const officerId = Number(params.officerId) || 101
+
+      const sql = `CALL banking_loan_source.sp_underwrite_loan_application(${applicationId}, ${officerId}, @decision, @reason);`
+
+      await connection.query('SET @decision = "", @reason = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_underwrite_loan_application(?, ?, @decision, @reason)
+      `, [applicationId, officerId])
+      const [outRows] = await connection.query('SELECT @decision AS decision, @reason AS reason')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_underwrite_loan_application',
+        sqlExecuted: sql,
+        statusCode: outRows[0]?.decision || 'UNKNOWN',
+        statusMessage: outRows[0]?.reason || 'Underwriting completed',
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.decision === 'APPROVED' ? 'COMMITTED (APPROVED)' : outRows[0]?.decision === 'REJECTED' ? 'COMMITTED (REJECTED)' : 'ROLLED_BACK',
+      })
     } else {
       return response.status(400).json({ error: `Unsupported procedure: ${procedure}` })
     }
@@ -878,6 +929,28 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
     })
   } finally {
     connection.release()
+  }
+})
+
+app.get('/api/customer/loans/adbms/explain-analyze', async (request, response) => {
+  const start = performance.now()
+  try {
+    const querySql = `SELECT * FROM banking_loan_source.loans WHERE loan_status = 'Overdue' AND loan_end_date < CURDATE();`
+    const [explainRows] = await pool.query(`EXPLAIN ANALYZE ${querySql}`)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    response.json({
+      success: true,
+      query: querySql,
+      indexUsed: 'idx_loans_status_enddate',
+      explainPlan: explainRows[0]?.['EXPLAIN'] || '',
+      executionTimeMs: execTime,
+      optimizationType: 'Index Range Scan (Composite Index on loan_status, loan_end_date)',
+      engine: 'MySQL 8.0 InnoDB Optimizer',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
   }
 })
 

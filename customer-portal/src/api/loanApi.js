@@ -235,4 +235,13 @@ export const loanApi = {
     }
     return await res.json()
   },
+
+  async getExplainAnalyze() {
+    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/explain-analyze`)
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || 'Failed to fetch explain analyze plan')
+    }
+    return await res.json()
+  },
 }

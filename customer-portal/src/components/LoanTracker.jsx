@@ -219,6 +219,63 @@ export default function LoanTracker({ initialLoanId }) {
               </div>
             </div>
 
+            {/* Pledged Collateral & Guarantor Security (Member 2 Domain) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+              {/* Collateral Card */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#93c5fd' }}>🏢 Pledged Collateral Security</span>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '2px 6px', borderRadius: '4px' }}>
+                    loan_collaterals
+                  </span>
+                </div>
+                {data.collaterals && data.collaterals.filter((c) => c.loan_id === loan.loan_id).length > 0 ? (
+                  data.collaterals.filter((c) => c.loan_id === loan.loan_id).map((c) => (
+                    <div key={c.collateral_id} style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                      <div style={{ fontWeight: '600', color: '#f8fafc' }}>{c.collateral_type}: {c.collateral_description}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '4px' }}>
+                        Valuation: <strong style={{ color: 'var(--emerald-400)' }}>LKR {Number(c.valuation_amount).toLocaleString()}</strong> • Ref: <span className="mono">{c.document_reference}</span>
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                        Assessed by: {c.valuer_name} ({c.status})
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    Standard unsecured retail credit facility (Assessed on borrower monthly cash flow).
+                  </div>
+                )}
+              </div>
+
+              {/* Guarantor Card */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#34d399' }}>👤 Registered Guarantor</span>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.2)', color: 'var(--emerald-400)', padding: '2px 6px', borderRadius: '4px' }}>
+                    loan_guarantors
+                  </span>
+                </div>
+                {data.guarantors && data.guarantors.filter((g) => g.loan_id === loan.loan_id).length > 0 ? (
+                  data.guarantors.filter((g) => g.loan_id === loan.loan_id).map((g) => (
+                    <div key={g.guarantor_id} style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                      <div style={{ fontWeight: '600', color: '#f8fafc' }}>{g.guarantor_name} <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({g.relationship_to_borrower})</span></div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '4px' }}>
+                        NIC: <span className="mono">{g.nic_number}</span> • Monthly Income: LKR {Number(g.monthly_income).toLocaleString()}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                        Employer: {g.employer_name} • Contact: {g.phone_number}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    Direct primary borrower obligation without third-party guarantee endorsement.
+                  </div>
+                )}
+              </div>
+            </div>
+
             {/* Payments Table */}
             <div style={{ marginBottom: '28px' }}>
               <h4 style={{ fontSize: '1.02rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
