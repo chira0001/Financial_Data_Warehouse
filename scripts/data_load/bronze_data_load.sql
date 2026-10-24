@@ -1,29 +1,19 @@
 /*
 Load the Bronze Layer
 
-This procedure initiates the data loading process for the Bronze Layer of the Financial Data Warehouse. 
-Before execution, ensure that all required CSV files and Python scripts are available at their configured file locations.
-
-The Python scripts must be executed explicitly through the Windows Command Prompt (CMD), 
-as MySQL stored procedures cannot directly execute external Python scripts or use LOAD DATA statements within stored procedures.
-
-Verify the file paths, database connections, and required permissions before starting the process to ensure that data is loaded successfully from the source files, 
-database tables, and external APIs into the corresponding Bronze Layer tables.
+This script loads source CSV files and banking database tables into Bronze tables.
+The backend replaces {{PROJECT_ROOT}} with the repository root before executing it.
 
 Note: This process may truncate existing Bronze Layer data before reloading. 
 Ensure that the source data is accessible and valid before execution.
 */
-
--- Run in CMD
--- python -u "e:\E Drive\University Project\L3S2\Financial_Data_Warehouse\sources\API\fetch_rates.py"
 
 SET @bronze_started_at = NOW();
 CALL warehouse.sp_log_etl_run('BRONZE', 'RUNNING', @bronze_started_at, NULL, 'Bronze load started');
 START TRANSACTION;
 
 DELETE FROM warehouse.bronze_accounts;
-LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/accounts.csv'
+LOAD DATA LOCAL INFILE '{{PROJECT_ROOT}}/sources/CSV/accounts.csv'
 INTO TABLE warehouse.bronze_accounts
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -32,8 +22,7 @@ IGNORE 1 ROWS
 (account_id, customer_id, account_type, branch_id, opening_date, balance);
 
 DELETE FROM warehouse.bronze_banking_transactions;
-LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/banking_transactions.csv'
+LOAD DATA LOCAL INFILE '{{PROJECT_ROOT}}/sources/CSV/banking_transactions.csv'
 INTO TABLE warehouse.bronze_banking_transactions
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -42,8 +31,7 @@ IGNORE 1 ROWS
 (transaction_id, account_id, transaction_date, transaction_type, amount, channel, description, currency);
 
 DELETE FROM warehouse.bronze_branches;
-LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/branches.csv'
+LOAD DATA LOCAL INFILE '{{PROJECT_ROOT}}/sources/CSV/branches.csv'
 INTO TABLE warehouse.bronze_branches
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -52,8 +40,7 @@ IGNORE 1 ROWS
 (branch_id, branch_name, city, province);
 
 DELETE FROM warehouse.bronze_customers;
-LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/customers.csv'
+LOAD DATA LOCAL INFILE '{{PROJECT_ROOT}}/sources/CSV/customers.csv'
 INTO TABLE warehouse.bronze_customers
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'

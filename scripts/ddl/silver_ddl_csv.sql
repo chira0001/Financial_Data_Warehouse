@@ -71,15 +71,6 @@ begin
 		payment_status varchar(30)
 	);
 	
-    #drop index idx_target_currency_rate_date on warehouse.silver_exchange_rates;
-	create index idx_target_currency_rate_date on warehouse.silver_exchange_rates(target_currency,rate_date);
-    
-	#drop INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates;
-	CREATE INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates (target_currency, rate_date);
-    
-	#drop INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions;
-    CREATE INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions (currency);
-    
 end&&
 delimiter ;
 

@@ -14,7 +14,6 @@ Financial_Data_Warehouse/
 │   ├── data_load/           Layer load scripts
 │   └── tests/               Warehouse and Gold validation queries
 ├── sources/
-│   ├── API/                 Foreign-exchange API loader
 │   ├── CSV/                 Core banking and transaction extracts
 │   └── MySQL-DB/            Loan source database dump
 └── visualization/           Vite + React warehouse control room
@@ -53,7 +52,6 @@ Database functions, procedures, and ETL audit logging are defined in [routines.s
 
 - MySQL 8.0 or later
 - Node.js 18 or later
-- Python 3 with `requests` and `mysql-connector-python` for the FX loader
 - MySQL client available on `PATH`, or use MySQL Workbench to run the SQL files
 
 ## Database Setup
