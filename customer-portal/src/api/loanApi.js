@@ -217,4 +217,22 @@ export const loanApi = {
     }
     return await res.json()
   },
+
+  async getView(viewName) {
+    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/views/${viewName}`)
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || 'Failed to fetch view data')
+    }
+    return await res.json()
+  },
+
+  async getAuditLog() {
+    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/audit-log`)
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || 'Failed to fetch audit logs')
+    }
+    return await res.json()
+  },
 }

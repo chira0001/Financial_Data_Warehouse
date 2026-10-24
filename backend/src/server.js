@@ -841,6 +841,31 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
         database: 'banking_loan_source',
         transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
       })
+    } else if (procedure === 'sp_restructure_loan') {
+      const loanId = Number(params.loanId) || 2008
+      const newInterestRate = Number(params.newInterestRate) || 7.5
+      const newEndDate = params.newEndDate || '2029-12-31'
+      const officerReason = params.officerReason || 'Hardship interest relief approved by credit committee'
+
+      const sql = `CALL banking_loan_source.sp_restructure_loan(${loanId}, ${newInterestRate}, '${newEndDate}', '${officerReason}', @code, @msg);`
+
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_restructure_loan(?, ?, ?, ?, @code, @msg)
+      `, [loanId, newInterestRate, newEndDate, officerReason])
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_restructure_loan',
+        sqlExecuted: sql,
+        statusCode: outRows[0]?.code || 'UNKNOWN',
+        statusMessage: outRows[0]?.msg || 'Execution completed',
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
+      })
     } else {
       return response.status(400).json({ error: `Unsupported procedure: ${procedure}` })
     }
@@ -853,6 +878,62 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
     })
   } finally {
     connection.release()
+  }
+})
+
+app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) => {
+  const start = performance.now()
+  try {
+    const { viewName } = request.params
+    const allowedViews = [
+      'vw_loan_officer_active_facilities',
+      'vw_overdue_collections_queue',
+      'vw_loan_portfolio_health_metrics',
+      'vw_daily_payment_reconciliation',
+      'vw_customer_loan_statement',
+    ]
+
+    if (!allowedViews.includes(viewName)) {
+      return response.status(400).json({ error: `Unsupported view: ${viewName}` })
+    }
+
+    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    response.json({
+      success: true,
+      viewName,
+      sqlExecuted: `SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`,
+      rowCount: rows.length,
+      data: rows,
+      executionTimeMs: execTime,
+      database: 'banking_loan_source',
+      engine: 'MySQL 8.0 Materialized/Relational View',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  }
+})
+
+app.get('/api/customer/loans/adbms/audit-log', async (request, response) => {
+  const start = performance.now()
+  try {
+    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.loan_audit_log ORDER BY audit_id DESC LIMIT 30;`)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    response.json({
+      success: true,
+      sqlExecuted: `SELECT * FROM banking_loan_source.loan_audit_log ORDER BY audit_id DESC LIMIT 30;`,
+      rowCount: rows.length,
+      data: rows,
+      executionTimeMs: execTime,
+      database: 'banking_loan_source',
+      engine: 'MySQL 8.0 Trigger-Populated Audit Ledger',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
   }
 })
 
