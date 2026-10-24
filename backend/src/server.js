@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import { config } from './config.js'
 import { checkDatabase, pool } from './db.js'
-import { runPipeline, runQueryGroup } from './sql.js'
+import { initializeWarehouse, runPipeline, runQueryGroup } from './sql.js'
 
 const app = express()
 let pipelineRunning = false
@@ -354,6 +354,21 @@ app.post('/api/pipeline/run', async (_request, response) => {
   }
 })
 
-app.listen(config.port, () => {
-  console.info(`Warehouse API listening on http://127.0.0.1:${config.port}`)
-})
+async function startServer() {
+  let connection
+  try {
+    connection = await pool.getConnection()
+    await initializeWarehouse(connection)
+    console.info('Warehouse tables and views are ready')
+  } catch (error) {
+    console.error('Warehouse schema initialization failed:', error)
+  } finally {
+    connection?.release()
+  }
+
+  app.listen(config.port, () => {
+    console.info(`Warehouse API listening on http://127.0.0.1:${config.port}`)
+  })
+}
+
+startServer()

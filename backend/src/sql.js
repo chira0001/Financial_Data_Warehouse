@@ -30,7 +30,7 @@ function splitSqlScript(script) {
   return statements
 }
 
-async function initializeWarehouse(connection) {
+export async function initializeWarehouse(connection) {
   const ddlScripts = [
     'scripts/ddl/bronze_ddl_csv.sql',
     'scripts/ddl/routines.sql',
