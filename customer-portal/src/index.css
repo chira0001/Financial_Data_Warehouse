@@ -978,3 +978,73 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
+/* RESPONSIVE DESIGN BREAKPOINTS */
+@media (max-width: 992px) {
+  .nav-container {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .nav-links {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+    overflow-x: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-subtle);
+  }
+  .nav-cta {
+    order: 2;
+  }
+  .hero-container {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .hero-actions {
+    justify-content: center;
+  }
+  .calc-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .navbar {
+    padding: 12px 14px;
+  }
+  .brand-text span {
+    display: none;
+  }
+  .brand-text h1 {
+    font-size: 1rem;
+  }
+  .nav-cta .btn-secondary {
+    display: none;
+  }
+  .nav-btn {
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+  .hero {
+    padding: 32px 14px;
+  }
+  .hero-title {
+    font-size: 2rem;
+  }
+  .loan-detail-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .search-box {
+    flex-direction: column;
+  }
+  .search-box button {
+    width: 100%;
+    justify-content: center;
+  }
+  .loan-metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
