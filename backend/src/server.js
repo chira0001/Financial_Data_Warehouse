@@ -611,17 +611,20 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
     const loans = await query(`
       SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
              l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+             c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id,
              COALESCE(SUM(p.payment_amount), 0) AS total_paid
       FROM banking_loan_source.loans l
+      LEFT JOIN banking_loan_source.customers c ON c.customer_id = l.customer_id
       LEFT JOIN banking_loan_source.loan_payments p ON p.loan_id = l.loan_id
-      WHERE l.loan_id = ? OR l.customer_id = ?
+      WHERE l.loan_id = ? OR l.customer_id = ? OR c.customer_code = ?
       GROUP BY l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
-               l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status
+               l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+               c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
       ORDER BY l.loan_id DESC
-    `, [numParam, numParam])
+    `, [numParam, numParam, rawParam])
 
     if (!loans.length) {
-      return response.status(404).json({ error: 'No loan records found for this identifier' })
+      return response.status(404).json({ error: 'No loan facilities registered under this identifier' })
     }
 
     const loanIdList = loans.map((l) => l.loan_id)
@@ -629,8 +632,23 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
       SELECT payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
       FROM banking_loan_source.loan_payments
       WHERE loan_id IN (?)
-      ORDER BY payment_date DESC LIMIT 50
+      ORDER BY payment_date DESC, payment_id DESC LIMIT 50
     `, [loanIdList])
+
+    let auditLogs = []
+    try {
+      const [auditRows] = await pool.query(`
+        SELECT audit_id, loan_id, action_type, old_status, new_status,
+               old_amount, new_amount, old_interest_rate, new_interest_rate,
+               modified_by, modified_at, notes
+        FROM banking_loan_source.loan_audit_log
+        WHERE loan_id IN (?)
+        ORDER BY modified_at DESC, audit_id DESC LIMIT 50
+      `, [loanIdList])
+      auditLogs = auditRows || []
+    } catch (auditErr) {
+      console.warn('Could not query loan_audit_log:', auditErr.message)
+    }
 
     response.json({
       loans: loans.map((l) => ({
@@ -639,6 +657,7 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
         progress_pct: Math.min(100, Math.round((Number(l.total_paid) / Number(l.loan_amount)) * 100)),
       })),
       payments,
+      auditLogs,
     })
   } catch (error) {
     handleError(response, error)
@@ -677,6 +696,17 @@ app.post('/api/customer/loans/pay', async (request, response) => {
           (payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status)
         VALUES (?, ?, CURDATE(), ?, ?, 'Paid')
       `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
+    }
+
+    // Record audit trail entry for ADBMS compliance logging
+    try {
+      await connection.query(`
+        INSERT INTO banking_loan_source.loan_audit_log
+          (loan_id, action_type, old_status, new_status, old_amount, new_amount, notes, modified_by)
+        VALUES (?, 'REPAYMENT', 'Active', 'Active', NULL, ?, ?, 'web_customer_portal')
+      `, [targetLoanId, parsedAmount, `Installment #${newPaymentId} of LKR ${parsedAmount.toLocaleString()} paid via ${paymentMethod || 'Online Transfer'}`])
+    } catch (auditErr) {
+      console.warn('Audit log write error:', auditErr.message)
     }
 
     response.json({

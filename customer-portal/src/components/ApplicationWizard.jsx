@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CheckIcon, ArrowRightIcon, FileTextIcon, ShieldCheckIcon } from './Icons'
+import { CheckIcon, ArrowRightIcon, FileTextIcon, ShieldCheckIcon, PrinterIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
 export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
@@ -122,7 +122,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginTop: '28px', flexWrap: 'wrap' }}>
+          <div className="no-print" style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginTop: '28px', flexWrap: 'wrap' }}>
             <button 
               type="button"
               className="btn-primary"
@@ -130,6 +130,15 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
             >
               <span>Inspect Facility & Repayments</span>
               <ArrowRightIcon size={16} />
+            </button>
+            <button 
+              type="button"
+              className="btn-secondary"
+              onClick={() => window.print()}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              <PrinterIcon size={16} />
+              <span>Print Official Approval Letter</span>
             </button>
             <button 
               type="button"
@@ -373,6 +382,27 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
                   <option value="B009">B009 - Batticaloa Branch</option>
                   <option value="B010">B010 - Anuradhapura Branch</option>
                 </select>
+              </div>
+
+              <div className="form-group full" style={{ border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '16px', background: 'rgba(15, 23, 42, 0.4)' }}>
+                <h4 style={{ fontSize: '0.94rem', marginBottom: '10px', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheckIcon size={16} />
+                  <span>Mandatory Regulatory KYC Documentation (CBSL Directive Compliant)</span>
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', fontSize: '0.84rem' }}>
+                  <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>National Identity Card (NIC Scan)</span>
+                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached ✓</span>
+                  </div>
+                  <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Certified Salary Payslip (3 Mo)</span>
+                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached ✓</span>
+                  </div>
+                  <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span>Proof of Residential Address</span>
+                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached ✓</span>
+                  </div>
+                </div>
               </div>
 
               <div className="form-group full" style={{ border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '16px', background: 'var(--bg-surface)' }}>

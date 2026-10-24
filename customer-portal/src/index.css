@@ -948,3 +948,33 @@ input:focus, select:focus, textarea:focus {
   font-size: 1.2rem;
   line-height: 1;
 }
+
+/* PRINT MEDIA STYLES FOR BANKING RECEIPTS & SCHEDULES */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .navbar, .portal-footer, .no-print, .search-box, .preset-pills, .calc-controls, .form-actions, .actions {
+    display: none !important;
+  }
+  .modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  .modal-content, .app-card {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #cccccc !important;
+    box-shadow: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 20px !important;
+  }
+  .payment-table th, .payment-table td {
+    color: #000000 !important;
+    border-bottom: 1px solid #dddddd !important;
+  }
+}
+
