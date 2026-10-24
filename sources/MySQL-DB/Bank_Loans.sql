@@ -3089,23 +3089,9 @@ SELECT * FROM loan_payments;
 --       maintain strict compatibility with the downstream Data Warehouse ETL.
 -- ============================================================================
 
--- ----------------------------------------------------------------------------
--- SECTION 1: PERFORMANCE SECONDARY INDEXES
--- ----------------------------------------------------------------------------
-CREATE INDEX idx_loans_customer ON loans(customer_id);
-CREATE INDEX idx_loans_account ON loans(account_id);
-CREATE INDEX idx_loans_status ON loans(loan_status);
-CREATE INDEX idx_loans_dates ON loans(loan_start_date, loan_end_date);
-CREATE INDEX idx_loans_type_status ON loans(loan_type, loan_status);
 
-CREATE INDEX idx_payments_loan ON loan_payments(loan_id);
-CREATE INDEX idx_payments_date ON loan_payments(payment_date);
-CREATE INDEX idx_payments_status ON loan_payments(payment_status);
-CREATE INDEX idx_payments_method ON loan_payments(payment_method);
-
--- ----------------------------------------------------------------------------
 -- ============================================================================
--- SECTION 2: EXTENDED PRODUCTION OPERATIONAL TABLES & CATALOG
+-- SECTION 1: EXTENDED PRODUCTION OPERATIONAL TABLES & CATALOG
 -- ============================================================================
 
 -- 2.1 Loan Products Master Catalog
@@ -3119,9 +3105,7 @@ CREATE TABLE IF NOT EXISTS loan_products (
     base_interest_rate DECIMAL(5,2) NOT NULL,
     max_tenure_months INT NOT NULL,
     is_collateral_required BOOLEAN NOT NULL DEFAULT FALSE,
-    processing_fee_percentage DECIMAL(4,2) DEFAULT 1.00,
-    INDEX idx_prod_category (loan_category),
-    INDEX idx_prod_rate (base_interest_rate)
+    processing_fee_percentage DECIMAL(4,2) DEFAULT 1.00
 );
 
 INSERT INTO loan_products (product_id, product_code, product_name, loan_category, min_amount, max_amount, base_interest_rate, max_tenure_months, is_collateral_required, processing_fee_percentage) VALUES
@@ -3142,9 +3126,7 @@ CREATE TABLE IF NOT EXISTS loan_officers (
     branch_id VARCHAR(10) NOT NULL,
     role_title VARCHAR(50) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'Active',
-    FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
-    INDEX idx_officer_branch (branch_id),
-    INDEX idx_officer_status (status)
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
 );
 
 INSERT INTO loan_officers (officer_id, employee_code, first_name, last_name, email, phone_number, branch_id, role_title, status) VALUES
@@ -3176,12 +3158,7 @@ CREATE TABLE IF NOT EXISTS loan_applications (
     decision_notes VARCHAR(500),
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
     FOREIGN KEY (product_id) REFERENCES loan_products(product_id),
-    FOREIGN KEY (assigned_officer_id) REFERENCES loan_officers(officer_id),
-    INDEX idx_app_customer (customer_id),
-    INDEX idx_app_product (product_id),
-    INDEX idx_app_officer (assigned_officer_id),
-    INDEX idx_app_status (approval_status),
-    INDEX idx_app_date (application_date)
+    FOREIGN KEY (assigned_officer_id) REFERENCES loan_officers(officer_id)
 );
 
 INSERT INTO loan_applications (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, approved_amount, approval_date, decision_notes) VALUES
@@ -3209,10 +3186,7 @@ CREATE TABLE IF NOT EXISTS loan_collaterals (
     valuer_name VARCHAR(100) NOT NULL,
     document_reference VARCHAR(100),
     status VARCHAR(30) NOT NULL DEFAULT 'Pledged',
-    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
-    INDEX idx_collateral_loan (loan_id),
-    INDEX idx_collateral_type (collateral_type),
-    INDEX idx_collateral_status (status)
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
 INSERT INTO loan_collaterals (collateral_id, loan_id, collateral_type, collateral_description, valuation_amount, valuation_date, valuer_name, document_reference, status) VALUES
@@ -3235,9 +3209,7 @@ CREATE TABLE IF NOT EXISTS loan_guarantors (
     monthly_income DECIMAL(15,2) NOT NULL,
     employer_name VARCHAR(100),
     guarantee_amount DECIMAL(15,2),
-    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
-    INDEX idx_guarantor_loan (loan_id),
-    INDEX idx_guarantor_nic (nic_number)
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
 INSERT INTO loan_guarantors (guarantor_id, loan_id, guarantor_name, nic_number, relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount) VALUES
@@ -3257,10 +3229,7 @@ CREATE TABLE IF NOT EXISTS loan_disbursements (
     reference_number VARCHAR(100) NOT NULL UNIQUE,
     authorized_by_officer_id INT,
     FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
-    FOREIGN KEY (authorized_by_officer_id) REFERENCES loan_officers(officer_id),
-    INDEX idx_disbursement_loan (loan_id),
-    INDEX idx_disbursement_date (disbursement_date),
-    INDEX idx_disbursement_officer (authorized_by_officer_id)
+    FOREIGN KEY (authorized_by_officer_id) REFERENCES loan_officers(officer_id)
 );
 
 INSERT INTO loan_disbursements (disbursement_id, loan_id, disbursement_date, disbursed_amount, disbursement_method, reference_number, authorized_by_officer_id) VALUES
@@ -3286,10 +3255,7 @@ CREATE TABLE IF NOT EXISTS loan_repayment_schedules (
     interest_component DECIMAL(15,2) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'Pending',
     paid_date DATE NULL,
-    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
-    INDEX idx_schedule_loan (loan_id),
-    INDEX idx_schedule_due_date (due_date),
-    INDEX idx_schedule_status (status)
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
 INSERT INTO loan_repayment_schedules (loan_id, installment_number, due_date, installment_amount, principal_component, interest_component, status, paid_date) VALUES
@@ -3311,10 +3277,7 @@ CREATE TABLE IF NOT EXISTS loan_fees_and_penalties (
     assessed_date DATE NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'Unpaid',
     settled_date DATE NULL,
-    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
-    INDEX idx_fee_loan (loan_id),
-    INDEX idx_fee_status (status),
-    INDEX idx_fee_date (assessed_date)
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
 INSERT INTO loan_fees_and_penalties (fee_id, loan_id, fee_type, amount, assessed_date, status, settled_date) VALUES
@@ -3335,11 +3298,7 @@ CREATE TABLE IF NOT EXISTS loan_recovery_actions (
     borrower_commitment VARCHAR(255),
     next_followup_date DATE,
     FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
-    FOREIGN KEY (officer_id) REFERENCES loan_officers(officer_id),
-    INDEX idx_recovery_loan (loan_id),
-    INDEX idx_recovery_officer (officer_id),
-    INDEX idx_recovery_date (action_date),
-    INDEX idx_recovery_followup (next_followup_date)
+    FOREIGN KEY (officer_id) REFERENCES loan_officers(officer_id)
 );
 
 INSERT INTO loan_recovery_actions (action_id, loan_id, officer_id, action_date, action_type, officer_notes, borrower_commitment, next_followup_date) VALUES
@@ -3363,9 +3322,7 @@ CREATE TABLE IF NOT EXISTS loan_audit_log (
     new_interest_rate DECIMAL(5,2) NULL,
     modified_by VARCHAR(100) DEFAULT (CURRENT_USER()),
     modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    notes VARCHAR(500) NULL,
-    INDEX idx_audit_loan (loan_id),
-    INDEX idx_audit_date (modified_at)
+    notes VARCHAR(500) NULL
 );
 
 CREATE TABLE IF NOT EXISTS loan_payment_audit_log (
@@ -3379,10 +3336,75 @@ CREATE TABLE IF NOT EXISTS loan_payment_audit_log (
     new_status VARCHAR(30) NULL,
     modified_by VARCHAR(100) DEFAULT (CURRENT_USER()),
     modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    notes VARCHAR(500) NULL,
-    INDEX idx_payment_audit_loan (loan_id),
-    INDEX idx_payment_audit_payment (payment_id)
+    notes VARCHAR(500) NULL
 );
+
+-- ----------------------------------------------------------------------------
+
+-- ============================================================================
+-- SECTION 2: CONSOLIDATED PERFORMANCE B-TREE INDEXING STRATEGY
+-- ============================================================================
+-- In production OLTP banking systems, performance indexes are consolidated and
+-- applied after base table creation and seed ingestion. This prevents index
+-- maintenance overhead during bulk inserts and organizes all indexing rationale
+-- in one place for database administrators, query tuning, and viva demonstration.
+-- ============================================================================
+
+-- 1. Customer & Branch Network Indexes
+CREATE INDEX idx_customers_branch ON customers(branch_id);
+CREATE INDEX idx_customers_city ON customers(city);
+CREATE INDEX idx_officers_branch ON loan_officers(branch_id);
+CREATE INDEX idx_officers_status ON loan_officers(status);
+
+-- 2. Loan Facilities Master Performance Indexes
+CREATE INDEX idx_loans_customer ON loans(customer_id);
+CREATE INDEX idx_loans_account ON loans(account_id);
+CREATE INDEX idx_loans_status ON loans(loan_status);
+CREATE INDEX idx_loans_dates ON loans(loan_start_date, loan_end_date);
+CREATE INDEX idx_loans_type_status ON loans(loan_type, loan_status);
+
+-- 3. Loan Origination & Underwriting Pipeline Indexes
+CREATE INDEX idx_products_category ON loan_products(loan_category);
+CREATE INDEX idx_products_rate ON loan_products(base_interest_rate);
+CREATE INDEX idx_applications_customer ON loan_applications(customer_id);
+CREATE INDEX idx_applications_product ON loan_applications(product_id);
+CREATE INDEX idx_applications_officer ON loan_applications(assigned_officer_id);
+CREATE INDEX idx_applications_status ON loan_applications(approval_status);
+CREATE INDEX idx_applications_date ON loan_applications(application_date);
+
+-- 4. Repayment Ledger & Cashier Operations Indexes
+CREATE INDEX idx_payments_loan ON loan_payments(loan_id);
+CREATE INDEX idx_payments_date ON loan_payments(payment_date);
+CREATE INDEX idx_payments_status ON loan_payments(payment_status);
+CREATE INDEX idx_payments_method ON loan_payments(payment_method);
+CREATE INDEX idx_schedules_loan ON loan_repayment_schedules(loan_id);
+CREATE INDEX idx_schedules_due_date ON loan_repayment_schedules(due_date);
+CREATE INDEX idx_schedules_status ON loan_repayment_schedules(status);
+
+-- 5. Security, Collateral & Guarantor Indexes
+CREATE INDEX idx_collaterals_loan ON loan_collaterals(loan_id);
+CREATE INDEX idx_collaterals_type ON loan_collaterals(collateral_type);
+CREATE INDEX idx_collaterals_status ON loan_collaterals(status);
+CREATE INDEX idx_guarantors_loan ON loan_guarantors(loan_id);
+CREATE INDEX idx_guarantors_nic ON loan_guarantors(nic_number);
+
+-- 6. Disbursement & Recovery Execution Indexes
+CREATE INDEX idx_disbursements_loan ON loan_disbursements(loan_id);
+CREATE INDEX idx_disbursements_date ON loan_disbursements(disbursement_date);
+CREATE INDEX idx_disbursements_officer ON loan_disbursements(authorized_by_officer_id);
+CREATE INDEX idx_fees_loan ON loan_fees_and_penalties(loan_id);
+CREATE INDEX idx_fees_status ON loan_fees_and_penalties(status);
+CREATE INDEX idx_fees_date ON loan_fees_and_penalties(assessed_date);
+CREATE INDEX idx_recovery_loan ON loan_recovery_actions(loan_id);
+CREATE INDEX idx_recovery_officer ON loan_recovery_actions(officer_id);
+CREATE INDEX idx_recovery_date ON loan_recovery_actions(action_date);
+CREATE INDEX idx_recovery_followup ON loan_recovery_actions(next_followup_date);
+
+-- 7. Audit & Compliance Trail Indexes
+CREATE INDEX idx_audit_loan ON loan_audit_log(loan_id);
+CREATE INDEX idx_audit_date ON loan_audit_log(modified_at);
+CREATE INDEX idx_payment_audit_loan ON loan_payment_audit_log(loan_id);
+CREATE INDEX idx_payment_audit_payment ON loan_payment_audit_log(payment_id);
 
 -- ----------------------------------------------------------------------------
 -- SECTION 3: USER DEFINED FUNCTIONS (UDFs) FOR BANKING CALCULATIONS
