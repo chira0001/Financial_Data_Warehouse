@@ -3,7 +3,7 @@
 -- Q17. Customer loan exposure.
 SELECT c.customer_id, CONCAT_WS(' ', c.first_name, c.last_name) AS customer_name, COUNT(l.loan_id) AS loan_count, SUM(l.loan_amount) AS exposure
 FROM warehouse.fact_loan l JOIN warehouse.dim_customer c ON c.customer_key = l.customer_key
-GROUP BY c.customer_id, customer_name ORDER BY exposure DESC LIMIT 20;
+GROUP BY c.customer_id, customer_name ORDER BY exposure DESC;
 
 -- Q18. Overdue loans and their payment totals.
 SELECT l.loan_id, l.loan_amount, l.interest_rate, COALESCE(SUM(p.payment_amount), 0) AS payments_received
