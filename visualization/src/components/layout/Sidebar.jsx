@@ -4,9 +4,16 @@ const navItems = [
   { id: 'loans', label: 'Loan portfolio', mark: '03' },
   { id: 'quality', label: 'Data quality', mark: '04' },
   { id: 'queries', label: 'Business queries', mark: '05' },
+  { id: 'analytics', label: 'Executive analytics', mark: '06' },
 ]
 
-function Sidebar({ activeView, onNavigate }) {
+function Sidebar({ activeView, onNavigate, connectionStatus }) {
+  const connectionCopy = {
+    checking: ['Checking connection', 'Verifying database access'],
+    connected: ['Connected', 'Database connection active'],
+    disconnected: ['Disconnected', 'Database unavailable'],
+  }[connectionStatus]
+
   return (
     <aside className="sidebar">
       <div className="brand-lockup">
@@ -44,9 +51,9 @@ function Sidebar({ activeView, onNavigate }) {
       <div className="sidebar-bottom">
         <div className="source-card">
           <span className="eyebrow">Warehouse status</span>
-          <strong>Awaiting connection</strong>
-          <div className="source-meter"><span /></div>
-          <small>No warehouse data loaded</small>
+          <strong className={`connection-state ${connectionStatus}`}>{connectionCopy[0]}</strong>
+          <div className={`source-meter ${connectionStatus}`}><span /></div>
+          <small>{connectionCopy[1]}</small>
         </div>
         <div className="user-chip">
           <span className="avatar">PA</span>

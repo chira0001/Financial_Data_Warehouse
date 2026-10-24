@@ -8,6 +8,7 @@ import VolumeChart from './components/dashboard/VolumeChart'
 import CurrencyMix from './components/dashboard/CurrencyMix'
 import RunLedger from './components/dashboard/RunLedger'
 import { LoansView, QualityView, QueryGroupsView, TransactionsView } from './components/views/DataViews'
+import ControlRoomView from './components/views/ControlRoomView'
 import { pipelineLayers } from './data/warehouseData'
 
 function Overview({ isRunning, onNavigate, overview, error }) {
@@ -19,6 +20,26 @@ function App() {
   const [isRunning, setIsRunning] = useState(false)
   const [overview, setOverview] = useState(null)
   const [apiError, setApiError] = useState('')
+  const [analyticsRefresh, setAnalyticsRefresh] = useState(0)
+  const [connectionStatus, setConnectionStatus] = useState('checking')
+
+  useEffect(() => {
+    let active = true
+    const checkConnection = () => warehouseApi.health()
+      .then((data) => {
+        if (active) setConnectionStatus(data.status === 'ok' && data.database === 'connected' ? 'connected' : 'disconnected')
+      })
+      .catch(() => {
+        if (active) setConnectionStatus('disconnected')
+      })
+
+    checkConnection()
+    const interval = window.setInterval(checkConnection, 15000)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+    }
+  }, [])
 
   useEffect(() => {
     warehouseApi.overview().then((data) => {
@@ -31,6 +52,7 @@ function App() {
     setIsRunning(true)
     try {
       await warehouseApi.runPipeline()
+      setAnalyticsRefresh((current) => current + 1)
       const data = await warehouseApi.overview()
       setOverview(data)
       setApiError('')
@@ -46,10 +68,11 @@ function App() {
     if (activeView === 'loans') return <LoansView />
     if (activeView === 'quality') return <QualityView />
     if (activeView === 'queries') return <QueryGroupsView />
+    if (activeView === 'analytics') return <ControlRoomView refreshKey={analyticsRefresh} />
     return <Overview isRunning={isRunning} onNavigate={setActiveView} overview={overview} error={apiError} />
   }
 
-  return <div className="app-shell"><Sidebar activeView={activeView} onNavigate={setActiveView} /><main className="main-content"><Topbar activeView={activeView} isRunning={isRunning} onRun={handleRunPipeline} /><div className="page-content">{renderView()}</div></main></div>
+  return <div className="app-shell"><Sidebar activeView={activeView} onNavigate={setActiveView} connectionStatus={connectionStatus} /><main className="main-content"><Topbar activeView={activeView} isRunning={isRunning} onRun={handleRunPipeline} connectionStatus={connectionStatus} /><div className="page-content">{renderView()}</div></main></div>
 }
 
 export default App
