@@ -28,7 +28,7 @@ GROUP BY b.branch_id, b.branch_name ORDER BY lkr_amount DESC;
 -- 07. Top customers by transaction value.
 SELECT c.customer_id, CONCAT_WS(' ', c.first_name, c.last_name) AS customer_name, COUNT(*) AS transaction_count, SUM(f.lkr_amount) AS lkr_amount
 FROM warehouse.fact_transaction f JOIN warehouse.dim_customer c ON c.customer_key = f.customer_key
-GROUP BY c.customer_id, customer_name ORDER BY lkr_amount DESC LIMIT 20;
+GROUP BY c.customer_id, customer_name ORDER BY lkr_amount DESC;
 
 -- 08. Account balances by account type.
 SELECT account_type, COUNT(*) AS account_count, SUM(balance) AS total_balance, AVG(balance) AS average_balance
@@ -53,7 +53,7 @@ FROM warehouse.fact_loan GROUP BY loan_status ORDER BY principal DESC;
 
 -- 13. Highest-interest loan facilities.
 SELECT loan_id, loan_type, loan_amount, interest_rate, loan_status
-FROM warehouse.fact_loan ORDER BY interest_rate DESC, loan_amount DESC LIMIT 20;
+FROM warehouse.fact_loan ORDER BY interest_rate DESC, loan_amount DESC;
 
 -- 14. Loan payments by payment status.
 SELECT payment_status, COUNT(*) AS payment_count, SUM(payment_amount) AS payment_total
@@ -71,7 +71,7 @@ GROUP BY d.calendar_year, d.calendar_month ORDER BY d.calendar_year, d.calendar_
 -- 17. Customer loan exposure.
 SELECT c.customer_id, CONCAT_WS(' ', c.first_name, c.last_name) AS customer_name, COUNT(l.loan_id) AS loan_count, SUM(l.loan_amount) AS exposure
 FROM warehouse.fact_loan l JOIN warehouse.dim_customer c ON c.customer_key = l.customer_key
-GROUP BY c.customer_id, customer_name ORDER BY exposure DESC LIMIT 20;
+GROUP BY c.customer_id, customer_name ORDER BY exposure DESC;
 
 -- 18. Overdue loans and their payment totals.
 SELECT l.loan_id, l.loan_amount, l.interest_rate, COALESCE(SUM(p.payment_amount), 0) AS payments_received
