@@ -25,7 +25,7 @@ Financial_Data_Warehouse/
 1. Core banking CSV extracts: customers, accounts, and branches.
 2. Banking transaction CSV extract covering January to September 2026.
 3. Loan and loan-payment source database in [Bank_Loans.sql](sources/MySQL-DB/Bank_Loans.sql).
-4. Foreign-exchange rates retrieved from the Frankfurter REST API by [fetch_rates.py](sources/API/fetch_rates.py).
+4. Foreign-exchange rates retrieved from the Frankfurter REST API by the Node.js backend during a pipeline run.
 
 ## Warehouse Layers
 
@@ -81,11 +81,7 @@ mysql -u root -p warehouse < scripts/ddl/gold_ddl.sql
 mysql -u root -p warehouse < scripts/ddl/reporting_views.sql
 ```
 
-Before loading, update the CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) for your machine. Configure the database connection in [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
-
-```powershell
-python sources/API/fetch_rates.py
-```
+The backend pipeline reads the database connection from `backend/.env`, fetches foreign-exchange rates in JavaScript, and loads the CSV files from this repository's `sources/CSV` directory. Use `POST /api/pipeline/run` to run the complete Bronze, Silver, and Gold pipeline.
 
 Load the layers manually when needed:
 
