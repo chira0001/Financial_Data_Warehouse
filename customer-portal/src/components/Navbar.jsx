@@ -1,7 +1,7 @@
 import React from 'react'
 import { BankIcon, ArrowRightIcon, ExternalLinkIcon } from './Icons'
 
-export default function Navbar({ activeTab, setActiveTab }) {
+export default function Navbar({ activeTab, setActiveTab, onOpenConsole }) {
   return (
     <header className="navbar">
       <div className="nav-container">
@@ -47,6 +47,16 @@ export default function Navbar({ activeTab, setActiveTab }) {
         </nav>
 
         <div className="nav-cta">
+          <button 
+            type="button"
+            className="btn-secondary"
+            onClick={onOpenConsole}
+            style={{ borderColor: 'rgba(59, 130, 246, 0.5)', background: 'rgba(59, 130, 246, 0.12)', color: '#93c5fd', fontWeight: '600' }}
+            title="Open Interactive ADBMS Stored Procedure & Function Console"
+          >
+            <span style={{ color: '#60a5fa' }}>⚡</span>
+            <span>ADBMS Console</span>
+          </button>
           <button 
             type="button"
             className="btn-primary"

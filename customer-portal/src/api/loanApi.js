@@ -191,4 +191,30 @@ export const loanApi = {
       }
     }
   },
+
+  async executeProcedure(payload) {
+    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/execute-procedure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || 'Procedure execution failed')
+    }
+    return await res.json()
+  },
+
+  async executeFunction(payload) {
+    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/execute-function`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || 'Function execution failed')
+    }
+    return await res.json()
+  },
 }

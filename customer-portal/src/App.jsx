@@ -6,6 +6,7 @@ import EmiCalculator from './components/EmiCalculator'
 import ApplicationWizard from './components/ApplicationWizard'
 import LoanTracker from './components/LoanTracker'
 import Footer from './components/Footer'
+import AdbmsConsoleModal from './components/AdbmsConsoleModal'
 import { loanApi } from './api/loanApi'
 
 export default function App() {
@@ -13,6 +14,7 @@ export default function App() {
   const [products, setProducts] = useState([])
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [trackedLoanId, setTrackedLoanId] = useState(null)
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false)
 
   useEffect(() => {
     loanApi.getProducts().then(setProducts)
@@ -54,7 +56,11 @@ export default function App() {
 
   return (
     <div className="portal-app">
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onOpenConsole={() => setIsConsoleOpen(true)} 
+      />
 
       <main>
         {activeTab === 'home' && (
@@ -107,6 +113,10 @@ export default function App() {
       </main>
 
       <Footer />
+      <AdbmsConsoleModal 
+        isOpen={isConsoleOpen} 
+        onClose={() => setIsConsoleOpen(false)} 
+      />
     </div>
   )
 }

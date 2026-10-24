@@ -771,6 +771,150 @@ app.post('/api/customer/loans/pay', async (request, response) => {
   }
 })
 
+// ==========================================
+// ADBMS LIVE PLAYGROUND & EXECUTION CONSOLE
+// ==========================================
+app.post('/api/customer/loans/adbms/execute-procedure', async (request, response) => {
+  const connection = await pool.getConnection()
+  const start = performance.now()
+  try {
+    const { procedure, params } = request.body
+
+    if (procedure === 'sp_process_loan_payment') {
+      const loanId = Number(params.loanId) || 2008
+      const amount = Number(params.amount) || 25000
+      const method = params.method || 'Online Transfer'
+
+      const [maxPayRows] = await connection.query('SELECT COALESCE(MAX(payment_id), 3000) AS max_id FROM banking_loan_source.loan_payments')
+      const paymentId = (maxPayRows[0]?.max_id || 3000) + 1
+
+      const sql = `CALL banking_loan_source.sp_process_loan_payment(${paymentId}, ${loanId}, CURDATE(), ${amount}, '${method}', 'Paid', @code, @msg);`
+
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(
+        'CALL banking_loan_source.sp_process_loan_payment(?, ?, CURDATE(), ?, ?, "Paid", @code, @msg)',
+        [paymentId, loanId, amount, method]
+      )
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_process_loan_payment',
+        sqlExecuted: sql,
+        statusCode: outRows[0]?.code || 'UNKNOWN',
+        statusMessage: outRows[0]?.msg || 'Execution completed',
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
+      })
+    } else if (procedure === 'sp_disburse_new_loan') {
+      const customerId = Number(params.customerId) || 10
+      const accountId = Number(params.accountId) || 101
+      const loanType = params.loanType || 'Personal'
+      const amount = Number(params.amount) || 500000
+      const rate = Number(params.rate) || 12.5
+      const tenure = Number(params.tenure) || 36
+
+      const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
+      const loanId = (maxRows[0]?.max_id || 2000) + 1
+
+      const sql = `CALL banking_loan_source.sp_disburse_new_loan(${loanId}, ${customerId}, ${accountId}, '${loanType}', ${amount}, ${rate}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ${tenure} MONTH), @code, @msg);`
+
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_disburse_new_loan(
+          ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @code, @msg
+        )
+      `, [loanId, customerId, accountId, loanType, amount, rate, tenure])
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_disburse_new_loan',
+        sqlExecuted: sql,
+        generatedLoanId: loanId,
+        statusCode: outRows[0]?.code || 'UNKNOWN',
+        statusMessage: outRows[0]?.msg || 'Execution completed',
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
+      })
+    } else {
+      return response.status(400).json({ error: `Unsupported procedure: ${procedure}` })
+    }
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({
+      error: error.message,
+      executionTimeMs: execTime,
+      transactionStatus: 'ROLLED_BACK',
+    })
+  } finally {
+    connection.release()
+  }
+})
+
+app.post('/api/customer/loans/adbms/execute-function', async (request, response) => {
+  const start = performance.now()
+  try {
+    const { functionName, params } = request.body
+    let sql = ''
+    let queryParams = []
+
+    if (functionName === 'fn_calculate_monthly_emi') {
+      const principal = Number(params.principal) || 1500000
+      const rate = Number(params.rate) || 12.5
+      const tenure = Number(params.tenure) || 36
+      sql = `SELECT banking_loan_source.fn_calculate_monthly_emi(?, ?, ?) AS result;`
+      queryParams = [principal, rate, tenure]
+    } else if (functionName === 'fn_loan_outstanding_balance') {
+      const loanId = Number(params.loanId) || 2008
+      sql = `SELECT banking_loan_source.fn_loan_outstanding_balance(?) AS result;`
+      queryParams = [loanId]
+    } else if (functionName === 'fn_days_overdue') {
+      const loanId = Number(params.loanId) || 2008
+      sql = `SELECT banking_loan_source.fn_days_overdue(?) AS result;`
+      queryParams = [loanId]
+    } else if (functionName === 'fn_loan_risk_tier') {
+      const loanId = Number(params.loanId) || 2008
+      sql = `SELECT banking_loan_source.fn_loan_risk_tier(?) AS result;`
+      queryParams = [loanId]
+    } else if (functionName === 'fn_calculate_total_interest') {
+      const principal = Number(params.principal) || 1500000
+      const rate = Number(params.rate) || 12.5
+      const tenure = Number(params.tenure) || 36
+      sql = `SELECT banking_loan_source.fn_calculate_total_interest(?, ?, ?) AS result;`
+      queryParams = [principal, rate, tenure]
+    } else {
+      return response.status(400).json({ error: `Unsupported function: ${functionName}` })
+    }
+
+    const [rows] = await pool.query(sql, queryParams)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    // Build human readable SQL with interpolated parameters
+    let displaySql = sql
+    queryParams.forEach((p) => {
+      displaySql = displaySql.replace('?', typeof p === 'string' ? `'${p}'` : p)
+    })
+
+    response.json({
+      success: true,
+      functionName,
+      sqlExecuted: displaySql,
+      result: rows[0]?.result,
+      executionTimeMs: execTime,
+      database: 'banking_loan_source',
+      engine: 'MySQL 8.0 In-Engine UDF',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  }
+})
+
 app.listen(config.port, () => {
   console.info(`Warehouse API listening on http://127.0.0.1:${config.port}`)
 })
