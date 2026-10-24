@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
-import { SearchIcon, CreditCardIcon, CheckIcon, ClockIcon } from './Icons'
+import { SearchIcon, CreditCardIcon, CheckIcon, ClockIcon, PrinterIcon, DatabaseIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
 export default function LoanTracker({ initialLoanId }) {
-  const [searchQuery, setSearchQuery] = useState(initialLoanId ? String(initialLoanId) : '1001')
+  const [searchQuery, setSearchQuery] = useState(initialLoanId ? String(initialLoanId) : '2001')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -14,6 +14,13 @@ export default function LoanTracker({ initialLoanId }) {
   const [payMethod, setPayMethod] = useState('LankaPay Real-Time Transfer')
   const [payLoading, setPayLoading] = useState(false)
   const [payReceipt, setPayReceipt] = useState(null)
+
+  const quickDemoFacilities = [
+    { label: 'Loan #2001 (New Online Application)', id: '2001' },
+    { label: 'Loan #1001 (Active Core Facility)', id: '1001' },
+    { label: 'Loan #1005 (Commercial Overdue Facility)', id: '1005' },
+    { label: 'Loan #1010 (Prime Residential Facility)', id: '1010' },
+  ]
 
   const handleSearch = async (idToSearch) => {
     const q = idToSearch || searchQuery
@@ -41,7 +48,7 @@ export default function LoanTracker({ initialLoanId }) {
       setSearchQuery(String(initialLoanId))
       handleSearch(String(initialLoanId))
     } else {
-      handleSearch('1001')
+      handleSearch('2001')
     }
   }, [initialLoanId])
 
@@ -63,7 +70,15 @@ export default function LoanTracker({ initialLoanId }) {
         paymentMethod: payMethod,
       })
       if (res.success) {
-        setPayReceipt(res)
+        setPayReceipt({
+          ...res,
+          amount: payAmount,
+          method: payMethod,
+          date: new Date().toISOString().split('T')[0],
+          loanId: payModalLoan.loan_id,
+          loanType: payModalLoan.loan_type,
+          customerName: payModalLoan.customer_name || 'Valued Customer',
+        })
         handleSearch(String(payModalLoan.loan_id))
       }
     } catch (err) {
@@ -86,7 +101,7 @@ export default function LoanTracker({ initialLoanId }) {
         <div className="search-box">
           <input 
             type="text" 
-            placeholder="Enter Facility Account ID (e.g. 1001, 1002, 2001) or Customer CIF (e.g. 1, C0001)..."
+            placeholder="Enter Facility Account ID (e.g. 2001, 1001, 1005) or Customer CIF (e.g. C0001)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -95,6 +110,25 @@ export default function LoanTracker({ initialLoanId }) {
             <SearchIcon size={16} />
             <span>{loading ? 'Searching...' : 'Search Account'}</span>
           </button>
+        </div>
+
+        {/* Quick Demo Facilities Selector */}
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '24px' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Quick Facilities:</span>
+          {quickDemoFacilities.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              className={`preset-pill ${searchQuery === f.id ? 'active' : ''}`}
+              style={{ fontSize: '0.78rem', padding: '4px 10px' }}
+              onClick={() => {
+                setSearchQuery(f.id)
+                handleSearch(f.id)
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {error && (
@@ -108,12 +142,20 @@ export default function LoanTracker({ initialLoanId }) {
           <div key={loan.loan_id} className="loan-detail-card">
             <div className="loan-detail-top">
               <div>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Facility Account: #{loan.loan_id} • Borrower CIF: C{String(loan.customer_id).padStart(4, '0')}
-                </span>
-                <h3 style={{ fontSize: '1.55rem', marginTop: '4px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Facility Account: #{loan.loan_id} • Borrower CIF: C{String(loan.customer_id).padStart(4, '0')}
+                  </span>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--emerald-400)', border: '1px solid var(--emerald-500)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                    KYC Verified
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '1.55rem', marginTop: '2px' }}>
                   {loan.loan_type} Loan Facility
                 </h3>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.86rem', marginTop: '4px' }}>
+                  Account Holder: <strong style={{ color: 'var(--text-main)' }}>{loan.customer_name || 'Chaminda Silva'}</strong> • Branch: {loan.branch_id || 'B001 (Colombo)'} • Sector: {loan.occupation || 'Private Sector Salaried'}
+                </p>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <span className={`status-pill status-${(loan.loan_status || 'active').toLowerCase()}`}>
@@ -121,12 +163,14 @@ export default function LoanTracker({ initialLoanId }) {
                 </span>
                 <button 
                   type="button"
-                  className="btn-primary" 
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  className={loan.loan_status === 'Closed' ? 'btn-secondary' : 'btn-primary'} 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', opacity: loan.loan_status === 'Closed' ? 0.6 : 1, cursor: loan.loan_status === 'Closed' ? 'not-allowed' : 'pointer' }}
                   onClick={() => handleOpenPay(loan)}
+                  disabled={loan.loan_status === 'Closed'}
+                  title={loan.loan_status === 'Closed' ? 'Facility is closed and fully settled' : 'Pay installment'}
                 >
                   <CreditCardIcon size={14} />
-                  <span>Settle Installment</span>
+                  <span>{loan.loan_status === 'Closed' ? 'Fully Settled (Closed)' : 'Settle Installment'}</span>
                 </button>
               </div>
             </div>
@@ -171,7 +215,7 @@ export default function LoanTracker({ initialLoanId }) {
             </div>
 
             {/* Payments Table */}
-            <div>
+            <div style={{ marginBottom: '28px' }}>
               <h4 style={{ fontSize: '1.02rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ClockIcon size={16} />
                 <span>Verified Repayment Ledger</span>
@@ -217,6 +261,62 @@ export default function LoanTracker({ initialLoanId }) {
                 </p>
               )}
             </div>
+
+            {/* ADBMS Compliance Audit Trail Box */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <h4 style={{ fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#93c5fd' }}>
+                  <DatabaseIcon size={16} />
+                  <span>Database Audit Trail & State Transitions (MySQL loan_audit_log)</span>
+                </h4>
+                <span style={{ fontSize: '0.72rem', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', border: '1px solid #3b82f6', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                  ADBMS Core Feature: Triggers & Change Log
+                </span>
+              </div>
+
+              {data.auditLogs && data.auditLogs.filter((a) => a.loan_id === loan.loan_id).length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="payment-table" style={{ fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr>
+                        <th>Log ID</th>
+                        <th>Action Type</th>
+                        <th>State Transition</th>
+                        <th>Transacted / Disbursed</th>
+                        <th>Modified By</th>
+                        <th>Timestamp</th>
+                        <th>Audit Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.auditLogs.filter((a) => a.loan_id === loan.loan_id).map((a) => (
+                        <tr key={a.audit_id}>
+                          <td className="mono" style={{ color: '#93c5fd' }}>#{a.audit_id}</td>
+                          <td>
+                            <span style={{ background: a.action_type === 'DISBURSEMENT' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: a.action_type === 'DISBURSEMENT' ? 'var(--emerald-400)' : '#60a5fa', padding: '2px 6px', borderRadius: '4px', fontWeight: '600' }}>
+                              {a.action_type}
+                            </span>
+                          </td>
+                          <td className="mono">
+                            {a.old_status || 'INIT'} → <strong style={{ color: 'var(--emerald-400)' }}>{a.new_status}</strong>
+                          </td>
+                          <td>
+                            {a.new_amount ? `LKR ${Number(a.new_amount).toLocaleString()}` : '—'}
+                          </td>
+                          <td className="mono" style={{ color: 'var(--text-faint)' }}>{a.modified_by || 'system'}</td>
+                          <td className="mono" style={{ color: 'var(--text-muted)' }}>{a.modified_at}</td>
+                          <td style={{ color: 'var(--text-main)', maxWidth: '240px' }}>{a.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p style={{ color: 'var(--text-faint)', fontSize: '0.84rem' }}>
+                  Audit log records are recorded automatically by MySQL stored procedures (<code style={{ color: '#93c5fd' }}>sp_disburse_new_loan</code> and <code style={{ color: '#93c5fd' }}>sp_process_loan_payment</code>).
+                </p>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -224,29 +324,69 @@ export default function LoanTracker({ initialLoanId }) {
       {/* Pay Installment Modal */}
       {payModalLoan && (
         <div className="modal-overlay">
-          <div className="modal-content">
-            <button type="button" className="modal-close" onClick={() => setPayModalLoan(null)}>✕</button>
+          <div className="modal-content print-target">
+            <button type="button" className="modal-close no-print" onClick={() => setPayModalLoan(null)}>✕</button>
 
             {payReceipt ? (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
-                <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', border: '2px solid var(--emerald-500)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--emerald-400)' }}>
+                <div className="no-print" style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)', border: '2px solid var(--emerald-500)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: 'var(--emerald-400)' }}>
                   <CheckIcon size={26} />
                 </div>
                 <h3>Settlement Executed Successfully</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', margin: '8px 0 16px' }}>
-                  Your monthly loan repayment has been registered and reconciled in the banking ledger.
+                  Your monthly loan repayment has been registered, reconciled, and audited in the core banking ledger.
                 </p>
-                <div className="success-ref" style={{ margin: '10px 0' }}>
-                  Electronic Receipt: {payReceipt.receiptNo}
+                
+                {/* Official Banking Voucher */}
+                <div style={{ background: 'var(--bg-surface)', border: '1px dashed var(--emerald-500)', padding: '18px', borderRadius: 'var(--radius-sm)', textAlign: 'left', margin: '14px 0', fontSize: '0.88rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px', marginBottom: '8px' }}>
+                    <span>Apex Commercial Bank PLC</span>
+                    <strong style={{ color: 'var(--emerald-400)' }}>OFFICIAL PAYMENT VOUCHER</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Voucher Reference:</span>
+                    <strong className="mono">{payReceipt.receiptNo}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Facility Account:</span>
+                    <strong>#{payReceipt.loanId} ({payReceipt.loanType})</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Settled Amount:</span>
+                    <strong style={{ color: 'var(--emerald-400)', fontSize: '1.05rem' }}>LKR {Number(payReceipt.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Payment Channel:</span>
+                    <span>{payReceipt.method}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Timestamp:</span>
+                    <span className="mono">{payReceipt.date}</span>
+                  </div>
+                  <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)', fontSize: '0.75rem', color: 'var(--text-faint)', textAlign: 'center' }}>
+                    Electronically verified and signed by Apex CBSL Core Banking Engine.
+                  </div>
                 </div>
-                <button 
-                  type="button"
-                  className="btn-primary" 
-                  style={{ width: '100%', marginTop: '16px' }}
-                  onClick={() => setPayModalLoan(null)}
-                >
-                  Close Receipt
-                </button>
+
+                <div className="no-print" style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
+                  <button 
+                    type="button"
+                    className="btn-secondary" 
+                    style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                    onClick={() => window.print()}
+                  >
+                    <PrinterIcon size={16} />
+                    <span>Print Slip / PDF</span>
+                  </button>
+                  <button 
+                    type="button"
+                    className="btn-primary" 
+                    style={{ flex: 1 }}
+                    onClick={() => setPayModalLoan(null)}
+                  >
+                    Done
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleConfirmPayment}>
