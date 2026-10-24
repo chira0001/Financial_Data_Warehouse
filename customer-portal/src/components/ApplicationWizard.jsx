@@ -15,24 +15,37 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
     phone: '',
     city: 'Colombo',
     occupation: 'IT Professional',
-    customerId: 'C' + String(Math.floor(Math.random() * 200) + 1).padStart(4, '0'),
+    customerId: '',
 
     loanType: initialPlan?.productName || 'Personal',
     loanAmount: initialPlan?.amount || 1500000,
     tenureMonths: initialPlan?.tenureYears ? initialPlan.tenureYears * 12 : 36,
-    interestRate: initialPlan?.rate || 10.5,
+    interestRate: initialPlan?.rate || 12.5,
     purpose: 'Residential acquisition and property improvements',
 
-    accountId: 'A' + String(Math.floor(Math.random() * 300) + 100).padStart(5, '0'),
+    accountId: '',
     employmentType: 'Permanent Salaried',
     monthlyIncome: 285000,
     branchId: 'B001',
   })
 
+  const rateMap = {
+    Personal: 12.5,
+    Housing: 8.1,
+    Vehicle: 10.5,
+    Education: 6.87,
+    Business: 11.0,
+  }
+
   const handleChange = (e) => {
     let { name, value } = e.target
     if (name === 'nic') {
       value = value.toUpperCase().trim()
+    }
+    if (name === 'loanType') {
+      const autoRate = rateMap[value] || 12.5
+      setFormData((prev) => ({ ...prev, loanType: value, interestRate: autoRate }))
+      return
     }
     setFormData((prev) => ({ ...prev, [name]: value }))
   }

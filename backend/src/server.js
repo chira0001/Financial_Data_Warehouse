@@ -524,13 +524,53 @@ app.post('/api/customer/loans/apply', async (request, response) => {
       interestRate,
       purpose,
       monthlyIncome,
+      city,
+      occupation,
+      branchId,
+      nic,
+      phone,
     } = request.body
 
     const parsedAmount = Number(loanAmount) || 500000
     const parsedRate = Number(interestRate) || 12.5
     const tenure = Number(tenureMonths) || 36
-    const numericCusId = Number(String(customerId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 200) + 1
-    const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 300) + 100
+    const cleanName = (customerName || '').trim()
+
+    // 1. Manage Customer record so the applicant's entered name and profile are saved!
+    let targetCustomerId = null
+    let targetCustomerCode = null
+
+    if (cleanName) {
+      // Check if a customer already exists with this name (case-insensitive)
+      const [existing] = await connection.query(
+        'SELECT customer_id, customer_code FROM banking_loan_source.customers WHERE LOWER(customer_name) = LOWER(?) LIMIT 1',
+        [cleanName]
+      )
+      if (existing.length > 0) {
+        targetCustomerId = existing[0].customer_id
+        targetCustomerCode = existing[0].customer_code
+        // Update customer with latest contact/branch info
+        await connection.query(
+          'UPDATE banking_loan_source.customers SET city = ?, occupation = ?, branch_id = ? WHERE customer_id = ?',
+          [city || 'Colombo', occupation || 'IT Professional', branchId || 'B001', targetCustomerId]
+        )
+      } else {
+        // Find next customer_id
+        const [maxCus] = await connection.query('SELECT COALESCE(MAX(customer_id), 500) AS max_c FROM banking_loan_source.customers')
+        targetCustomerId = Math.max((maxCus[0]?.max_c || 500) + 1, 501)
+        targetCustomerCode = 'C' + String(targetCustomerId).padStart(4, '0')
+        await connection.query(`
+          INSERT INTO banking_loan_source.customers
+            (customer_id, customer_code, customer_name, gender, date_of_birth, city, occupation, branch_id)
+          VALUES (?, ?, ?, 'Not Specified', '1995-01-01', ?, ?, ?)
+        `, [targetCustomerId, targetCustomerCode, cleanName, city || 'Colombo', occupation || 'IT Professional', branchId || 'B001'])
+      }
+    } else {
+      targetCustomerId = Number(String(customerId || '').replace(/\D/g, '')) || 10
+      targetCustomerCode = 'C' + String(targetCustomerId).padStart(4, '0')
+    }
+
+    const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || (targetCustomerId * 10 + 1)
 
     const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
     const newLoanId = (maxRows[0]?.max_id || 2000) + 1
@@ -542,7 +582,7 @@ app.post('/api/customer/loans/apply', async (request, response) => {
         CALL banking_loan_source.sp_disburse_new_loan(
           ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @code, @msg
         )
-      `, [newLoanId, numericCusId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
+      `, [newLoanId, targetCustomerId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
       const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
       if (outRows[0]?.code === 'SUCCESS') {
         procedureSucceeded = true
@@ -556,7 +596,7 @@ app.post('/api/customer/loans/apply', async (request, response) => {
         INSERT INTO banking_loan_source.loans
           (loan_id, customer_id, account_id, loan_type, loan_amount, interest_rate, loan_start_date, loan_end_date, loan_status)
         VALUES (?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), 'Active')
-      `, [newLoanId, numericCusId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
+      `, [newLoanId, targetCustomerId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
     }
 
     // Record application in underwriting pipeline
@@ -575,7 +615,7 @@ app.post('/api/customer/loans/apply', async (request, response) => {
         INSERT INTO banking_loan_source.loan_applications
           (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, approved_amount, approval_date, decision_notes)
         VALUES (?, ?, ?, 101, ?, ?, CURDATE(), 720, 'Approved', ?, CURDATE(), 'Automated instant approval via Customer Online Portal')
-      `, [newAppId, numericCusId, mappedProduct, parsedAmount, tenure, parsedAmount])
+      `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, parsedAmount])
     } catch (appErr) {
       console.warn('Could not record application in pipeline:', appErr.message)
     }
@@ -583,11 +623,13 @@ app.post('/api/customer/loans/apply', async (request, response) => {
     response.json({
       success: true,
       loanId: newLoanId,
+      customerCode: targetCustomerCode,
       referenceNo: `LN-${new Date().getFullYear()}-${newLoanId}`,
       message: 'Loan facility approved and recorded successfully in core banking database!',
       details: {
         loanId: newLoanId,
-        customerName: customerName || `Customer #${numericCusId}`,
+        customerName: cleanName || `Customer #${targetCustomerId}`,
+        customerCode: targetCustomerCode,
         loanType: loanType || 'Personal',
         loanAmount: parsedAmount,
         interestRate: parsedRate,
