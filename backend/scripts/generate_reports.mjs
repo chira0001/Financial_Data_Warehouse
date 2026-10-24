@@ -142,6 +142,13 @@ async function convert(sourceName, outputName) {
   await writeFile(path.join(repositoryRoot, 'docs', outputName), buffer)
 }
 
-await convert('FINAL_REPORT.md', 'FINAL_REPORT.docx')
-await convert('PROJECT_REPORT.md', 'PROJECT_REPORT.docx')
-console.log('Generated docs/FINAL_REPORT.docx and docs/PROJECT_REPORT.docx')
+if (process.argv[2]) {
+  const sourceName = path.basename(process.argv[2])
+  const outputName = path.basename(process.argv[3] || sourceName.replace(/\.md$/i, '.docx'))
+  await convert(sourceName, outputName)
+  console.log(`Generated docs/${outputName}`)
+} else {
+  await convert('FINAL_REPORT.md', 'FINAL_REPORT.docx')
+  await convert('PROJECT_REPORT.md', 'PROJECT_REPORT.docx')
+  console.log('Generated docs/FINAL_REPORT.docx and docs/PROJECT_REPORT.docx')
+}
