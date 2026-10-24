@@ -14,6 +14,8 @@ export default function LoanTracker({ initialLoanId }) {
   const [payMethod, setPayMethod] = useState('LankaPay Real-Time Transfer')
   const [payLoading, setPayLoading] = useState(false)
   const [payReceipt, setPayReceipt] = useState(null)
+  const [payError, setPayError] = useState('')
+  const [copiedVoucher, setCopiedVoucher] = useState(false)
 
   const quickDemoFacilities = [
     { label: 'Loan #2001 (New Online Application)', id: '2001' },
@@ -57,12 +59,15 @@ export default function LoanTracker({ initialLoanId }) {
     const approx = Math.round(Number(loan.loan_amount) / 36)
     setPayAmount(approx > 0 ? approx : 45000)
     setPayReceipt(null)
+    setPayError('')
+    setCopiedVoucher(false)
   }
 
   const handleConfirmPayment = async (e) => {
     e.preventDefault()
     if (!payModalLoan) return
     setPayLoading(true)
+    setPayError('')
     try {
       const res = await loanApi.pay({
         loanId: payModalLoan.loan_id,
@@ -82,7 +87,7 @@ export default function LoanTracker({ initialLoanId }) {
         handleSearch(String(payModalLoan.loan_id))
       }
     } catch (err) {
-      alert('Settlement processing failed: ' + err.message)
+      setPayError(err.message || 'Settlement processing failed. Please verify facility terms.')
     } finally {
       setPayLoading(false)
     }
@@ -343,9 +348,23 @@ export default function LoanTracker({ initialLoanId }) {
                     <span>Apex Commercial Bank PLC</span>
                     <strong style={{ color: 'var(--emerald-400)' }}>OFFICIAL PAYMENT VOUCHER</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Voucher Reference:</span>
-                    <strong className="mono">{payReceipt.receiptNo}</strong>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <strong className="mono" style={{ color: '#93c5fd' }}>{payReceipt.receiptNo}</strong>
+                      <button
+                        type="button"
+                        className="btn-secondary no-print"
+                        style={{ padding: '2px 8px', fontSize: '0.72rem' }}
+                        onClick={() => {
+                          navigator.clipboard.writeText(payReceipt.receiptNo)
+                          setCopiedVoucher(true)
+                          setTimeout(() => setCopiedVoucher(false), 2000)
+                        }}
+                      >
+                        {copiedVoucher ? 'Copied ✓' : 'Copy'}
+                      </button>
+                    </div>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <span style={{ color: 'var(--text-muted)' }}>Facility Account:</span>
@@ -394,6 +413,12 @@ export default function LoanTracker({ initialLoanId }) {
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '20px' }}>
                   Facility Ref: #{payModalLoan.loan_id} ({payModalLoan.loan_type} Loan)
                 </p>
+
+                {payError && (
+                  <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid var(--rose-500)', color: '#fca5a5', padding: '10px 14px', borderRadius: '6px', marginBottom: '16px', fontSize: '0.86rem' }}>
+                    {payError}
+                  </div>
+                )}
 
                 <div className="form-group" style={{ marginBottom: '16px' }}>
                   <label>Installment Remittance Amount (LKR) *</label>
