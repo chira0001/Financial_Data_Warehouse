@@ -163,12 +163,14 @@ export default function LoanTracker({ initialLoanId }) {
                 </span>
                 <button 
                   type="button"
-                  className="btn-primary" 
-                  style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+                  className={loan.loan_status === 'Closed' ? 'btn-secondary' : 'btn-primary'} 
+                  style={{ padding: '8px 16px', fontSize: '0.85rem', opacity: loan.loan_status === 'Closed' ? 0.6 : 1, cursor: loan.loan_status === 'Closed' ? 'not-allowed' : 'pointer' }}
                   onClick={() => handleOpenPay(loan)}
+                  disabled={loan.loan_status === 'Closed'}
+                  title={loan.loan_status === 'Closed' ? 'Facility is closed and fully settled' : 'Pay installment'}
                 >
                   <CreditCardIcon size={14} />
-                  <span>Settle Installment</span>
+                  <span>{loan.loan_status === 'Closed' ? 'Fully Settled (Closed)' : 'Settle Installment'}</span>
                 </button>
               </div>
             </div>

@@ -683,11 +683,18 @@ app.post('/api/customer/loans/pay', async (request, response) => {
         )
       `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
       const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
-      if (outRows[0]?.code === 'SUCCESS') {
-        procedureSucceeded = true
+      if (outRows && outRows[0]?.code) {
+        if (outRows[0].code === 'SUCCESS') {
+          procedureSucceeded = true
+        } else {
+          return response.status(400).json({
+            error: outRows[0].msg || 'Repayment rejected by core banking stored procedure',
+            code: outRows[0].code,
+          })
+        }
       }
     } catch (spErr) {
-      console.warn('sp_process_loan_payment failed or not found, falling back to direct insert:', spErr.message)
+      console.warn('sp_process_loan_payment invocation exception, falling back to direct insert:', spErr.message)
     }
 
     if (!procedureSucceeded) {

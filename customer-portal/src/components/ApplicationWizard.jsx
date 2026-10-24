@@ -7,6 +7,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [submittedResult, setSubmittedResult] = useState(null)
+  const [copiedRef, setCopiedRef] = useState(false)
 
   const [formData, setFormData] = useState({
     customerName: '',
@@ -91,8 +92,22 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
             Dear <strong>{submittedResult.details.customerName}</strong>, your formal credit application has been recorded and processed under the retail credit framework.
           </p>
 
-          <div className="success-ref">
-            Application Reference: {submittedResult.referenceNo}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '14px 0' }}>
+            <div className="success-ref" style={{ margin: 0 }}>
+              Application Reference: {submittedResult.referenceNo}
+            </div>
+            <button
+              type="button"
+              className="btn-secondary no-print"
+              style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '4px' }}
+              onClick={() => {
+                navigator.clipboard.writeText(submittedResult.referenceNo)
+                setCopiedRef(true)
+                setTimeout(() => setCopiedRef(false), 2000)
+              }}
+            >
+              {copiedRef ? 'Copied ✓' : 'Copy Ref'}
+            </button>
           </div>
 
           <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', padding: '22px', borderRadius: 'var(--radius-sm)', maxWidth: '540px', margin: '22px auto', textAlign: 'left' }}>
