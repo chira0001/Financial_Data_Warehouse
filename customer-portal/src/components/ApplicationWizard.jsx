@@ -34,35 +34,86 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
+  const scrollToWizard = () => {
+    const el = document.getElementById('apply')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }
+
   const handleNext = () => {
+    setError('')
+
+    // Step 1: Personal Identification & Contact Validation
     if (step === 1) {
-      if (!formData.customerName.trim()) {
-        setError('Please enter your full name as printed on your National Identity Card.')
+      if (!formData.customerName.trim() || formData.customerName.trim().length < 3) {
+        setError('Please enter your full legal name as per NIC (minimum 3 characters).')
         return
       }
-      if (!formData.nic.trim()) {
-        setError('Please enter a valid National Identity Card (NIC) number.')
+
+      // Sri Lankan NIC validation: 9 digits + V/X or 12 digits
+      const nicTrimmed = formData.nic.trim()
+      const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/
+      if (!nicTrimmed || !nicRegex.test(nicTrimmed)) {
+        setError('Invalid National Identity Card (NIC) format. Expected 9 digits with V (e.g., 951234567V) or 12 digits (e.g., 199512345678).')
+        return
+      }
+
+      // Sri Lankan Mobile validation: 10 digits starting with 07
+      const phoneClean = formData.phone.replace(/[\s-+]/g, '')
+      const phoneRegex = /^(?:0|94)?(7[0-9]{8})$/
+      if (!phoneClean || !phoneRegex.test(phoneClean)) {
+        setError('Invalid contact telephone. Please provide a valid 10-digit Sri Lankan mobile number (e.g., 077 123 4567).')
         return
       }
     }
+
+    // Step 2: Facility Parameters Validation
+    if (step === 2) {
+      const amt = Number(formData.loanAmount)
+      if (!amt || isNaN(amt) || amt < 50000) {
+        setError('Minimum loan facility amount is LKR 50,000.')
+        return
+      }
+      if (amt > 25000000) {
+        setError('Maximum retail credit facility limit is LKR 25,000,000.')
+        return
+      }
+      const tenure = Number(formData.tenureMonths)
+      if (!tenure || tenure < 6) {
+        setError('Please select a valid amortization tenure (minimum 6 months).')
+        return
+      }
+    }
+
     setError('')
     setStep((prev) => Math.min(prev + 1, 3))
+    scrollToWizard()
   }
 
   const handleBack = () => {
     setError('')
     setStep((prev) => Math.max(prev - 1, 1))
+    scrollToWizard()
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
+
+    const income = Number(formData.monthlyIncome)
+    if (!income || isNaN(income) || income < 25000) {
+      setError('Declared gross monthly remuneration must be at least LKR 25,000.')
+      return
+    }
+
+    setLoading(true)
 
     try {
       const res = await loanApi.apply(formData)
       if (res.success) {
         setSubmittedResult(res)
+        scrollToWizard()
       } else {
         setError(res.error || 'The system could not process your application at this time.')
       }
@@ -219,7 +270,10 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
               </div>
 
               <div className="form-group">
-                <label>National Identity Card (NIC) / Passport Number *</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label>National Identity Card (NIC) / Passport Number *</label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>9 digits+V or 12 digits</span>
+                </div>
                 <input 
                   type="text" 
                   name="nic"
@@ -231,13 +285,17 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
               </div>
 
               <div className="form-group">
-                <label>Primary Contact Telephone *</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label>Primary Contact Telephone *</label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>07X XXX XXXX</span>
+                </div>
                 <input 
                   type="tel" 
                   name="phone"
                   placeholder="e.g. 077 123 4567"
                   value={formData.phone}
                   onChange={handleChange}
+                  required
                 />
               </div>
 
@@ -288,7 +346,10 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
               </div>
 
               <div className="form-group">
-                <label>Requested Principal Amount (LKR) *</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label>Requested Principal Amount (LKR) *</label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--emerald-400)' }}>LKR 50K – 25M</span>
+                </div>
                 <input 
                   type="number" 
                   name="loanAmount"
