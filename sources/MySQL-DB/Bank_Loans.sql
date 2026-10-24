@@ -5,9 +5,7 @@ CREATE DATABASE IF NOT EXISTS banking_loan_source;
 
 USE banking_loan_source;
 
--- ============================================================================
 -- BRANCHES MASTER TABLE (Ingested from sources/CSV/branches.csv)
--- ============================================================================
 CREATE TABLE IF NOT EXISTS branches (
     branch_id VARCHAR(10) PRIMARY KEY,
     branch_name VARCHAR(50) NOT NULL,
@@ -27,9 +25,7 @@ INSERT INTO branches (branch_id, branch_name, city, province) VALUES
 ('B009', 'Batticaloa Branch', 'Batticaloa', 'Eastern'),
 ('B010', 'Anuradhapura Branch', 'Anuradhapura', 'North Central');
 
--- ============================================================================
 -- CUSTOMERS MASTER TABLE (Ingested from sources/CSV/customers.csv)
--- ============================================================================
 CREATE TABLE IF NOT EXISTS customers (
     customer_id INT PRIMARY KEY,
     customer_code VARCHAR(20) NOT NULL UNIQUE,
@@ -3074,11 +3070,8 @@ INSERT INTO loan_payments (payment_id, loan_id, payment_date, payment_amount, pa
 SELECT * FROM loans;
 SELECT * FROM loan_payments;
 
--- ============================================================================
 -- PRODUCTION EXTENSION SCHEMA: ENTERPRISE LOAN MANAGEMENT SYSTEM
--- ============================================================================
--- The following extensions upgrade banking_loan_source from a raw seed dump
--- into a production-grade operational banking loan subsystem.
+
 -- It equips branch loan officers, credit managers, and compliance auditors with:
 --   1. Performance B-Tree Secondary Indexes
 --   2. Operational Audit & Compliance Tables (loan_audit_log, loan_payment_audit_log)
@@ -3088,10 +3081,6 @@ SELECT * FROM loan_payments;
 --   6. Automated MySQL Scheduled Events (Daily status & overdue evaluation)
 --   7. Role-Based Operational Views for End-Users
 --   8. Role-Based Access Control (RBAC) Security Setup
--- NOTE: Base columns of `loans` and `loan_payments` remain 100% untouched to
---       maintain strict compatibility with the downstream Data Warehouse ETL.
--- ============================================================================
-
 
 -- ============================================================================
 -- SECTION 1: EXTENDED PRODUCTION OPERATIONAL TABLES & CATALOG
@@ -3118,7 +3107,7 @@ INSERT INTO loan_products (product_id, product_code, product_name, loan_category
 ('PRD04', 'EDU-SCH', 'Higher Education & Scholar Loan', 'Education', 100000.00, 5000000.00, 8.50, 84, FALSE, 0.50),
 ('PRD05', 'BIZ-GROW', 'SME Business Expansion & Working Capital Loan', 'Business', 500000.00, 20000000.00, 12.75, 120, TRUE, 1.50);
 
--- 1.2 Loan Officers & Credit Staff (1,000 Records)
+-- 1.2 Loan Officers & Credit Staff
 CREATE TABLE IF NOT EXISTS loan_officers (
     officer_id INT PRIMARY KEY,
     employee_code VARCHAR(20) NOT NULL UNIQUE,
@@ -4134,7 +4123,7 @@ INSERT INTO loan_officers (officer_id, employee_code, first_name, last_name, ema
 (1099, 'EMP1099', 'Hiruni', 'Senanayake', 'hiruni.senanayake1099@bank.lk', '+94 77 100 0998', 'B009', 'Branch Loan Manager', 'Active'),
 (1100, 'EMP1100', 'Shalini', 'Alwis', 'shalini.alwis1100@bank.lk', '+94 77 100 0999', 'B010', 'Recovery Officer', 'Active');
 
--- 1.3 Loan Applications / Underwriting Pipeline (1,000 Records)
+-- 1.3 Loan Applications / Underwriting Pipeline
 CREATE TABLE IF NOT EXISTS loan_applications (
     application_id INT PRIMARY KEY,
     customer_id INT NOT NULL,
@@ -5155,7 +5144,7 @@ INSERT INTO loan_applications (application_id, customer_id, product_id, assigned
 (7999, 999, 'PRD04', 109, 891576.00, 84, '2024-11-09', 778, 'Approved', 768600.00, '2024-11-24', 'Education facility evaluated and cleared under credit score 778.'),
 (8000, 1000, 'PRD05', 110, 4696400.00, 120, '2023-07-08', 779, 'Approved', 3980000.00, '2023-07-23', 'Business facility evaluated and cleared under credit score 779.');
 
--- 1.4 Loan Collateral & Asset Securities (1,000 Records)
+-- 1.4 Loan Collateral & Asset Securities
 CREATE TABLE IF NOT EXISTS loan_collaterals (
     collateral_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -6171,7 +6160,7 @@ INSERT INTO loan_collaterals (collateral_id, loan_id, collateral_type, collatera
 (8999, 1999, 'Fixed Deposit', 'Fixed Deposit security pledged for Loan #1999', 1329678.00, '2024-11-24', 'Central Valuations Pvt Ltd', 'DEED-DOC-1999-FIX', 'Released'),
 (9000, 2000, 'Gold', 'Gold security pledged for Loan #2000', 6925200.00, '2023-07-23', 'Automobile Association of Ceylon', 'DEED-DOC-2000-GOL', 'Pledged');
 
--- 1.5 Loan Guarantors & Co-Signers (1,000 Records)
+-- 1.5 Loan Guarantors & Co-Signers
 CREATE TABLE IF NOT EXISTS loan_guarantors (
     guarantor_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -7187,7 +7176,7 @@ INSERT INTO loan_guarantors (guarantor_id, loan_id, guarantor_name, nic_number, 
 (9999, 1999, 'Sunil Rajapaksa', '197810000998', 'Uncle', '+94 71 200 0998', 530000.00, 'Lanka Electricity Co', 768600.00),
 (10000, 2000, 'Kithsiri Senanayake', '197910000999', 'Colleague', '+94 71 200 0999', 540000.00, 'Ceylon Petroleum Corp', 3980000.00);
 
--- 1.6 Loan Disbursements Execution (1,000 Records)
+-- 1.6 Loan Disbursements Execution
 CREATE TABLE IF NOT EXISTS loan_disbursements (
     disbursement_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -8202,7 +8191,7 @@ INSERT INTO loan_disbursements (disbursement_id, loan_id, disbursement_date, dis
 (3999, 1999, '2024-11-24', 768600.00, 'Cheque', 'TXN-DISB-1999-0999', 109),
 (4000, 2000, '2023-07-23', 3980000.00, 'Account Transfer', 'TXN-DISB-2000-1000', 110);
 
--- 1.7 Loan Repayment Schedule & Amortization Installments (1,000 Records)
+-- 1.7 Loan Repayment Schedule & Amortization Installments
 CREATE TABLE IF NOT EXISTS loan_repayment_schedules (
     schedule_id INT PRIMARY KEY AUTO_INCREMENT,
     loan_id INT NOT NULL,
@@ -9218,7 +9207,7 @@ INSERT INTO loan_repayment_schedules (schedule_id, loan_id, installment_number, 
 (999, 1999, 3, '2025-02-24', 26901.00, 21578.44, 5322.56, 'Paid', '2025-02-24'),
 (1000, 2000, 4, '2023-11-23', 139300.00, 81092.50, 58207.50, 'Overdue', NULL);
 
--- 1.8 Loan Fees, Charges & Penalties (1,000 Records)
+-- 1.8 Loan Fees, Charges & Penalties
 CREATE TABLE IF NOT EXISTS loan_fees_and_penalties (
     fee_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -10232,7 +10221,7 @@ INSERT INTO loan_fees_and_penalties (fee_id, loan_id, fee_type, amount, assessed
 (4999, 1999, 'Valuation Fee', 20500.00, '2024-11-24', 'Settled', '2024-11-24'),
 (5000, 2000, 'Restructure Fee', 21500.00, '2023-07-23', 'Unpaid', NULL);
 
--- 1.9 Delinquency Recovery & Debt Collections Log (1,000 Records)
+-- 1.9 Delinquency Recovery & Debt Collections Log
 CREATE TABLE IF NOT EXISTS loan_recovery_actions (
     action_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -11248,7 +11237,7 @@ INSERT INTO loan_recovery_actions (action_id, loan_id, officer_id, action_date, 
 (6999, 1999, 109, '2025-05-24', 'Legal Demand Notice', 'Officer follow-up on Loan #1999 (Closed status). Action: Legal Demand Notice.', 'Awaiting legal consultation with attorney', '2025-06-07'),
 (7000, 2000, 110, '2024-01-23', 'Settlement Conference', 'Officer follow-up on Loan #2000 (Overdue status). Action: Settlement Conference.', 'Settlement commitment confirmed via cashier deposit', '2024-02-06');
 
--- 1.10 Loan Facility Lifecycle Audit Log (1,000 Records)
+-- 1.10 Loan Facility Lifecycle Audit Log
 CREATE TABLE IF NOT EXISTS loan_audit_log (
     audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -12266,7 +12255,7 @@ INSERT INTO loan_audit_log (audit_id, loan_id, action_type, old_status, new_stat
 (999, 1999, 'DISBURSEMENT', NULL, 'Closed', NULL, 768600.00, NULL, 8.31, 'SYSTEM', '2024-11-24 09:00:00', 'Initial loan disbursement recorded'),
 (1000, 2000, 'DISBURSEMENT', NULL, 'Overdue', NULL, 3980000.00, NULL, 17.55, 'SYSTEM', '2023-07-23 09:00:00', 'Initial loan disbursement recorded');
 
--- 1.11 Loan Payment Audit Log (1,000 Records)
+-- 1.11 Loan Payment Audit Log
 CREATE TABLE IF NOT EXISTS loan_payment_audit_log (
     audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     payment_id INT NOT NULL,
