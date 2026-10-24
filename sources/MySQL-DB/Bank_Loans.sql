@@ -1,3 +1,6 @@
+-- Banking Loan Source Database
+-- Core loan management schema feeding the warehouse
+
 CREATE DATABASE IF NOT EXISTS banking_loan_source;
 
 USE banking_loan_source;
