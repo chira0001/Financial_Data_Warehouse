@@ -2,6 +2,7 @@ import { createReadStream } from 'node:fs'
 import { basename, dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mysql from 'mysql2/promise'
+import { createReadStream } from 'node:fs'
 import { config } from './config.js'
 
 const csvDirectory = resolve(fileURLToPath(config.repoRoot), 'sources', 'CSV')
@@ -19,6 +20,7 @@ export const pool = mysql.createPool({
   decimalNumbers: true,
   dateStrings: true,
   multipleStatements: true,
+/*
   infileStreamFactory: (requestedPath) => {
     const filePath = resolve(requestedPath)
     const relativePath = relative(csvDirectory, filePath)
@@ -31,6 +33,8 @@ export const pool = mysql.createPool({
 
     return createReadStream(filePath)
   },
+*/
+  infileStreamFactory: (path) => createReadStream(path),
 })
 
 export async function checkDatabase() {
