@@ -30,7 +30,10 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
   })
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    let { name, value } = e.target
+    if (name === 'nic') {
+      value = value.toUpperCase().trim()
+    }
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -494,6 +497,20 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
                   <div>Amortization: <strong>{formData.tenureMonths} Months</strong></div>
                   <div>Monthly Installment: <strong style={{ color: 'var(--emerald-400)' }}>LKR {estimatedEmi.toLocaleString()}</strong></div>
                 </div>
+              </div>
+
+              {/* Statutory CRIB Regulatory Declaration */}
+              <div className="form-group full" style={{ marginTop: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '0.84rem', color: 'var(--text-main)', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 14px', borderRadius: '6px', border: '1px solid var(--border-subtle)' }}>
+                  <input 
+                    type="checkbox" 
+                    required 
+                    style={{ width: '18px', height: '18px', marginTop: '2px', cursor: 'pointer', accentColor: 'var(--emerald-500)' }} 
+                  />
+                  <span>
+                    I hereby certify that all information submitted is accurate and true. I authorize <strong>Apex Commercial Bank PLC</strong> to conduct statutory credit assessments through the <strong>Credit Information Bureau of Sri Lanka (CRIB)</strong> and CBSL regulatory databases. *
+                  </span>
+                </label>
               </div>
             </div>
           )}
