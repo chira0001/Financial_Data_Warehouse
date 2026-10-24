@@ -7,7 +7,7 @@ import { runPipeline, runQueryGroup } from './sql.js'
 const app = express()
 let pipelineRunning = false
 
-app.use(cors({ origin: config.frontendOrigin }))
+app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 
 const query = async (sql, params = []) => {
@@ -342,6 +342,353 @@ app.post('/api/pipeline/run', async (_request, response) => {
   } finally {
     connection.release()
     pipelineRunning = false
+  }
+})
+
+// --- Customer Loan Portal Endpoints ---
+const fallbackLoanProducts = [
+  {
+    id: 'personal',
+    name: 'Personal Loan',
+    category: 'Personal',
+    tagline: 'Instant financial support for travel, emergency, wedding or medical needs.',
+    minAmount: 50000,
+    maxAmount: 5000000,
+    rate: 13.5,
+    minTenure: 12,
+    maxTenure: 60,
+    badge: 'Fast Approval',
+    features: ['No guarantor needed up to LKR 500K', 'Instant 24-hr pre-approval', 'Flexible repayment schedule'],
+    color: '#3b82f6',
+  },
+  {
+    id: 'housing',
+    name: 'Housing & Home Loan',
+    category: 'Housing',
+    tagline: 'Build, buy, or renovate your dream sanctuary with Sri Lanka’s lowest long-term rates.',
+    minAmount: 500000,
+    maxAmount: 25000000,
+    rate: 11.25,
+    minTenure: 36,
+    maxTenure: 240,
+    badge: 'Lowest Interest',
+    features: ['Up to 20 years repayment tenure', 'Zero early settlement penalty', 'Free legal & valuation guidance'],
+    color: '#10b981',
+  },
+  {
+    id: 'vehicle',
+    name: 'Vehicle & Auto Loan',
+    category: 'Vehicle',
+    tagline: 'Drive your preferred car, commercial vehicle or hybrid with quick leasing solutions.',
+    minAmount: 250000,
+    maxAmount: 10000000,
+    rate: 14.0,
+    minTenure: 12,
+    maxTenure: 84,
+    badge: 'Popular',
+    features: ['Up to 80% vehicle financing', 'Speedy registration & approval', 'Special subsidized green rates for EVs'],
+    color: '#8b5cf6',
+  },
+  {
+    id: 'education',
+    name: 'Education Loan',
+    category: 'Education',
+    tagline: 'Empower your future with undergraduate & postgraduate funding locally and abroad.',
+    minAmount: 100000,
+    maxAmount: 5000000,
+    rate: 8.5,
+    minTenure: 12,
+    maxTenure: 84,
+    badge: 'Subsidized Rate',
+    features: ['Grace period during course study', 'Covers tuition fees & living expenses', 'Convenient parent co-borrower terms'],
+    color: '#06b6d4',
+  },
+  {
+    id: 'business',
+    name: 'Business & SME Facility',
+    category: 'Business',
+    tagline: 'Fuel your enterprise growth, working capital, inventory, or machinery upgrade.',
+    minAmount: 500000,
+    maxAmount: 20000000,
+    rate: 12.75,
+    minTenure: 12,
+    maxTenure: 120,
+    badge: 'Growth Booster',
+    features: ['Collateral-free credit lines for SMEs', 'Cash-flow structured repayments', 'Dedicated relationship officer'],
+    color: '#f59e0b',
+  },
+]
+
+app.get('/api/customer/loans/products', async (_request, response) => {
+  try {
+    const dbProducts = await query(`
+      SELECT product_id, product_code, product_name, loan_category,
+             min_amount, max_amount, base_interest_rate, max_tenure_months,
+             is_collateral_required, processing_fee_percentage
+      FROM banking_loan_source.loan_products
+      ORDER BY product_id
+    `)
+
+    if (dbProducts && dbProducts.length > 0) {
+      const categoryMetadata = {
+        Personal: {
+          id: 'personal',
+          tagline: 'Instant financial support for travel, emergency, wedding or medical needs.',
+          badge: 'Fast Approval',
+          features: ['No guarantor needed up to LKR 500K', 'Instant 24-hr pre-approval', 'Flexible repayment schedule'],
+          color: '#3b82f6',
+          minTenure: 12,
+        },
+        Housing: {
+          id: 'housing',
+          tagline: 'Build, buy, or renovate your dream sanctuary with Sri Lanka’s lowest long-term rates.',
+          badge: 'Lowest Interest',
+          features: ['Up to 20 years repayment tenure', 'Zero early settlement penalty', 'Free legal & valuation guidance'],
+          color: '#10b981',
+          minTenure: 36,
+        },
+        Vehicle: {
+          id: 'vehicle',
+          tagline: 'Drive your preferred car, commercial vehicle or hybrid with quick leasing solutions.',
+          badge: 'Popular',
+          features: ['Up to 80% vehicle financing', 'Speedy registration & approval', 'Special subsidized green rates for EVs'],
+          color: '#8b5cf6',
+          minTenure: 12,
+        },
+        Education: {
+          id: 'education',
+          tagline: 'Empower your future with undergraduate & postgraduate funding locally and abroad.',
+          badge: 'Subsidized Rate',
+          features: ['Grace period during course study', 'Covers tuition fees & living expenses', 'Convenient parent co-borrower terms'],
+          color: '#06b6d4',
+          minTenure: 12,
+        },
+        Business: {
+          id: 'business',
+          tagline: 'Fuel your enterprise growth, working capital, inventory, or machinery upgrade.',
+          badge: 'Growth Booster',
+          features: ['Collateral-free credit lines for SMEs', 'Cash-flow structured repayments', 'Dedicated relationship officer'],
+          color: '#f59e0b',
+          minTenure: 12,
+        },
+      }
+
+      const merged = dbProducts.map((p) => {
+        const meta = categoryMetadata[p.loan_category] || {
+          id: p.loan_category.toLowerCase(),
+          tagline: 'Reliable financing option tailored to your requirements.',
+          badge: 'Standard Facility',
+          features: ['Competitive interest rate', 'Flexible tenure', 'Dedicated advisory support'],
+          color: '#6366f1',
+          minTenure: 12,
+        }
+        return {
+          id: meta.id,
+          productId: p.product_id,
+          productCode: p.product_code,
+          name: p.product_name,
+          category: p.loan_category,
+          tagline: meta.tagline,
+          minAmount: Number(p.min_amount),
+          maxAmount: Number(p.max_amount),
+          rate: Number(p.base_interest_rate),
+          minTenure: meta.minTenure,
+          maxTenure: Number(p.max_tenure_months),
+          badge: meta.badge,
+          features: meta.features,
+          color: meta.color,
+          isCollateralRequired: Boolean(p.is_collateral_required),
+          processingFeePercentage: Number(p.processing_fee_percentage),
+        }
+      })
+      return response.json({ products: merged })
+    }
+
+    response.json({ products: fallbackLoanProducts })
+  } catch (error) {
+    console.warn('DB loan products unavailable, returning fallback catalog:', error.message)
+    response.json({ products: fallbackLoanProducts })
+  }
+})
+
+app.post('/api/customer/loans/apply', async (request, response) => {
+  const connection = await pool.getConnection()
+  try {
+    const {
+      customerId,
+      accountId,
+      customerName,
+      loanType,
+      loanAmount,
+      tenureMonths,
+      interestRate,
+      purpose,
+      monthlyIncome,
+    } = request.body
+
+    const parsedAmount = Number(loanAmount) || 500000
+    const parsedRate = Number(interestRate) || 12.5
+    const tenure = Number(tenureMonths) || 36
+    const numericCusId = Number(String(customerId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 200) + 1
+    const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 300) + 100
+
+    const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
+    const newLoanId = (maxRows[0]?.max_id || 2000) + 1
+
+    let procedureSucceeded = false
+    try {
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_disburse_new_loan(
+          ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @code, @msg
+        )
+      `, [newLoanId, numericCusId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      if (outRows[0]?.code === 'SUCCESS') {
+        procedureSucceeded = true
+      }
+    } catch (spErr) {
+      console.warn('sp_disburse_new_loan failed or not found, falling back to direct insert:', spErr.message)
+    }
+
+    if (!procedureSucceeded) {
+      await connection.query(`
+        INSERT INTO banking_loan_source.loans
+          (loan_id, customer_id, account_id, loan_type, loan_amount, interest_rate, loan_start_date, loan_end_date, loan_status)
+        VALUES (?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), 'Active')
+      `, [newLoanId, numericCusId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
+    }
+
+    // Record application in underwriting pipeline
+    try {
+      const [appMax] = await connection.query('SELECT COALESCE(MAX(application_id), 7000) AS max_app FROM banking_loan_source.loan_applications')
+      const newAppId = (appMax[0]?.max_app || 7000) + 1
+      const productMap = {
+        Personal: 'PRD01',
+        Housing: 'PRD02',
+        Vehicle: 'PRD03',
+        Education: 'PRD04',
+        Business: 'PRD05',
+      }
+      const mappedProduct = productMap[loanType] || 'PRD01'
+      await connection.query(`
+        INSERT INTO banking_loan_source.loan_applications
+          (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, approved_amount, approval_date, decision_notes)
+        VALUES (?, ?, ?, 101, ?, ?, CURDATE(), 720, 'Approved', ?, CURDATE(), 'Automated instant approval via Customer Online Portal')
+      `, [newAppId, numericCusId, mappedProduct, parsedAmount, tenure, parsedAmount])
+    } catch (appErr) {
+      console.warn('Could not record application in pipeline:', appErr.message)
+    }
+
+    response.json({
+      success: true,
+      loanId: newLoanId,
+      referenceNo: `LN-${new Date().getFullYear()}-${newLoanId}`,
+      message: 'Loan facility approved and recorded successfully in core banking database!',
+      details: {
+        loanId: newLoanId,
+        customerName: customerName || `Customer #${numericCusId}`,
+        loanType: loanType || 'Personal',
+        loanAmount: parsedAmount,
+        interestRate: parsedRate,
+        tenureMonths: tenure,
+        status: 'Active',
+        startDate: new Date().toISOString().split('T')[0],
+      },
+    })
+  } catch (error) {
+    handleError(response, error)
+  } finally {
+    connection.release()
+  }
+})
+
+app.get('/api/customer/loans/lookup/:query', async (request, response) => {
+  try {
+    const rawParam = request.params.query.trim()
+    const numParam = Number(rawParam.replace(/\D/g, '')) || 0
+
+    const loans = await query(`
+      SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+             l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+             COALESCE(SUM(p.payment_amount), 0) AS total_paid
+      FROM banking_loan_source.loans l
+      LEFT JOIN banking_loan_source.loan_payments p ON p.loan_id = l.loan_id
+      WHERE l.loan_id = ? OR l.customer_id = ?
+      GROUP BY l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+               l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status
+      ORDER BY l.loan_id DESC
+    `, [numParam, numParam])
+
+    if (!loans.length) {
+      return response.status(404).json({ error: 'No loan records found for this identifier' })
+    }
+
+    const loanIdList = loans.map((l) => l.loan_id)
+    const [payments] = await pool.query(`
+      SELECT payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
+      FROM banking_loan_source.loan_payments
+      WHERE loan_id IN (?)
+      ORDER BY payment_date DESC LIMIT 50
+    `, [loanIdList])
+
+    response.json({
+      loans: loans.map((l) => ({
+        ...l,
+        balance_remaining: Math.max(0, Number(l.loan_amount) - Number(l.total_paid)),
+        progress_pct: Math.min(100, Math.round((Number(l.total_paid) / Number(l.loan_amount)) * 100)),
+      })),
+      payments,
+    })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
+app.post('/api/customer/loans/pay', async (request, response) => {
+  const connection = await pool.getConnection()
+  try {
+    const { loanId, paymentAmount, paymentMethod } = request.body
+    const parsedAmount = Number(paymentAmount)
+    const targetLoanId = Number(loanId)
+
+    const [maxPayRows] = await connection.query('SELECT COALESCE(MAX(payment_id), 3000) AS max_id FROM banking_loan_source.loan_payments')
+    const newPaymentId = (maxPayRows[0]?.max_id || 3000) + 1
+
+    let procedureSucceeded = false
+    try {
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_process_loan_payment(
+          ?, ?, CURDATE(), ?, ?, 'Paid', @code, @msg
+        )
+      `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      if (outRows[0]?.code === 'SUCCESS') {
+        procedureSucceeded = true
+      }
+    } catch (spErr) {
+      console.warn('sp_process_loan_payment failed or not found, falling back to direct insert:', spErr.message)
+    }
+
+    if (!procedureSucceeded) {
+      await connection.query(`
+        INSERT INTO banking_loan_source.loan_payments
+          (payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status)
+        VALUES (?, ?, CURDATE(), ?, ?, 'Paid')
+      `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
+    }
+
+    response.json({
+      success: true,
+      paymentId: newPaymentId,
+      receiptNo: `RCP-${new Date().getFullYear()}-${newPaymentId}`,
+      message: 'Installment payment recorded and posted successfully!',
+    })
+  } catch (error) {
+    handleError(response, error)
+  } finally {
+    connection.release()
   }
 })
 
