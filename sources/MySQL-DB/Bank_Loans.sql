@@ -2,6 +2,1045 @@ CREATE DATABASE IF NOT EXISTS banking_loan_source;
 
 USE banking_loan_source;
 
+-- ============================================================================
+-- BRANCHES MASTER TABLE (Ingested from sources/CSV/branches.csv)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS branches (
+    branch_id VARCHAR(10) PRIMARY KEY,
+    branch_name VARCHAR(50) NOT NULL,
+    city VARCHAR(50) NOT NULL,
+    province VARCHAR(50) NOT NULL
+);
+
+INSERT INTO branches (branch_id, branch_name, city, province) VALUES
+('B001', 'Colombo Branch', 'Colombo', 'Western'),
+('B002', 'Kandy Branch', 'Kandy', 'Central'),
+('B003', 'Galle Branch', 'Galle', 'Southern'),
+('B004', 'Jaffna Branch', 'Jaffna', 'Northern'),
+('B005', 'Negombo Branch', 'Negombo', 'Western'),
+('B006', 'Kurunegala Branch', 'Kurunegala', 'North Western'),
+('B007', 'Matara Branch', 'Matara', 'Southern'),
+('B008', 'Nuwara Eliya Branch', 'Nuwara Eliya', 'Central'),
+('B009', 'Batticaloa Branch', 'Batticaloa', 'Eastern'),
+('B010', 'Anuradhapura Branch', 'Anuradhapura', 'North Central');
+
+-- ============================================================================
+-- CUSTOMERS MASTER TABLE (Ingested from sources/CSV/customers.csv)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS customers (
+    customer_id INT PRIMARY KEY,
+    customer_code VARCHAR(20) NOT NULL UNIQUE,
+    customer_name VARCHAR(100) NOT NULL,
+    gender VARCHAR(20),
+    date_of_birth DATE,
+    city VARCHAR(50),
+    occupation VARCHAR(50),
+    branch_id VARCHAR(10),
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
+);
+
+INSERT INTO customers (customer_id, customer_code, customer_name, gender, date_of_birth, city, occupation, branch_id) VALUES
+(1, 'C0001', 'Sahan Jayasinghe', 'Male', '1967-05-11', 'Nuwara Eliya', 'Doctor', 'B008'),
+(2, 'C0002', 'Sahan Karunaratne', 'Male', '1966-04-12', 'Matara', 'IT Professional', 'B007'),
+(3, 'C0003', 'Tharindu Rajapaksa', 'Male', '1987-10-15', 'Kurunegala', 'Teacher', 'B006'),
+(4, 'C0004', 'Ayesha Gunawardena', 'Male', '1971-08-31', 'Negombo', 'Other', 'B005'),
+(5, 'C0005', 'Ayesha De Silva', 'Female', '1988-09-23', 'Anuradhapura', 'Accountant', 'B010'),
+(6, 'C0006', 'Ayesha Wickramasinghe', 'Male', '1968-06-21', 'Batticaloa', 'Doctor', 'B009'),
+(7, 'C0007', 'Sanduni Wickramasinghe', 'Male', '2004-04-22', 'Batticaloa', 'Teacher', 'B009'),
+(8, 'C0008', 'Tharindu De Silva', 'Female', '1993-11-25', 'Kandy', 'Government Officer', 'B002'),
+(9, 'C0009', 'Nimal Jayasinghe', 'Female', '1982-01-27', 'Matara', 'IT Professional', 'B007'),
+(10, 'C0010', 'Shalini Fernando', 'Female', '2004-10-24', 'Colombo', 'Teacher', 'B001'),
+(11, 'C0011', 'Chamod Jayasinghe', 'Female', '1973-06-01', 'Kurunegala', 'Other', 'B006'),
+(12, 'C0012', 'Tharindu Gunawardena', 'Female', '1991-07-16', 'Kandy', 'Teacher', 'B002'),
+(13, 'C0013', 'Kavindu Jayasinghe', 'Female', '2004-12-27', 'Nuwara Eliya', 'Student', 'B008'),
+(14, 'C0014', 'Chamod Bandara', 'Male', '1983-10-17', 'Kandy', 'Doctor', 'B002'),
+(15, 'C0015', 'Dilani De Silva', 'Male', '1979-06-13', 'Colombo', 'Student', 'B001'),
+(16, 'C0016', 'Isuru Rajapaksa', 'Female', '2001-10-19', 'Nuwara Eliya', 'Accountant', 'B008'),
+(17, 'C0017', 'Anjali Rajapaksa', 'Male', '2003-04-18', 'Galle', 'Doctor', 'B003'),
+(18, 'C0018', 'Kavindu Wickramasinghe', 'Male', '1981-12-07', 'Matara', 'IT Professional', 'B007'),
+(19, 'C0019', 'Ayesha Silva', 'Male', '1973-07-02', 'Matara', 'IT Professional', 'B007'),
+(20, 'C0020', 'Dinesh Fernando', 'Female', '1972-06-24', 'Nuwara Eliya', 'Accountant', 'B008'),
+(21, 'C0021', 'Kasun Fernando', 'Male', '2005-12-05', 'Galle', 'Doctor', 'B003'),
+(22, 'C0022', 'Nadeesha Wickramasinghe', 'Male', '1983-12-31', 'Batticaloa', 'Other', 'B009'),
+(23, 'C0023', 'Kavindu Senanayake', 'Male', '1969-01-24', 'Galle', 'Student', 'B003'),
+(24, 'C0024', 'Anjali Jayasinghe', 'Female', '1979-01-04', 'Jaffna', 'Doctor', 'B004'),
+(25, 'C0025', 'Sahan Abeysekera', 'Male', '1969-08-06', 'Jaffna', 'Student', 'B004'),
+(26, 'C0026', 'Sanduni Gunawardena', 'Female', '1981-03-13', 'Kandy', 'Government Officer', 'B002'),
+(27, 'C0027', 'Ruwan Senanayake', 'Female', '2001-07-10', 'Jaffna', 'Other', 'B004'),
+(28, 'C0028', 'Sahan Perera', 'Male', '2002-07-02', 'Batticaloa', 'Government Officer', 'B009'),
+(29, 'C0029', 'Thilini Abeysekera', 'Male', '1981-01-21', 'Galle', 'Manager', 'B003'),
+(30, 'C0030', 'Chamod Samarasinghe', 'Male', '2000-06-02', 'Negombo', 'Accountant', 'B005'),
+(31, 'C0031', 'Kavindu Senanayake', 'Female', '1966-10-26', 'Kurunegala', 'IT Professional', 'B006'),
+(32, 'C0032', 'Isuru Jayasinghe', 'Female', '1979-04-30', 'Colombo', 'Business Owner', 'B001'),
+(33, 'C0033', 'Ayesha Wickramasinghe', 'Male', '1996-11-23', 'Galle', 'Doctor', 'B003'),
+(34, 'C0034', 'Anjali Rajapaksa', 'Female', '1996-01-23', 'Colombo', 'Teacher', 'B001'),
+(35, 'C0035', 'Dinesh Perera', 'Female', '1982-11-16', 'Galle', 'Teacher', 'B003'),
+(36, 'C0036', 'Ayesha Karunaratne', 'Female', '1980-11-09', 'Kurunegala', 'Student', 'B006'),
+(37, 'C0037', 'Tharindu Wickramasinghe', 'Male', '1965-07-22', 'Nuwara Eliya', 'Engineer', 'B008'),
+(38, 'C0038', 'Ruwan Rajapaksa', 'Female', '1986-12-01', 'Jaffna', 'Manager', 'B004'),
+(39, 'C0039', 'Sara Perera', 'Female', '1996-05-22', 'Kurunegala', 'Accountant', 'B006'),
+(40, 'C0040', 'Thilini Senanayake', 'Male', '1984-06-08', 'Jaffna', 'Other', 'B004'),
+(41, 'C0041', 'Amal Fernando', 'Female', '1996-03-30', 'Matara', 'Government Officer', 'B007'),
+(42, 'C0042', 'Kasun Rajapaksa', 'Female', '1980-10-08', 'Matara', 'IT Professional', 'B007'),
+(43, 'C0043', 'Kasun Samarasinghe', 'Male', '1987-05-01', 'Batticaloa', 'Teacher', 'B009'),
+(44, 'C0044', 'Kavindu Fernando', 'Female', '1965-09-20', 'Anuradhapura', 'Government Officer', 'B010'),
+(45, 'C0045', 'Thilini Senanayake', 'Male', '2001-01-20', 'Kandy', 'Doctor', 'B002'),
+(46, 'C0046', 'Dinesh Samarasinghe', 'Male', '1984-08-07', 'Batticaloa', 'Accountant', 'B009'),
+(47, 'C0047', 'Sanduni Fernando', 'Female', '1977-04-27', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(48, 'C0048', 'Kasun Rajapaksa', 'Female', '2000-05-12', 'Colombo', 'Business Owner', 'B001'),
+(49, 'C0049', 'Ruwan Rajapaksa', 'Female', '1998-03-04', 'Galle', 'Government Officer', 'B003'),
+(50, 'C0050', 'Amal De Silva', 'Female', '2003-10-21', 'Kandy', 'Teacher', 'B002'),
+(51, 'C0051', 'Nimal Gunawardena', 'Female', '1996-04-14', 'Batticaloa', 'Engineer', 'B009'),
+(52, 'C0052', 'Tharindu Perera', 'Female', '1977-04-21', 'Negombo', 'Business Owner', 'B005'),
+(53, 'C0053', 'Chamod Wickramasinghe', 'Female', '1968-05-03', 'Colombo', 'Engineer', 'B001'),
+(54, 'C0054', 'Piumi Senanayake', 'Female', '1990-01-16', 'Galle', 'Student', 'B003'),
+(55, 'C0055', 'Nadeesha Gunawardena', 'Female', '2004-11-17', 'Galle', 'IT Professional', 'B003'),
+(56, 'C0056', 'Nimal Bandara', 'Female', '1978-05-26', 'Colombo', 'Engineer', 'B001'),
+(57, 'C0057', 'Dinesh Senanayake', 'Female', '1986-11-23', 'Galle', 'Accountant', 'B003'),
+(58, 'C0058', 'Anjali Perera', 'Female', '1985-02-04', 'Negombo', 'Accountant', 'B005'),
+(59, 'C0059', 'Isuru Bandara', 'Female', '1971-05-17', 'Colombo', 'Doctor', 'B001'),
+(60, 'C0060', 'Amal Senanayake', 'Male', '1978-12-07', 'Jaffna', 'Doctor', 'B004'),
+(61, 'C0061', 'Kasun Fernando', 'Male', '1987-10-12', 'Kandy', 'Other', 'B002'),
+(62, 'C0062', 'Amal Rajapaksa', 'Female', '1972-06-26', 'Nuwara Eliya', 'Manager', 'B008'),
+(63, 'C0063', 'Nimal Samarasinghe', 'Female', '1994-05-18', 'Kandy', 'Engineer', 'B002'),
+(64, 'C0064', 'Chamod Perera', 'Female', '1985-09-13', 'Kurunegala', 'Student', 'B006'),
+(65, 'C0065', 'Kavindu Wickramasinghe', 'Female', '1966-06-22', 'Galle', 'Government Officer', 'B003'),
+(66, 'C0066', 'Dilani Senanayake', 'Male', '1980-05-27', 'Matara', 'Business Owner', 'B007'),
+(67, 'C0067', 'Dilani Jayasinghe', 'Female', '1971-06-27', 'Nuwara Eliya', 'Accountant', 'B008'),
+(68, 'C0068', 'Shalini Senanayake', 'Male', '2000-12-04', 'Matara', 'Manager', 'B007'),
+(69, 'C0069', 'Sanduni De Silva', 'Female', '1975-04-28', 'Kurunegala', 'Other', 'B006'),
+(70, 'C0070', 'Anjali Jayasinghe', 'Male', '1978-01-30', 'Kurunegala', 'Manager', 'B006'),
+(71, 'C0071', 'Sara Senanayake', 'Female', '1994-09-18', 'Colombo', 'Doctor', 'B001'),
+(72, 'C0072', 'Ayesha Senanayake', 'Female', '1965-01-05', 'Matara', 'Manager', 'B007'),
+(73, 'C0073', 'Dilani Jayasinghe', 'Male', '1976-05-05', 'Galle', 'IT Professional', 'B003'),
+(74, 'C0074', 'Thilini Abeysekera', 'Female', '1977-03-24', 'Anuradhapura', 'Accountant', 'B010'),
+(75, 'C0075', 'Anjali Rajapaksa', 'Female', '1967-04-11', 'Galle', 'Other', 'B003'),
+(76, 'C0076', 'Dinesh Karunaratne', 'Male', '1987-10-01', 'Matara', 'Government Officer', 'B007'),
+(77, 'C0077', 'Ayesha Bandara', 'Female', '1969-07-23', 'Anuradhapura', 'Engineer', 'B010'),
+(78, 'C0078', 'Shalini Silva', 'Female', '2001-09-16', 'Kurunegala', 'Government Officer', 'B006'),
+(79, 'C0079', 'Chamod Abeysekera', 'Female', '2001-02-05', 'Matara', 'Doctor', 'B007'),
+(80, 'C0080', 'Amal Senanayake', 'Male', '1976-08-20', 'Galle', 'Manager', 'B003'),
+(81, 'C0081', 'Nadeesha Senanayake', 'Female', '1979-03-17', 'Colombo', 'Business Owner', 'B001'),
+(82, 'C0082', 'Dinesh Senanayake', 'Female', '1995-07-14', 'Anuradhapura', 'Doctor', 'B010'),
+(83, 'C0083', 'Sahan Jayasinghe', 'Male', '2002-03-28', 'Negombo', 'Other', 'B005'),
+(84, 'C0084', 'Kavindu Gunawardena', 'Male', '1972-10-20', 'Jaffna', 'Other', 'B004'),
+(85, 'C0085', 'Sanduni Karunaratne', 'Female', '1991-11-24', 'Colombo', 'Doctor', 'B001'),
+(86, 'C0086', 'Dilani Jayasinghe', 'Female', '1995-11-19', 'Nuwara Eliya', 'Student', 'B008'),
+(87, 'C0087', 'Nimal Perera', 'Female', '1989-11-18', 'Jaffna', 'Teacher', 'B004'),
+(88, 'C0088', 'Amal Senanayake', 'Male', '1991-09-22', 'Colombo', 'Accountant', 'B001'),
+(89, 'C0089', 'Sara Bandara', 'Male', '1979-10-02', 'Galle', 'Engineer', 'B003'),
+(90, 'C0090', 'Chamod Karunaratne', 'Male', '1967-12-03', 'Kandy', 'Accountant', 'B002'),
+(91, 'C0091', 'Hiruni Fernando', 'Female', '1995-01-10', 'Colombo', 'IT Professional', 'B001'),
+(92, 'C0092', 'Kavindu Karunaratne', 'Male', '1995-11-01', 'Kandy', 'Government Officer', 'B002'),
+(93, 'C0093', 'Sahan Jayasinghe', 'Female', '1967-04-06', 'Negombo', 'IT Professional', 'B005'),
+(94, 'C0094', 'Tharindu De Silva', 'Female', '1996-08-06', 'Batticaloa', 'Other', 'B009'),
+(95, 'C0095', 'Dinesh De Silva', 'Male', '1973-02-15', 'Galle', 'Accountant', 'B003'),
+(96, 'C0096', 'Piumi Jayasinghe', 'Male', '1978-11-22', 'Colombo', 'IT Professional', 'B001'),
+(97, 'C0097', 'Dinesh Senanayake', 'Male', '1974-06-03', 'Matara', 'Student', 'B007'),
+(98, 'C0098', 'Amal De Silva', 'Male', '1981-03-15', 'Colombo', 'Business Owner', 'B001'),
+(99, 'C0099', 'Piumi De Silva', 'Male', '1968-09-27', 'Galle', 'Business Owner', 'B003'),
+(100, 'C0100', 'Ayesha Abeysekera', 'Female', '1985-04-06', 'Galle', 'Government Officer', 'B003'),
+(101, 'C0101', 'Sahan Senanayake', 'Male', '1966-12-19', 'Jaffna', 'Other', 'B004'),
+(102, 'C0102', 'Shalini Bandara', 'Female', '1996-01-11', 'Galle', 'Government Officer', 'B003'),
+(103, 'C0103', 'Thilini Samarasinghe', 'Male', '1980-04-20', 'Jaffna', 'Student', 'B004'),
+(104, 'C0104', 'Piumi De Silva', 'Female', '1967-11-29', 'Negombo', 'Other', 'B005'),
+(105, 'C0105', 'Sahan Karunaratne', 'Male', '1990-08-06', 'Galle', 'Teacher', 'B003'),
+(106, 'C0106', 'Shalini Senanayake', 'Female', '1984-10-29', 'Anuradhapura', 'Engineer', 'B010'),
+(107, 'C0107', 'Ruwan Wickramasinghe', 'Female', '1979-06-30', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(108, 'C0108', 'Hiruni Samarasinghe', 'Male', '1972-05-05', 'Kandy', 'Doctor', 'B002'),
+(109, 'C0109', 'Ruwan Fernando', 'Female', '1997-08-12', 'Colombo', 'Business Owner', 'B001'),
+(110, 'C0110', 'Anjali Wickramasinghe', 'Female', '1976-10-22', 'Jaffna', 'Manager', 'B004'),
+(111, 'C0111', 'Sanduni Abeysekera', 'Male', '1973-01-02', 'Kurunegala', 'Other', 'B006'),
+(112, 'C0112', 'Sanduni Wickramasinghe', 'Female', '1997-01-27', 'Kandy', 'Other', 'B002'),
+(113, 'C0113', 'Thilini Senanayake', 'Male', '1988-09-04', 'Batticaloa', 'Engineer', 'B009'),
+(114, 'C0114', 'Amal Abeysekera', 'Male', '2005-03-15', 'Batticaloa', 'Engineer', 'B009'),
+(115, 'C0115', 'Kasun Gunawardena', 'Female', '2001-10-07', 'Kurunegala', 'Doctor', 'B006'),
+(116, 'C0116', 'Piumi Gunawardena', 'Female', '1996-06-03', 'Negombo', 'Accountant', 'B005'),
+(117, 'C0117', 'Sanduni Jayasinghe', 'Male', '1997-01-17', 'Kandy', 'Government Officer', 'B002'),
+(118, 'C0118', 'Anjali Perera', 'Female', '1991-04-03', 'Kurunegala', 'Accountant', 'B006'),
+(119, 'C0119', 'Piumi Wickramasinghe', 'Female', '1987-03-27', 'Anuradhapura', 'IT Professional', 'B010'),
+(120, 'C0120', 'Ruwan Senanayake', 'Female', '1985-09-28', 'Negombo', 'Other', 'B005'),
+(121, 'C0121', 'Tharindu Karunaratne', 'Female', '1975-03-09', 'Anuradhapura', 'Teacher', 'B010'),
+(122, 'C0122', 'Dinesh De Silva', 'Male', '1978-03-29', 'Kurunegala', 'Engineer', 'B006'),
+(123, 'C0123', 'Isuru Perera', 'Male', '1981-10-16', 'Jaffna', 'Accountant', 'B004'),
+(124, 'C0124', 'Ruwan Silva', 'Male', '1984-03-28', 'Negombo', 'Government Officer', 'B005'),
+(125, 'C0125', 'Nimal Karunaratne', 'Male', '1972-11-11', 'Kandy', 'Doctor', 'B002'),
+(126, 'C0126', 'Kasun Gunawardena', 'Female', '1996-01-07', 'Kandy', 'Engineer', 'B002'),
+(127, 'C0127', 'Sara Bandara', 'Female', '1985-05-25', 'Batticaloa', 'Engineer', 'B009'),
+(128, 'C0128', 'Dilani Perera', 'Male', '1969-06-22', 'Batticaloa', 'Engineer', 'B009'),
+(129, 'C0129', 'Piumi Wickramasinghe', 'Male', '2000-01-23', 'Colombo', 'Doctor', 'B001'),
+(130, 'C0130', 'Ruwan Fernando', 'Male', '1968-12-31', 'Matara', 'Doctor', 'B007'),
+(131, 'C0131', 'Dinesh Karunaratne', 'Male', '1976-06-10', 'Colombo', 'Government Officer', 'B001'),
+(132, 'C0132', 'Nadeesha Perera', 'Female', '1998-10-13', 'Jaffna', 'Engineer', 'B004'),
+(133, 'C0133', 'Anjali Rajapaksa', 'Female', '1992-06-03', 'Kandy', 'IT Professional', 'B002'),
+(134, 'C0134', 'Sahan Karunaratne', 'Female', '1965-09-07', 'Kandy', 'Manager', 'B002'),
+(135, 'C0135', 'Amal Samarasinghe', 'Female', '1976-12-12', 'Colombo', 'Doctor', 'B001'),
+(136, 'C0136', 'Anjali Wickramasinghe', 'Male', '1996-05-28', 'Negombo', 'Teacher', 'B005'),
+(137, 'C0137', 'Sara Fernando', 'Female', '1993-04-26', 'Kurunegala', 'Teacher', 'B006'),
+(138, 'C0138', 'Ruwan Silva', 'Female', '1982-02-02', 'Kandy', 'Accountant', 'B002'),
+(139, 'C0139', 'Nimal Jayasinghe', 'Male', '1999-04-29', 'Kurunegala', 'IT Professional', 'B006'),
+(140, 'C0140', 'Shalini Senanayake', 'Female', '1977-09-12', 'Matara', 'Accountant', 'B007'),
+(141, 'C0141', 'Anjali Bandara', 'Female', '1978-05-25', 'Jaffna', 'IT Professional', 'B004'),
+(142, 'C0142', 'Anjali Karunaratne', 'Female', '1972-10-03', 'Jaffna', 'Doctor', 'B004'),
+(143, 'C0143', 'Nimal Gunawardena', 'Male', '2004-05-24', 'Kandy', 'Accountant', 'B002'),
+(144, 'C0144', 'Shalini De Silva', 'Female', '1986-06-10', 'Matara', 'Manager', 'B007'),
+(145, 'C0145', 'Piumi Rajapaksa', 'Female', '1989-11-22', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(146, 'C0146', 'Amal Fernando', 'Male', '1966-10-29', 'Kandy', 'Other', 'B002'),
+(147, 'C0147', 'Sanduni Fernando', 'Female', '1986-10-14', 'Negombo', 'Other', 'B005'),
+(148, 'C0148', 'Ruwan Perera', 'Female', '2006-01-06', 'Batticaloa', 'Other', 'B009'),
+(149, 'C0149', 'Nadeesha Silva', 'Male', '1992-10-26', 'Anuradhapura', 'Government Officer', 'B010'),
+(150, 'C0150', 'Shalini De Silva', 'Female', '1993-08-15', 'Nuwara Eliya', 'Engineer', 'B008'),
+(151, 'C0151', 'Tharindu Perera', 'Male', '1993-01-21', 'Colombo', 'Business Owner', 'B001'),
+(152, 'C0152', 'Shalini Rajapaksa', 'Female', '2000-08-18', 'Anuradhapura', 'Student', 'B010'),
+(153, 'C0153', 'Nadeesha Rajapaksa', 'Female', '1965-12-31', 'Anuradhapura', 'IT Professional', 'B010'),
+(154, 'C0154', 'Sanduni Wickramasinghe', 'Female', '1979-01-10', 'Matara', 'Teacher', 'B007'),
+(155, 'C0155', 'Ruwan Fernando', 'Male', '1970-03-22', 'Batticaloa', 'Doctor', 'B009'),
+(156, 'C0156', 'Kavindu Wickramasinghe', 'Male', '1970-05-31', 'Colombo', 'Manager', 'B001'),
+(157, 'C0157', 'Ayesha De Silva', 'Male', '1982-03-21', 'Jaffna', 'Business Owner', 'B004'),
+(158, 'C0158', 'Kavindu Fernando', 'Male', '1965-08-21', 'Kandy', 'Business Owner', 'B002'),
+(159, 'C0159', 'Shalini Gunawardena', 'Female', '2004-05-05', 'Nuwara Eliya', 'Engineer', 'B008'),
+(160, 'C0160', 'Ayesha Fernando', 'Female', '1971-10-09', 'Negombo', 'Business Owner', 'B005'),
+(161, 'C0161', 'Nimal Samarasinghe', 'Male', '1992-11-02', 'Kurunegala', 'Government Officer', 'B006'),
+(162, 'C0162', 'Kasun Bandara', 'Female', '1994-11-06', 'Negombo', 'Manager', 'B005'),
+(163, 'C0163', 'Piumi Jayasinghe', 'Male', '1996-10-18', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(164, 'C0164', 'Amal Fernando', 'Male', '1972-02-04', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(165, 'C0165', 'Ruwan Silva', 'Male', '1988-09-16', 'Jaffna', 'Manager', 'B004'),
+(166, 'C0166', 'Anjali Rajapaksa', 'Female', '2004-03-06', 'Galle', 'Government Officer', 'B003'),
+(167, 'C0167', 'Nimal Samarasinghe', 'Male', '2002-07-09', 'Anuradhapura', 'Doctor', 'B010'),
+(168, 'C0168', 'Ruwan Karunaratne', 'Male', '1990-07-22', 'Jaffna', 'Business Owner', 'B004'),
+(169, 'C0169', 'Kasun Jayasinghe', 'Female', '1976-07-10', 'Colombo', 'Manager', 'B001'),
+(170, 'C0170', 'Dinesh Samarasinghe', 'Male', '1984-02-19', 'Galle', 'Manager', 'B003'),
+(171, 'C0171', 'Hiruni Rajapaksa', 'Male', '1965-01-10', 'Negombo', 'Other', 'B005'),
+(172, 'C0172', 'Ayesha Silva', 'Female', '1970-08-23', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(173, 'C0173', 'Kasun Bandara', 'Male', '1993-12-08', 'Colombo', 'IT Professional', 'B001'),
+(174, 'C0174', 'Ruwan Wickramasinghe', 'Male', '1974-07-23', 'Colombo', 'Teacher', 'B001'),
+(175, 'C0175', 'Nadeesha Bandara', 'Female', '1988-06-16', 'Batticaloa', 'Accountant', 'B009'),
+(176, 'C0176', 'Amal Perera', 'Female', '1979-10-30', 'Kurunegala', 'IT Professional', 'B006'),
+(177, 'C0177', 'Sara De Silva', 'Male', '1990-11-10', 'Galle', 'Doctor', 'B003'),
+(178, 'C0178', 'Dinesh Fernando', 'Female', '1985-08-30', 'Anuradhapura', 'Business Owner', 'B010'),
+(179, 'C0179', 'Dilani Karunaratne', 'Female', '1970-11-07', 'Kandy', 'IT Professional', 'B002'),
+(180, 'C0180', 'Sahan Rajapaksa', 'Male', '1997-04-12', 'Galle', 'Manager', 'B003'),
+(181, 'C0181', 'Kasun Wickramasinghe', 'Male', '1977-10-15', 'Colombo', 'Engineer', 'B001'),
+(182, 'C0182', 'Kasun Wickramasinghe', 'Female', '1976-01-17', 'Negombo', 'IT Professional', 'B005'),
+(183, 'C0183', 'Sanduni Wickramasinghe', 'Female', '1970-05-25', 'Kurunegala', 'Accountant', 'B006'),
+(184, 'C0184', 'Sahan Fernando', 'Female', '1987-04-11', 'Anuradhapura', 'Business Owner', 'B010'),
+(185, 'C0185', 'Shalini Abeysekera', 'Female', '1979-10-23', 'Jaffna', 'Student', 'B004'),
+(186, 'C0186', 'Tharindu Abeysekera', 'Male', '1994-07-17', 'Batticaloa', 'Doctor', 'B009'),
+(187, 'C0187', 'Kasun Jayasinghe', 'Female', '1972-03-30', 'Kandy', 'Doctor', 'B002'),
+(188, 'C0188', 'Kavindu Perera', 'Male', '2001-10-08', 'Kurunegala', 'Business Owner', 'B006'),
+(189, 'C0189', 'Dilani Rajapaksa', 'Male', '1986-07-13', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(190, 'C0190', 'Ayesha Abeysekera', 'Male', '1976-07-27', 'Galle', 'Business Owner', 'B003'),
+(191, 'C0191', 'Tharindu Karunaratne', 'Female', '1992-06-14', 'Negombo', 'Other', 'B005'),
+(192, 'C0192', 'Chamod Gunawardena', 'Male', '1996-03-16', 'Nuwara Eliya', 'Other', 'B008'),
+(193, 'C0193', 'Nadeesha Samarasinghe', 'Male', '1971-09-10', 'Anuradhapura', 'IT Professional', 'B010'),
+(194, 'C0194', 'Hiruni De Silva', 'Female', '1986-05-01', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(195, 'C0195', 'Piumi Jayasinghe', 'Female', '1995-06-20', 'Negombo', 'Other', 'B005'),
+(196, 'C0196', 'Anjali Senanayake', 'Female', '1996-11-15', 'Batticaloa', 'Accountant', 'B009'),
+(197, 'C0197', 'Nadeesha Rajapaksa', 'Male', '1974-03-23', 'Kurunegala', 'Student', 'B006'),
+(198, 'C0198', 'Kasun Bandara', 'Female', '1974-07-09', 'Anuradhapura', 'Business Owner', 'B010'),
+(199, 'C0199', 'Kasun Gunawardena', 'Female', '1977-10-07', 'Galle', 'Doctor', 'B003'),
+(200, 'C0200', 'Shalini De Silva', 'Female', '1991-01-29', 'Batticaloa', 'Business Owner', 'B009'),
+(201, 'C0201', 'Isuru Fernando', 'Male', '1989-01-01', 'Jaffna', 'Other', 'B004'),
+(202, 'C0202', 'Sara Gunawardena', 'Female', '1988-06-26', 'Matara', 'Teacher', 'B007'),
+(203, 'C0203', 'Anjali Samarasinghe', 'Female', '1990-01-16', 'Galle', 'IT Professional', 'B003'),
+(204, 'C0204', 'Sahan Jayasinghe', 'Female', '2000-08-02', 'Negombo', 'Engineer', 'B005'),
+(205, 'C0205', 'Anjali Abeysekera', 'Female', '1998-10-25', 'Kurunegala', 'Teacher', 'B006'),
+(206, 'C0206', 'Anjali Wickramasinghe', 'Male', '1978-07-16', 'Jaffna', 'Engineer', 'B004'),
+(207, 'C0207', 'Thilini Gunawardena', 'Male', '1988-05-13', 'Nuwara Eliya', 'Student', 'B008'),
+(208, 'C0208', 'Kasun Abeysekera', 'Male', '1990-02-20', 'Matara', 'IT Professional', 'B007'),
+(209, 'C0209', 'Sanduni Abeysekera', 'Male', '1996-09-03', 'Nuwara Eliya', 'Teacher', 'B008'),
+(210, 'C0210', 'Kasun Fernando', 'Female', '1995-10-20', 'Kandy', 'Engineer', 'B002'),
+(211, 'C0211', 'Hiruni Gunawardena', 'Male', '1990-01-08', 'Jaffna', 'IT Professional', 'B004'),
+(212, 'C0212', 'Sahan Fernando', 'Female', '2000-10-31', 'Anuradhapura', 'Accountant', 'B010'),
+(213, 'C0213', 'Nadeesha Silva', 'Male', '1974-06-14', 'Colombo', 'Student', 'B001'),
+(214, 'C0214', 'Hiruni Wickramasinghe', 'Male', '1995-11-11', 'Colombo', 'Student', 'B001'),
+(215, 'C0215', 'Amal Rajapaksa', 'Female', '2004-02-20', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(216, 'C0216', 'Shalini Bandara', 'Male', '1983-05-29', 'Galle', 'IT Professional', 'B003'),
+(217, 'C0217', 'Nimal Fernando', 'Female', '1970-11-14', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(218, 'C0218', 'Nadeesha Samarasinghe', 'Female', '1998-05-03', 'Jaffna', 'Doctor', 'B004'),
+(219, 'C0219', 'Nadeesha Wickramasinghe', 'Male', '1967-08-02', 'Kandy', 'Other', 'B002'),
+(220, 'C0220', 'Sahan Perera', 'Male', '1971-01-08', 'Negombo', 'Accountant', 'B005'),
+(221, 'C0221', 'Tharindu Abeysekera', 'Male', '1976-06-09', 'Kandy', 'Doctor', 'B002'),
+(222, 'C0222', 'Thilini Samarasinghe', 'Male', '1978-04-04', 'Kandy', 'Student', 'B002'),
+(223, 'C0223', 'Ayesha Jayasinghe', 'Female', '2004-12-18', 'Negombo', 'Government Officer', 'B005'),
+(224, 'C0224', 'Nimal Bandara', 'Female', '1984-05-24', 'Galle', 'Other', 'B003'),
+(225, 'C0225', 'Ayesha Rajapaksa', 'Female', '2000-04-07', 'Anuradhapura', 'IT Professional', 'B010'),
+(226, 'C0226', 'Nadeesha Wickramasinghe', 'Female', '1976-07-25', 'Colombo', 'Accountant', 'B001'),
+(227, 'C0227', 'Anjali De Silva', 'Male', '1972-02-13', 'Kandy', 'Government Officer', 'B002'),
+(228, 'C0228', 'Sahan De Silva', 'Male', '1981-02-03', 'Kurunegala', 'Business Owner', 'B006'),
+(229, 'C0229', 'Dilani Silva', 'Male', '1997-10-30', 'Negombo', 'Manager', 'B005'),
+(230, 'C0230', 'Hiruni Bandara', 'Male', '1993-02-24', 'Jaffna', 'Manager', 'B004'),
+(231, 'C0231', 'Nimal Perera', 'Female', '1980-11-14', 'Batticaloa', 'Other', 'B009'),
+(232, 'C0232', 'Ayesha Wickramasinghe', 'Male', '1987-01-07', 'Kurunegala', 'Government Officer', 'B006'),
+(233, 'C0233', 'Ruwan Samarasinghe', 'Female', '1976-09-03', 'Kandy', 'Government Officer', 'B002'),
+(234, 'C0234', 'Sahan Karunaratne', 'Female', '1992-02-09', 'Colombo', 'Doctor', 'B001'),
+(235, 'C0235', 'Nadeesha Silva', 'Male', '1973-05-26', 'Kurunegala', 'Engineer', 'B006'),
+(236, 'C0236', 'Sanduni Bandara', 'Female', '1996-08-21', 'Galle', 'Doctor', 'B003'),
+(237, 'C0237', 'Sara Rajapaksa', 'Male', '1993-01-24', 'Jaffna', 'Student', 'B004'),
+(238, 'C0238', 'Chamod Fernando', 'Male', '1968-08-26', 'Kandy', 'IT Professional', 'B002'),
+(239, 'C0239', 'Dinesh Rajapaksa', 'Female', '1979-10-23', 'Anuradhapura', 'Business Owner', 'B010'),
+(240, 'C0240', 'Sanduni Fernando', 'Male', '1998-03-01', 'Kandy', 'Other', 'B002'),
+(241, 'C0241', 'Nimal Bandara', 'Female', '1970-10-22', 'Batticaloa', 'Engineer', 'B009'),
+(242, 'C0242', 'Kasun De Silva', 'Female', '1965-03-02', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(243, 'C0243', 'Sahan Fernando', 'Male', '1999-01-01', 'Kandy', 'Accountant', 'B002'),
+(244, 'C0244', 'Ruwan Silva', 'Male', '1983-04-04', 'Galle', 'Engineer', 'B003'),
+(245, 'C0245', 'Anjali Karunaratne', 'Male', '1974-12-20', 'Matara', 'IT Professional', 'B007'),
+(246, 'C0246', 'Sanduni Rajapaksa', 'Male', '1998-07-21', 'Negombo', 'Student', 'B005'),
+(247, 'C0247', 'Dinesh Gunawardena', 'Female', '1984-06-29', 'Kurunegala', 'Government Officer', 'B006'),
+(248, 'C0248', 'Hiruni De Silva', 'Male', '1979-10-02', 'Anuradhapura', 'Other', 'B010'),
+(249, 'C0249', 'Shalini Karunaratne', 'Male', '2001-06-28', 'Matara', 'Student', 'B007'),
+(250, 'C0250', 'Sahan Bandara', 'Male', '1986-01-17', 'Batticaloa', 'IT Professional', 'B009'),
+(251, 'C0251', 'Sangeeth Karunaratne', 'Female', '1971-12-28', 'Kandy', 'Consultant', 'B002'),
+(252, 'C0252', 'Malinda Mendis', 'Male', '1972-01-01', 'Galle', 'Engineer', 'B003'),
+(253, 'C0253', 'Thilina Fonseka', 'Female', '1973-02-02', 'Jaffna', 'Doctor', 'B004'),
+(254, 'C0254', 'Buddhika Abeysekara', 'Male', '1974-03-03', 'Negombo', 'Teacher', 'B005'),
+(255, 'C0255', 'Nuwan Perera', 'Female', '1975-04-04', 'Kurunegala', 'Accountant', 'B006'),
+(256, 'C0256', 'Anushka Silva', 'Male', '1976-05-05', 'Matara', 'Business Owner', 'B007'),
+(257, 'C0257', 'Indika Fernando', 'Female', '1977-06-06', 'Nuwara Eliya', 'Executive', 'B008'),
+(258, 'C0258', 'Pradeep Jayawardena', 'Male', '1978-07-07', 'Batticaloa', 'Government Officer', 'B009'),
+(259, 'C0259', 'Gayan Wickramasinghe', 'Female', '1979-08-08', 'Anuradhapura', 'IT Professional', 'B010'),
+(260, 'C0260', 'Amal Gunaratne', 'Male', '1980-09-09', 'Colombo', 'Consultant', 'B001'),
+(261, 'C0261', 'Kamal Bandara', 'Female', '1981-10-10', 'Kandy', 'Engineer', 'B002'),
+(262, 'C0262', 'Sunil Dissanayake', 'Male', '1982-11-11', 'Galle', 'Doctor', 'B003'),
+(263, 'C0263', 'Kavinda Rajapaksa', 'Female', '1983-12-12', 'Jaffna', 'Teacher', 'B004'),
+(264, 'C0264', 'Dilan Senanayake', 'Male', '1984-01-13', 'Negombo', 'Accountant', 'B005'),
+(265, 'C0265', 'Ruwan Alwis', 'Female', '1985-02-14', 'Kurunegala', 'Business Owner', 'B006'),
+(266, 'C0266', 'Roshan Karunaratne', 'Male', '1986-03-15', 'Matara', 'Executive', 'B007'),
+(267, 'C0267', 'Nadeesha Mendis', 'Female', '1987-04-16', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(268, 'C0268', 'Chathura Fonseka', 'Male', '1988-05-17', 'Batticaloa', 'IT Professional', 'B009'),
+(269, 'C0269', 'Janaka Abeysekara', 'Female', '1989-06-18', 'Anuradhapura', 'Consultant', 'B010'),
+(270, 'C0270', 'Priyanka Perera', 'Male', '1990-07-19', 'Colombo', 'Engineer', 'B001'),
+(271, 'C0271', 'Sangeeth Silva', 'Female', '1991-08-20', 'Kandy', 'Doctor', 'B002'),
+(272, 'C0272', 'Malinda Fernando', 'Male', '1992-09-21', 'Galle', 'Teacher', 'B003'),
+(273, 'C0273', 'Thilina Jayawardena', 'Female', '1993-10-22', 'Jaffna', 'Accountant', 'B004'),
+(274, 'C0274', 'Buddhika Wickramasinghe', 'Male', '1994-11-23', 'Negombo', 'Business Owner', 'B005'),
+(275, 'C0275', 'Nuwan Gunaratne', 'Female', '1995-12-24', 'Kurunegala', 'Executive', 'B006'),
+(276, 'C0276', 'Anushka Bandara', 'Male', '1996-01-25', 'Matara', 'Government Officer', 'B007'),
+(277, 'C0277', 'Indika Dissanayake', 'Female', '1997-02-26', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(278, 'C0278', 'Pradeep Rajapaksa', 'Male', '1998-03-27', 'Batticaloa', 'Consultant', 'B009'),
+(279, 'C0279', 'Gayan Senanayake', 'Female', '1999-04-28', 'Anuradhapura', 'Engineer', 'B010'),
+(280, 'C0280', 'Amal Alwis', 'Male', '1965-05-01', 'Colombo', 'Doctor', 'B001'),
+(281, 'C0281', 'Kamal Karunaratne', 'Female', '1966-06-02', 'Kandy', 'Teacher', 'B002'),
+(282, 'C0282', 'Sunil Mendis', 'Male', '1967-07-03', 'Galle', 'Accountant', 'B003'),
+(283, 'C0283', 'Kavinda Fonseka', 'Female', '1968-08-04', 'Jaffna', 'Business Owner', 'B004'),
+(284, 'C0284', 'Dilan Abeysekara', 'Male', '1969-09-05', 'Negombo', 'Executive', 'B005'),
+(285, 'C0285', 'Ruwan Perera', 'Female', '1970-10-06', 'Kurunegala', 'Government Officer', 'B006'),
+(286, 'C0286', 'Roshan Silva', 'Male', '1971-11-07', 'Matara', 'IT Professional', 'B007'),
+(287, 'C0287', 'Nadeesha Fernando', 'Female', '1972-12-08', 'Nuwara Eliya', 'Consultant', 'B008'),
+(288, 'C0288', 'Chathura Jayawardena', 'Male', '1973-01-09', 'Batticaloa', 'Engineer', 'B009'),
+(289, 'C0289', 'Janaka Wickramasinghe', 'Female', '1974-02-10', 'Anuradhapura', 'Doctor', 'B010'),
+(290, 'C0290', 'Priyanka Gunaratne', 'Male', '1975-03-11', 'Colombo', 'Teacher', 'B001'),
+(291, 'C0291', 'Sangeeth Bandara', 'Female', '1976-04-12', 'Kandy', 'Accountant', 'B002'),
+(292, 'C0292', 'Malinda Dissanayake', 'Male', '1977-05-13', 'Galle', 'Business Owner', 'B003'),
+(293, 'C0293', 'Thilina Rajapaksa', 'Female', '1978-06-14', 'Jaffna', 'Executive', 'B004'),
+(294, 'C0294', 'Buddhika Senanayake', 'Male', '1979-07-15', 'Negombo', 'Government Officer', 'B005'),
+(295, 'C0295', 'Nuwan Alwis', 'Female', '1980-08-16', 'Kurunegala', 'IT Professional', 'B006'),
+(296, 'C0296', 'Anushka Karunaratne', 'Male', '1981-09-17', 'Matara', 'Consultant', 'B007'),
+(297, 'C0297', 'Indika Mendis', 'Female', '1982-10-18', 'Nuwara Eliya', 'Engineer', 'B008'),
+(298, 'C0298', 'Pradeep Fonseka', 'Male', '1983-11-19', 'Batticaloa', 'Doctor', 'B009'),
+(299, 'C0299', 'Gayan Abeysekara', 'Female', '1984-12-20', 'Anuradhapura', 'Teacher', 'B010'),
+(300, 'C0300', 'Amal Perera', 'Male', '1985-01-21', 'Colombo', 'Accountant', 'B001'),
+(301, 'C0301', 'Kamal Silva', 'Female', '1986-02-22', 'Kandy', 'Business Owner', 'B002'),
+(302, 'C0302', 'Sunil Fernando', 'Male', '1987-03-23', 'Galle', 'Executive', 'B003'),
+(303, 'C0303', 'Kavinda Jayawardena', 'Female', '1988-04-24', 'Jaffna', 'Government Officer', 'B004'),
+(304, 'C0304', 'Dilan Wickramasinghe', 'Male', '1989-05-25', 'Negombo', 'IT Professional', 'B005'),
+(305, 'C0305', 'Ruwan Gunaratne', 'Female', '1990-06-26', 'Kurunegala', 'Consultant', 'B006'),
+(306, 'C0306', 'Roshan Bandara', 'Male', '1991-07-27', 'Matara', 'Engineer', 'B007'),
+(307, 'C0307', 'Nadeesha Dissanayake', 'Female', '1992-08-28', 'Nuwara Eliya', 'Doctor', 'B008'),
+(308, 'C0308', 'Chathura Rajapaksa', 'Male', '1993-09-01', 'Batticaloa', 'Teacher', 'B009'),
+(309, 'C0309', 'Janaka Senanayake', 'Female', '1994-10-02', 'Anuradhapura', 'Accountant', 'B010'),
+(310, 'C0310', 'Priyanka Alwis', 'Male', '1995-11-03', 'Colombo', 'Business Owner', 'B001'),
+(311, 'C0311', 'Sangeeth Karunaratne', 'Female', '1996-12-04', 'Kandy', 'Executive', 'B002'),
+(312, 'C0312', 'Malinda Mendis', 'Male', '1997-01-05', 'Galle', 'Government Officer', 'B003'),
+(313, 'C0313', 'Thilina Fonseka', 'Female', '1998-02-06', 'Jaffna', 'IT Professional', 'B004'),
+(314, 'C0314', 'Buddhika Abeysekara', 'Male', '1999-03-07', 'Negombo', 'Consultant', 'B005'),
+(315, 'C0315', 'Nuwan Perera', 'Female', '1965-04-08', 'Kurunegala', 'Engineer', 'B006'),
+(316, 'C0316', 'Anushka Silva', 'Male', '1966-05-09', 'Matara', 'Doctor', 'B007'),
+(317, 'C0317', 'Indika Fernando', 'Female', '1967-06-10', 'Nuwara Eliya', 'Teacher', 'B008'),
+(318, 'C0318', 'Pradeep Jayawardena', 'Male', '1968-07-11', 'Batticaloa', 'Accountant', 'B009'),
+(319, 'C0319', 'Gayan Wickramasinghe', 'Female', '1969-08-12', 'Anuradhapura', 'Business Owner', 'B010'),
+(320, 'C0320', 'Amal Gunaratne', 'Male', '1970-09-13', 'Colombo', 'Executive', 'B001'),
+(321, 'C0321', 'Kamal Bandara', 'Female', '1971-10-14', 'Kandy', 'Government Officer', 'B002'),
+(322, 'C0322', 'Sunil Dissanayake', 'Male', '1972-11-15', 'Galle', 'IT Professional', 'B003'),
+(323, 'C0323', 'Kavinda Rajapaksa', 'Female', '1973-12-16', 'Jaffna', 'Consultant', 'B004'),
+(324, 'C0324', 'Dilan Senanayake', 'Male', '1974-01-17', 'Negombo', 'Engineer', 'B005'),
+(325, 'C0325', 'Ruwan Alwis', 'Female', '1975-02-18', 'Kurunegala', 'Doctor', 'B006'),
+(326, 'C0326', 'Roshan Karunaratne', 'Male', '1976-03-19', 'Matara', 'Teacher', 'B007'),
+(327, 'C0327', 'Nadeesha Mendis', 'Female', '1977-04-20', 'Nuwara Eliya', 'Accountant', 'B008'),
+(328, 'C0328', 'Chathura Fonseka', 'Male', '1978-05-21', 'Batticaloa', 'Business Owner', 'B009'),
+(329, 'C0329', 'Janaka Abeysekara', 'Female', '1979-06-22', 'Anuradhapura', 'Executive', 'B010'),
+(330, 'C0330', 'Priyanka Perera', 'Male', '1980-07-23', 'Colombo', 'Government Officer', 'B001'),
+(331, 'C0331', 'Sangeeth Silva', 'Female', '1981-08-24', 'Kandy', 'IT Professional', 'B002'),
+(332, 'C0332', 'Malinda Fernando', 'Male', '1982-09-25', 'Galle', 'Consultant', 'B003'),
+(333, 'C0333', 'Thilina Jayawardena', 'Female', '1983-10-26', 'Jaffna', 'Engineer', 'B004'),
+(334, 'C0334', 'Buddhika Wickramasinghe', 'Male', '1984-11-27', 'Negombo', 'Doctor', 'B005'),
+(335, 'C0335', 'Nuwan Gunaratne', 'Female', '1985-12-28', 'Kurunegala', 'Teacher', 'B006'),
+(336, 'C0336', 'Anushka Bandara', 'Male', '1986-01-01', 'Matara', 'Accountant', 'B007'),
+(337, 'C0337', 'Indika Dissanayake', 'Female', '1987-02-02', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(338, 'C0338', 'Pradeep Rajapaksa', 'Male', '1988-03-03', 'Batticaloa', 'Executive', 'B009'),
+(339, 'C0339', 'Gayan Senanayake', 'Female', '1989-04-04', 'Anuradhapura', 'Government Officer', 'B010'),
+(340, 'C0340', 'Amal Alwis', 'Male', '1990-05-05', 'Colombo', 'IT Professional', 'B001'),
+(341, 'C0341', 'Kamal Karunaratne', 'Female', '1991-06-06', 'Kandy', 'Consultant', 'B002'),
+(342, 'C0342', 'Sunil Mendis', 'Male', '1992-07-07', 'Galle', 'Engineer', 'B003'),
+(343, 'C0343', 'Kavinda Fonseka', 'Female', '1993-08-08', 'Jaffna', 'Doctor', 'B004'),
+(344, 'C0344', 'Dilan Abeysekara', 'Male', '1994-09-09', 'Negombo', 'Teacher', 'B005'),
+(345, 'C0345', 'Ruwan Perera', 'Female', '1995-10-10', 'Kurunegala', 'Accountant', 'B006'),
+(346, 'C0346', 'Roshan Silva', 'Male', '1996-11-11', 'Matara', 'Business Owner', 'B007'),
+(347, 'C0347', 'Nadeesha Fernando', 'Female', '1997-12-12', 'Nuwara Eliya', 'Executive', 'B008'),
+(348, 'C0348', 'Chathura Jayawardena', 'Male', '1998-01-13', 'Batticaloa', 'Government Officer', 'B009'),
+(349, 'C0349', 'Janaka Wickramasinghe', 'Female', '1999-02-14', 'Anuradhapura', 'IT Professional', 'B010'),
+(350, 'C0350', 'Priyanka Gunaratne', 'Male', '1965-03-15', 'Colombo', 'Consultant', 'B001'),
+(351, 'C0351', 'Sangeeth Bandara', 'Female', '1966-04-16', 'Kandy', 'Engineer', 'B002'),
+(352, 'C0352', 'Malinda Dissanayake', 'Male', '1967-05-17', 'Galle', 'Doctor', 'B003'),
+(353, 'C0353', 'Thilina Rajapaksa', 'Female', '1968-06-18', 'Jaffna', 'Teacher', 'B004'),
+(354, 'C0354', 'Buddhika Senanayake', 'Male', '1969-07-19', 'Negombo', 'Accountant', 'B005'),
+(355, 'C0355', 'Nuwan Alwis', 'Female', '1970-08-20', 'Kurunegala', 'Business Owner', 'B006'),
+(356, 'C0356', 'Anushka Karunaratne', 'Male', '1971-09-21', 'Matara', 'Executive', 'B007'),
+(357, 'C0357', 'Indika Mendis', 'Female', '1972-10-22', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(358, 'C0358', 'Pradeep Fonseka', 'Male', '1973-11-23', 'Batticaloa', 'IT Professional', 'B009'),
+(359, 'C0359', 'Gayan Abeysekara', 'Female', '1974-12-24', 'Anuradhapura', 'Consultant', 'B010'),
+(360, 'C0360', 'Amal Perera', 'Male', '1975-01-25', 'Colombo', 'Engineer', 'B001'),
+(361, 'C0361', 'Kamal Silva', 'Female', '1976-02-26', 'Kandy', 'Doctor', 'B002'),
+(362, 'C0362', 'Sunil Fernando', 'Male', '1977-03-27', 'Galle', 'Teacher', 'B003'),
+(363, 'C0363', 'Kavinda Jayawardena', 'Female', '1978-04-28', 'Jaffna', 'Accountant', 'B004'),
+(364, 'C0364', 'Dilan Wickramasinghe', 'Male', '1979-05-01', 'Negombo', 'Business Owner', 'B005'),
+(365, 'C0365', 'Ruwan Gunaratne', 'Female', '1980-06-02', 'Kurunegala', 'Executive', 'B006'),
+(366, 'C0366', 'Roshan Bandara', 'Male', '1981-07-03', 'Matara', 'Government Officer', 'B007'),
+(367, 'C0367', 'Nadeesha Dissanayake', 'Female', '1982-08-04', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(368, 'C0368', 'Chathura Rajapaksa', 'Male', '1983-09-05', 'Batticaloa', 'Consultant', 'B009'),
+(369, 'C0369', 'Janaka Senanayake', 'Female', '1984-10-06', 'Anuradhapura', 'Engineer', 'B010'),
+(370, 'C0370', 'Priyanka Alwis', 'Male', '1985-11-07', 'Colombo', 'Doctor', 'B001'),
+(371, 'C0371', 'Sangeeth Karunaratne', 'Female', '1986-12-08', 'Kandy', 'Teacher', 'B002'),
+(372, 'C0372', 'Malinda Mendis', 'Male', '1987-01-09', 'Galle', 'Accountant', 'B003'),
+(373, 'C0373', 'Thilina Fonseka', 'Female', '1988-02-10', 'Jaffna', 'Business Owner', 'B004'),
+(374, 'C0374', 'Buddhika Abeysekara', 'Male', '1989-03-11', 'Negombo', 'Executive', 'B005'),
+(375, 'C0375', 'Nuwan Perera', 'Female', '1990-04-12', 'Kurunegala', 'Government Officer', 'B006'),
+(376, 'C0376', 'Anushka Silva', 'Male', '1991-05-13', 'Matara', 'IT Professional', 'B007'),
+(377, 'C0377', 'Indika Fernando', 'Female', '1992-06-14', 'Nuwara Eliya', 'Consultant', 'B008'),
+(378, 'C0378', 'Pradeep Jayawardena', 'Male', '1993-07-15', 'Batticaloa', 'Engineer', 'B009'),
+(379, 'C0379', 'Gayan Wickramasinghe', 'Female', '1994-08-16', 'Anuradhapura', 'Doctor', 'B010'),
+(380, 'C0380', 'Amal Gunaratne', 'Male', '1995-09-17', 'Colombo', 'Teacher', 'B001'),
+(381, 'C0381', 'Kamal Bandara', 'Female', '1996-10-18', 'Kandy', 'Accountant', 'B002'),
+(382, 'C0382', 'Sunil Dissanayake', 'Male', '1997-11-19', 'Galle', 'Business Owner', 'B003'),
+(383, 'C0383', 'Kavinda Rajapaksa', 'Female', '1998-12-20', 'Jaffna', 'Executive', 'B004'),
+(384, 'C0384', 'Dilan Senanayake', 'Male', '1999-01-21', 'Negombo', 'Government Officer', 'B005'),
+(385, 'C0385', 'Ruwan Alwis', 'Female', '1965-02-22', 'Kurunegala', 'IT Professional', 'B006'),
+(386, 'C0386', 'Roshan Karunaratne', 'Male', '1966-03-23', 'Matara', 'Consultant', 'B007'),
+(387, 'C0387', 'Nadeesha Mendis', 'Female', '1967-04-24', 'Nuwara Eliya', 'Engineer', 'B008'),
+(388, 'C0388', 'Chathura Fonseka', 'Male', '1968-05-25', 'Batticaloa', 'Doctor', 'B009'),
+(389, 'C0389', 'Janaka Abeysekara', 'Female', '1969-06-26', 'Anuradhapura', 'Teacher', 'B010'),
+(390, 'C0390', 'Priyanka Perera', 'Male', '1970-07-27', 'Colombo', 'Accountant', 'B001'),
+(391, 'C0391', 'Sangeeth Silva', 'Female', '1971-08-28', 'Kandy', 'Business Owner', 'B002'),
+(392, 'C0392', 'Malinda Fernando', 'Male', '1972-09-01', 'Galle', 'Executive', 'B003'),
+(393, 'C0393', 'Thilina Jayawardena', 'Female', '1973-10-02', 'Jaffna', 'Government Officer', 'B004'),
+(394, 'C0394', 'Buddhika Wickramasinghe', 'Male', '1974-11-03', 'Negombo', 'IT Professional', 'B005'),
+(395, 'C0395', 'Nuwan Gunaratne', 'Female', '1975-12-04', 'Kurunegala', 'Consultant', 'B006'),
+(396, 'C0396', 'Anushka Bandara', 'Male', '1976-01-05', 'Matara', 'Engineer', 'B007'),
+(397, 'C0397', 'Indika Dissanayake', 'Female', '1977-02-06', 'Nuwara Eliya', 'Doctor', 'B008'),
+(398, 'C0398', 'Pradeep Rajapaksa', 'Male', '1978-03-07', 'Batticaloa', 'Teacher', 'B009'),
+(399, 'C0399', 'Gayan Senanayake', 'Female', '1979-04-08', 'Anuradhapura', 'Accountant', 'B010'),
+(400, 'C0400', 'Amal Alwis', 'Male', '1980-05-09', 'Colombo', 'Business Owner', 'B001'),
+(401, 'C0401', 'Kamal Karunaratne', 'Female', '1981-06-10', 'Kandy', 'Executive', 'B002'),
+(402, 'C0402', 'Sunil Mendis', 'Male', '1982-07-11', 'Galle', 'Government Officer', 'B003'),
+(403, 'C0403', 'Kavinda Fonseka', 'Female', '1983-08-12', 'Jaffna', 'IT Professional', 'B004'),
+(404, 'C0404', 'Dilan Abeysekara', 'Male', '1984-09-13', 'Negombo', 'Consultant', 'B005'),
+(405, 'C0405', 'Ruwan Perera', 'Female', '1985-10-14', 'Kurunegala', 'Engineer', 'B006'),
+(406, 'C0406', 'Roshan Silva', 'Male', '1986-11-15', 'Matara', 'Doctor', 'B007'),
+(407, 'C0407', 'Nadeesha Fernando', 'Female', '1987-12-16', 'Nuwara Eliya', 'Teacher', 'B008'),
+(408, 'C0408', 'Chathura Jayawardena', 'Male', '1988-01-17', 'Batticaloa', 'Accountant', 'B009'),
+(409, 'C0409', 'Janaka Wickramasinghe', 'Female', '1989-02-18', 'Anuradhapura', 'Business Owner', 'B010'),
+(410, 'C0410', 'Priyanka Gunaratne', 'Male', '1990-03-19', 'Colombo', 'Executive', 'B001'),
+(411, 'C0411', 'Sangeeth Bandara', 'Female', '1991-04-20', 'Kandy', 'Government Officer', 'B002'),
+(412, 'C0412', 'Malinda Dissanayake', 'Male', '1992-05-21', 'Galle', 'IT Professional', 'B003'),
+(413, 'C0413', 'Thilina Rajapaksa', 'Female', '1993-06-22', 'Jaffna', 'Consultant', 'B004'),
+(414, 'C0414', 'Buddhika Senanayake', 'Male', '1994-07-23', 'Negombo', 'Engineer', 'B005'),
+(415, 'C0415', 'Nuwan Alwis', 'Female', '1995-08-24', 'Kurunegala', 'Doctor', 'B006'),
+(416, 'C0416', 'Anushka Karunaratne', 'Male', '1996-09-25', 'Matara', 'Teacher', 'B007'),
+(417, 'C0417', 'Indika Mendis', 'Female', '1997-10-26', 'Nuwara Eliya', 'Accountant', 'B008'),
+(418, 'C0418', 'Pradeep Fonseka', 'Male', '1998-11-27', 'Batticaloa', 'Business Owner', 'B009'),
+(419, 'C0419', 'Gayan Abeysekara', 'Female', '1999-12-28', 'Anuradhapura', 'Executive', 'B010'),
+(420, 'C0420', 'Amal Perera', 'Male', '1965-01-01', 'Colombo', 'Government Officer', 'B001'),
+(421, 'C0421', 'Kamal Silva', 'Female', '1966-02-02', 'Kandy', 'IT Professional', 'B002'),
+(422, 'C0422', 'Sunil Fernando', 'Male', '1967-03-03', 'Galle', 'Consultant', 'B003'),
+(423, 'C0423', 'Kavinda Jayawardena', 'Female', '1968-04-04', 'Jaffna', 'Engineer', 'B004'),
+(424, 'C0424', 'Dilan Wickramasinghe', 'Male', '1969-05-05', 'Negombo', 'Doctor', 'B005'),
+(425, 'C0425', 'Ruwan Gunaratne', 'Female', '1970-06-06', 'Kurunegala', 'Teacher', 'B006'),
+(426, 'C0426', 'Roshan Bandara', 'Male', '1971-07-07', 'Matara', 'Accountant', 'B007'),
+(427, 'C0427', 'Nadeesha Dissanayake', 'Female', '1972-08-08', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(428, 'C0428', 'Chathura Rajapaksa', 'Male', '1973-09-09', 'Batticaloa', 'Executive', 'B009'),
+(429, 'C0429', 'Janaka Senanayake', 'Female', '1974-10-10', 'Anuradhapura', 'Government Officer', 'B010'),
+(430, 'C0430', 'Priyanka Alwis', 'Male', '1975-11-11', 'Colombo', 'IT Professional', 'B001'),
+(431, 'C0431', 'Sangeeth Karunaratne', 'Female', '1976-12-12', 'Kandy', 'Consultant', 'B002'),
+(432, 'C0432', 'Malinda Mendis', 'Male', '1977-01-13', 'Galle', 'Engineer', 'B003'),
+(433, 'C0433', 'Thilina Fonseka', 'Female', '1978-02-14', 'Jaffna', 'Doctor', 'B004'),
+(434, 'C0434', 'Buddhika Abeysekara', 'Male', '1979-03-15', 'Negombo', 'Teacher', 'B005'),
+(435, 'C0435', 'Nuwan Perera', 'Female', '1980-04-16', 'Kurunegala', 'Accountant', 'B006'),
+(436, 'C0436', 'Anushka Silva', 'Male', '1981-05-17', 'Matara', 'Business Owner', 'B007'),
+(437, 'C0437', 'Indika Fernando', 'Female', '1982-06-18', 'Nuwara Eliya', 'Executive', 'B008'),
+(438, 'C0438', 'Pradeep Jayawardena', 'Male', '1983-07-19', 'Batticaloa', 'Government Officer', 'B009'),
+(439, 'C0439', 'Gayan Wickramasinghe', 'Female', '1984-08-20', 'Anuradhapura', 'IT Professional', 'B010'),
+(440, 'C0440', 'Amal Gunaratne', 'Male', '1985-09-21', 'Colombo', 'Consultant', 'B001'),
+(441, 'C0441', 'Kamal Bandara', 'Female', '1986-10-22', 'Kandy', 'Engineer', 'B002'),
+(442, 'C0442', 'Sunil Dissanayake', 'Male', '1987-11-23', 'Galle', 'Doctor', 'B003'),
+(443, 'C0443', 'Kavinda Rajapaksa', 'Female', '1988-12-24', 'Jaffna', 'Teacher', 'B004'),
+(444, 'C0444', 'Dilan Senanayake', 'Male', '1989-01-25', 'Negombo', 'Accountant', 'B005'),
+(445, 'C0445', 'Ruwan Alwis', 'Female', '1990-02-26', 'Kurunegala', 'Business Owner', 'B006'),
+(446, 'C0446', 'Roshan Karunaratne', 'Male', '1991-03-27', 'Matara', 'Executive', 'B007'),
+(447, 'C0447', 'Nadeesha Mendis', 'Female', '1992-04-28', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(448, 'C0448', 'Chathura Fonseka', 'Male', '1993-05-01', 'Batticaloa', 'IT Professional', 'B009'),
+(449, 'C0449', 'Janaka Abeysekara', 'Female', '1994-06-02', 'Anuradhapura', 'Consultant', 'B010'),
+(450, 'C0450', 'Priyanka Perera', 'Male', '1995-07-03', 'Colombo', 'Engineer', 'B001'),
+(451, 'C0451', 'Sangeeth Silva', 'Female', '1996-08-04', 'Kandy', 'Doctor', 'B002'),
+(452, 'C0452', 'Malinda Fernando', 'Male', '1997-09-05', 'Galle', 'Teacher', 'B003'),
+(453, 'C0453', 'Thilina Jayawardena', 'Female', '1998-10-06', 'Jaffna', 'Accountant', 'B004'),
+(454, 'C0454', 'Buddhika Wickramasinghe', 'Male', '1999-11-07', 'Negombo', 'Business Owner', 'B005'),
+(455, 'C0455', 'Nuwan Gunaratne', 'Female', '1965-12-08', 'Kurunegala', 'Executive', 'B006'),
+(456, 'C0456', 'Anushka Bandara', 'Male', '1966-01-09', 'Matara', 'Government Officer', 'B007'),
+(457, 'C0457', 'Indika Dissanayake', 'Female', '1967-02-10', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(458, 'C0458', 'Pradeep Rajapaksa', 'Male', '1968-03-11', 'Batticaloa', 'Consultant', 'B009'),
+(459, 'C0459', 'Gayan Senanayake', 'Female', '1969-04-12', 'Anuradhapura', 'Engineer', 'B010'),
+(460, 'C0460', 'Amal Alwis', 'Male', '1970-05-13', 'Colombo', 'Doctor', 'B001'),
+(461, 'C0461', 'Kamal Karunaratne', 'Female', '1971-06-14', 'Kandy', 'Teacher', 'B002'),
+(462, 'C0462', 'Sunil Mendis', 'Male', '1972-07-15', 'Galle', 'Accountant', 'B003'),
+(463, 'C0463', 'Kavinda Fonseka', 'Female', '1973-08-16', 'Jaffna', 'Business Owner', 'B004'),
+(464, 'C0464', 'Dilan Abeysekara', 'Male', '1974-09-17', 'Negombo', 'Executive', 'B005'),
+(465, 'C0465', 'Ruwan Perera', 'Female', '1975-10-18', 'Kurunegala', 'Government Officer', 'B006'),
+(466, 'C0466', 'Roshan Silva', 'Male', '1976-11-19', 'Matara', 'IT Professional', 'B007'),
+(467, 'C0467', 'Nadeesha Fernando', 'Female', '1977-12-20', 'Nuwara Eliya', 'Consultant', 'B008'),
+(468, 'C0468', 'Chathura Jayawardena', 'Male', '1978-01-21', 'Batticaloa', 'Engineer', 'B009'),
+(469, 'C0469', 'Janaka Wickramasinghe', 'Female', '1979-02-22', 'Anuradhapura', 'Doctor', 'B010'),
+(470, 'C0470', 'Priyanka Gunaratne', 'Male', '1980-03-23', 'Colombo', 'Teacher', 'B001'),
+(471, 'C0471', 'Sangeeth Bandara', 'Female', '1981-04-24', 'Kandy', 'Accountant', 'B002'),
+(472, 'C0472', 'Malinda Dissanayake', 'Male', '1982-05-25', 'Galle', 'Business Owner', 'B003'),
+(473, 'C0473', 'Thilina Rajapaksa', 'Female', '1983-06-26', 'Jaffna', 'Executive', 'B004'),
+(474, 'C0474', 'Buddhika Senanayake', 'Male', '1984-07-27', 'Negombo', 'Government Officer', 'B005'),
+(475, 'C0475', 'Nuwan Alwis', 'Female', '1985-08-28', 'Kurunegala', 'IT Professional', 'B006'),
+(476, 'C0476', 'Anushka Karunaratne', 'Male', '1986-09-01', 'Matara', 'Consultant', 'B007'),
+(477, 'C0477', 'Indika Mendis', 'Female', '1987-10-02', 'Nuwara Eliya', 'Engineer', 'B008'),
+(478, 'C0478', 'Pradeep Fonseka', 'Male', '1988-11-03', 'Batticaloa', 'Doctor', 'B009'),
+(479, 'C0479', 'Gayan Abeysekara', 'Female', '1989-12-04', 'Anuradhapura', 'Teacher', 'B010'),
+(480, 'C0480', 'Amal Perera', 'Male', '1990-01-05', 'Colombo', 'Accountant', 'B001'),
+(481, 'C0481', 'Kamal Silva', 'Female', '1991-02-06', 'Kandy', 'Business Owner', 'B002'),
+(482, 'C0482', 'Sunil Fernando', 'Male', '1992-03-07', 'Galle', 'Executive', 'B003'),
+(483, 'C0483', 'Kavinda Jayawardena', 'Female', '1993-04-08', 'Jaffna', 'Government Officer', 'B004'),
+(484, 'C0484', 'Dilan Wickramasinghe', 'Male', '1994-05-09', 'Negombo', 'IT Professional', 'B005'),
+(485, 'C0485', 'Ruwan Gunaratne', 'Female', '1995-06-10', 'Kurunegala', 'Consultant', 'B006'),
+(486, 'C0486', 'Roshan Bandara', 'Male', '1996-07-11', 'Matara', 'Engineer', 'B007'),
+(487, 'C0487', 'Nadeesha Dissanayake', 'Female', '1997-08-12', 'Nuwara Eliya', 'Doctor', 'B008'),
+(488, 'C0488', 'Chathura Rajapaksa', 'Male', '1998-09-13', 'Batticaloa', 'Teacher', 'B009'),
+(489, 'C0489', 'Janaka Senanayake', 'Female', '1999-10-14', 'Anuradhapura', 'Accountant', 'B010'),
+(490, 'C0490', 'Priyanka Alwis', 'Male', '1965-11-15', 'Colombo', 'Business Owner', 'B001'),
+(491, 'C0491', 'Sangeeth Karunaratne', 'Female', '1966-12-16', 'Kandy', 'Executive', 'B002'),
+(492, 'C0492', 'Malinda Mendis', 'Male', '1967-01-17', 'Galle', 'Government Officer', 'B003'),
+(493, 'C0493', 'Thilina Fonseka', 'Female', '1968-02-18', 'Jaffna', 'IT Professional', 'B004'),
+(494, 'C0494', 'Buddhika Abeysekara', 'Male', '1969-03-19', 'Negombo', 'Consultant', 'B005'),
+(495, 'C0495', 'Nuwan Perera', 'Female', '1970-04-20', 'Kurunegala', 'Engineer', 'B006'),
+(496, 'C0496', 'Anushka Silva', 'Male', '1971-05-21', 'Matara', 'Doctor', 'B007'),
+(497, 'C0497', 'Indika Fernando', 'Female', '1972-06-22', 'Nuwara Eliya', 'Teacher', 'B008'),
+(498, 'C0498', 'Pradeep Jayawardena', 'Male', '1973-07-23', 'Batticaloa', 'Accountant', 'B009'),
+(499, 'C0499', 'Gayan Wickramasinghe', 'Female', '1974-08-24', 'Anuradhapura', 'Business Owner', 'B010'),
+(500, 'C0500', 'Amal Gunaratne', 'Male', '1975-09-25', 'Colombo', 'Executive', 'B001'),
+(501, 'C0501', 'Kamal Bandara', 'Female', '1976-10-26', 'Kandy', 'Government Officer', 'B002'),
+(502, 'C0502', 'Sunil Dissanayake', 'Male', '1977-11-27', 'Galle', 'IT Professional', 'B003'),
+(503, 'C0503', 'Kavinda Rajapaksa', 'Female', '1978-12-28', 'Jaffna', 'Consultant', 'B004'),
+(504, 'C0504', 'Dilan Senanayake', 'Male', '1979-01-01', 'Negombo', 'Engineer', 'B005'),
+(505, 'C0505', 'Ruwan Alwis', 'Female', '1980-02-02', 'Kurunegala', 'Doctor', 'B006'),
+(506, 'C0506', 'Roshan Karunaratne', 'Male', '1981-03-03', 'Matara', 'Teacher', 'B007'),
+(507, 'C0507', 'Nadeesha Mendis', 'Female', '1982-04-04', 'Nuwara Eliya', 'Accountant', 'B008'),
+(508, 'C0508', 'Chathura Fonseka', 'Male', '1983-05-05', 'Batticaloa', 'Business Owner', 'B009'),
+(509, 'C0509', 'Janaka Abeysekara', 'Female', '1984-06-06', 'Anuradhapura', 'Executive', 'B010'),
+(510, 'C0510', 'Priyanka Perera', 'Male', '1985-07-07', 'Colombo', 'Government Officer', 'B001'),
+(511, 'C0511', 'Sangeeth Silva', 'Female', '1986-08-08', 'Kandy', 'IT Professional', 'B002'),
+(512, 'C0512', 'Malinda Fernando', 'Male', '1987-09-09', 'Galle', 'Consultant', 'B003'),
+(513, 'C0513', 'Thilina Jayawardena', 'Female', '1988-10-10', 'Jaffna', 'Engineer', 'B004'),
+(514, 'C0514', 'Buddhika Wickramasinghe', 'Male', '1989-11-11', 'Negombo', 'Doctor', 'B005'),
+(515, 'C0515', 'Nuwan Gunaratne', 'Female', '1990-12-12', 'Kurunegala', 'Teacher', 'B006'),
+(516, 'C0516', 'Anushka Bandara', 'Male', '1991-01-13', 'Matara', 'Accountant', 'B007'),
+(517, 'C0517', 'Indika Dissanayake', 'Female', '1992-02-14', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(518, 'C0518', 'Pradeep Rajapaksa', 'Male', '1993-03-15', 'Batticaloa', 'Executive', 'B009'),
+(519, 'C0519', 'Gayan Senanayake', 'Female', '1994-04-16', 'Anuradhapura', 'Government Officer', 'B010'),
+(520, 'C0520', 'Amal Alwis', 'Male', '1995-05-17', 'Colombo', 'IT Professional', 'B001'),
+(521, 'C0521', 'Kamal Karunaratne', 'Female', '1996-06-18', 'Kandy', 'Consultant', 'B002'),
+(522, 'C0522', 'Sunil Mendis', 'Male', '1997-07-19', 'Galle', 'Engineer', 'B003'),
+(523, 'C0523', 'Kavinda Fonseka', 'Female', '1998-08-20', 'Jaffna', 'Doctor', 'B004'),
+(524, 'C0524', 'Dilan Abeysekara', 'Male', '1999-09-21', 'Negombo', 'Teacher', 'B005'),
+(525, 'C0525', 'Ruwan Perera', 'Female', '1965-10-22', 'Kurunegala', 'Accountant', 'B006'),
+(526, 'C0526', 'Roshan Silva', 'Male', '1966-11-23', 'Matara', 'Business Owner', 'B007'),
+(527, 'C0527', 'Nadeesha Fernando', 'Female', '1967-12-24', 'Nuwara Eliya', 'Executive', 'B008'),
+(528, 'C0528', 'Chathura Jayawardena', 'Male', '1968-01-25', 'Batticaloa', 'Government Officer', 'B009'),
+(529, 'C0529', 'Janaka Wickramasinghe', 'Female', '1969-02-26', 'Anuradhapura', 'IT Professional', 'B010'),
+(530, 'C0530', 'Priyanka Gunaratne', 'Male', '1970-03-27', 'Colombo', 'Consultant', 'B001'),
+(531, 'C0531', 'Sangeeth Bandara', 'Female', '1971-04-28', 'Kandy', 'Engineer', 'B002'),
+(532, 'C0532', 'Malinda Dissanayake', 'Male', '1972-05-01', 'Galle', 'Doctor', 'B003'),
+(533, 'C0533', 'Thilina Rajapaksa', 'Female', '1973-06-02', 'Jaffna', 'Teacher', 'B004'),
+(534, 'C0534', 'Buddhika Senanayake', 'Male', '1974-07-03', 'Negombo', 'Accountant', 'B005'),
+(535, 'C0535', 'Nuwan Alwis', 'Female', '1975-08-04', 'Kurunegala', 'Business Owner', 'B006'),
+(536, 'C0536', 'Anushka Karunaratne', 'Male', '1976-09-05', 'Matara', 'Executive', 'B007'),
+(537, 'C0537', 'Indika Mendis', 'Female', '1977-10-06', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(538, 'C0538', 'Pradeep Fonseka', 'Male', '1978-11-07', 'Batticaloa', 'IT Professional', 'B009'),
+(539, 'C0539', 'Gayan Abeysekara', 'Female', '1979-12-08', 'Anuradhapura', 'Consultant', 'B010'),
+(540, 'C0540', 'Amal Perera', 'Male', '1980-01-09', 'Colombo', 'Engineer', 'B001'),
+(541, 'C0541', 'Kamal Silva', 'Female', '1981-02-10', 'Kandy', 'Doctor', 'B002'),
+(542, 'C0542', 'Sunil Fernando', 'Male', '1982-03-11', 'Galle', 'Teacher', 'B003'),
+(543, 'C0543', 'Kavinda Jayawardena', 'Female', '1983-04-12', 'Jaffna', 'Accountant', 'B004'),
+(544, 'C0544', 'Dilan Wickramasinghe', 'Male', '1984-05-13', 'Negombo', 'Business Owner', 'B005'),
+(545, 'C0545', 'Ruwan Gunaratne', 'Female', '1985-06-14', 'Kurunegala', 'Executive', 'B006'),
+(546, 'C0546', 'Roshan Bandara', 'Male', '1986-07-15', 'Matara', 'Government Officer', 'B007'),
+(547, 'C0547', 'Nadeesha Dissanayake', 'Female', '1987-08-16', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(548, 'C0548', 'Chathura Rajapaksa', 'Male', '1988-09-17', 'Batticaloa', 'Consultant', 'B009'),
+(549, 'C0549', 'Janaka Senanayake', 'Female', '1989-10-18', 'Anuradhapura', 'Engineer', 'B010'),
+(550, 'C0550', 'Priyanka Alwis', 'Male', '1990-11-19', 'Colombo', 'Doctor', 'B001'),
+(551, 'C0551', 'Sangeeth Karunaratne', 'Female', '1991-12-20', 'Kandy', 'Teacher', 'B002'),
+(552, 'C0552', 'Malinda Mendis', 'Male', '1992-01-21', 'Galle', 'Accountant', 'B003'),
+(553, 'C0553', 'Thilina Fonseka', 'Female', '1993-02-22', 'Jaffna', 'Business Owner', 'B004'),
+(554, 'C0554', 'Buddhika Abeysekara', 'Male', '1994-03-23', 'Negombo', 'Executive', 'B005'),
+(555, 'C0555', 'Nuwan Perera', 'Female', '1995-04-24', 'Kurunegala', 'Government Officer', 'B006'),
+(556, 'C0556', 'Anushka Silva', 'Male', '1996-05-25', 'Matara', 'IT Professional', 'B007'),
+(557, 'C0557', 'Indika Fernando', 'Female', '1997-06-26', 'Nuwara Eliya', 'Consultant', 'B008'),
+(558, 'C0558', 'Pradeep Jayawardena', 'Male', '1998-07-27', 'Batticaloa', 'Engineer', 'B009'),
+(559, 'C0559', 'Gayan Wickramasinghe', 'Female', '1999-08-28', 'Anuradhapura', 'Doctor', 'B010'),
+(560, 'C0560', 'Amal Gunaratne', 'Male', '1965-09-01', 'Colombo', 'Teacher', 'B001'),
+(561, 'C0561', 'Kamal Bandara', 'Female', '1966-10-02', 'Kandy', 'Accountant', 'B002'),
+(562, 'C0562', 'Sunil Dissanayake', 'Male', '1967-11-03', 'Galle', 'Business Owner', 'B003'),
+(563, 'C0563', 'Kavinda Rajapaksa', 'Female', '1968-12-04', 'Jaffna', 'Executive', 'B004'),
+(564, 'C0564', 'Dilan Senanayake', 'Male', '1969-01-05', 'Negombo', 'Government Officer', 'B005'),
+(565, 'C0565', 'Ruwan Alwis', 'Female', '1970-02-06', 'Kurunegala', 'IT Professional', 'B006'),
+(566, 'C0566', 'Roshan Karunaratne', 'Male', '1971-03-07', 'Matara', 'Consultant', 'B007'),
+(567, 'C0567', 'Nadeesha Mendis', 'Female', '1972-04-08', 'Nuwara Eliya', 'Engineer', 'B008'),
+(568, 'C0568', 'Chathura Fonseka', 'Male', '1973-05-09', 'Batticaloa', 'Doctor', 'B009'),
+(569, 'C0569', 'Janaka Abeysekara', 'Female', '1974-06-10', 'Anuradhapura', 'Teacher', 'B010'),
+(570, 'C0570', 'Priyanka Perera', 'Male', '1975-07-11', 'Colombo', 'Accountant', 'B001'),
+(571, 'C0571', 'Sangeeth Silva', 'Female', '1976-08-12', 'Kandy', 'Business Owner', 'B002'),
+(572, 'C0572', 'Malinda Fernando', 'Male', '1977-09-13', 'Galle', 'Executive', 'B003'),
+(573, 'C0573', 'Thilina Jayawardena', 'Female', '1978-10-14', 'Jaffna', 'Government Officer', 'B004'),
+(574, 'C0574', 'Buddhika Wickramasinghe', 'Male', '1979-11-15', 'Negombo', 'IT Professional', 'B005'),
+(575, 'C0575', 'Nuwan Gunaratne', 'Female', '1980-12-16', 'Kurunegala', 'Consultant', 'B006'),
+(576, 'C0576', 'Anushka Bandara', 'Male', '1981-01-17', 'Matara', 'Engineer', 'B007'),
+(577, 'C0577', 'Indika Dissanayake', 'Female', '1982-02-18', 'Nuwara Eliya', 'Doctor', 'B008'),
+(578, 'C0578', 'Pradeep Rajapaksa', 'Male', '1983-03-19', 'Batticaloa', 'Teacher', 'B009'),
+(579, 'C0579', 'Gayan Senanayake', 'Female', '1984-04-20', 'Anuradhapura', 'Accountant', 'B010'),
+(580, 'C0580', 'Amal Alwis', 'Male', '1985-05-21', 'Colombo', 'Business Owner', 'B001'),
+(581, 'C0581', 'Kamal Karunaratne', 'Female', '1986-06-22', 'Kandy', 'Executive', 'B002'),
+(582, 'C0582', 'Sunil Mendis', 'Male', '1987-07-23', 'Galle', 'Government Officer', 'B003'),
+(583, 'C0583', 'Kavinda Fonseka', 'Female', '1988-08-24', 'Jaffna', 'IT Professional', 'B004'),
+(584, 'C0584', 'Dilan Abeysekara', 'Male', '1989-09-25', 'Negombo', 'Consultant', 'B005'),
+(585, 'C0585', 'Ruwan Perera', 'Female', '1990-10-26', 'Kurunegala', 'Engineer', 'B006'),
+(586, 'C0586', 'Roshan Silva', 'Male', '1991-11-27', 'Matara', 'Doctor', 'B007'),
+(587, 'C0587', 'Nadeesha Fernando', 'Female', '1992-12-28', 'Nuwara Eliya', 'Teacher', 'B008'),
+(588, 'C0588', 'Chathura Jayawardena', 'Male', '1993-01-01', 'Batticaloa', 'Accountant', 'B009'),
+(589, 'C0589', 'Janaka Wickramasinghe', 'Female', '1994-02-02', 'Anuradhapura', 'Business Owner', 'B010'),
+(590, 'C0590', 'Priyanka Gunaratne', 'Male', '1995-03-03', 'Colombo', 'Executive', 'B001'),
+(591, 'C0591', 'Sangeeth Bandara', 'Female', '1996-04-04', 'Kandy', 'Government Officer', 'B002'),
+(592, 'C0592', 'Malinda Dissanayake', 'Male', '1997-05-05', 'Galle', 'IT Professional', 'B003'),
+(593, 'C0593', 'Thilina Rajapaksa', 'Female', '1998-06-06', 'Jaffna', 'Consultant', 'B004'),
+(594, 'C0594', 'Buddhika Senanayake', 'Male', '1999-07-07', 'Negombo', 'Engineer', 'B005'),
+(595, 'C0595', 'Nuwan Alwis', 'Female', '1965-08-08', 'Kurunegala', 'Doctor', 'B006'),
+(596, 'C0596', 'Anushka Karunaratne', 'Male', '1966-09-09', 'Matara', 'Teacher', 'B007'),
+(597, 'C0597', 'Indika Mendis', 'Female', '1967-10-10', 'Nuwara Eliya', 'Accountant', 'B008'),
+(598, 'C0598', 'Pradeep Fonseka', 'Male', '1968-11-11', 'Batticaloa', 'Business Owner', 'B009'),
+(599, 'C0599', 'Gayan Abeysekara', 'Female', '1969-12-12', 'Anuradhapura', 'Executive', 'B010'),
+(600, 'C0600', 'Amal Perera', 'Male', '1970-01-13', 'Colombo', 'Government Officer', 'B001'),
+(601, 'C0601', 'Kamal Silva', 'Female', '1971-02-14', 'Kandy', 'IT Professional', 'B002'),
+(602, 'C0602', 'Sunil Fernando', 'Male', '1972-03-15', 'Galle', 'Consultant', 'B003'),
+(603, 'C0603', 'Kavinda Jayawardena', 'Female', '1973-04-16', 'Jaffna', 'Engineer', 'B004'),
+(604, 'C0604', 'Dilan Wickramasinghe', 'Male', '1974-05-17', 'Negombo', 'Doctor', 'B005'),
+(605, 'C0605', 'Ruwan Gunaratne', 'Female', '1975-06-18', 'Kurunegala', 'Teacher', 'B006'),
+(606, 'C0606', 'Roshan Bandara', 'Male', '1976-07-19', 'Matara', 'Accountant', 'B007'),
+(607, 'C0607', 'Nadeesha Dissanayake', 'Female', '1977-08-20', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(608, 'C0608', 'Chathura Rajapaksa', 'Male', '1978-09-21', 'Batticaloa', 'Executive', 'B009'),
+(609, 'C0609', 'Janaka Senanayake', 'Female', '1979-10-22', 'Anuradhapura', 'Government Officer', 'B010'),
+(610, 'C0610', 'Priyanka Alwis', 'Male', '1980-11-23', 'Colombo', 'IT Professional', 'B001'),
+(611, 'C0611', 'Sangeeth Karunaratne', 'Female', '1981-12-24', 'Kandy', 'Consultant', 'B002'),
+(612, 'C0612', 'Malinda Mendis', 'Male', '1982-01-25', 'Galle', 'Engineer', 'B003'),
+(613, 'C0613', 'Thilina Fonseka', 'Female', '1983-02-26', 'Jaffna', 'Doctor', 'B004'),
+(614, 'C0614', 'Buddhika Abeysekara', 'Male', '1984-03-27', 'Negombo', 'Teacher', 'B005'),
+(615, 'C0615', 'Nuwan Perera', 'Female', '1985-04-28', 'Kurunegala', 'Accountant', 'B006'),
+(616, 'C0616', 'Anushka Silva', 'Male', '1986-05-01', 'Matara', 'Business Owner', 'B007'),
+(617, 'C0617', 'Indika Fernando', 'Female', '1987-06-02', 'Nuwara Eliya', 'Executive', 'B008'),
+(618, 'C0618', 'Pradeep Jayawardena', 'Male', '1988-07-03', 'Batticaloa', 'Government Officer', 'B009'),
+(619, 'C0619', 'Gayan Wickramasinghe', 'Female', '1989-08-04', 'Anuradhapura', 'IT Professional', 'B010'),
+(620, 'C0620', 'Amal Gunaratne', 'Male', '1990-09-05', 'Colombo', 'Consultant', 'B001'),
+(621, 'C0621', 'Kamal Bandara', 'Female', '1991-10-06', 'Kandy', 'Engineer', 'B002'),
+(622, 'C0622', 'Sunil Dissanayake', 'Male', '1992-11-07', 'Galle', 'Doctor', 'B003'),
+(623, 'C0623', 'Kavinda Rajapaksa', 'Female', '1993-12-08', 'Jaffna', 'Teacher', 'B004'),
+(624, 'C0624', 'Dilan Senanayake', 'Male', '1994-01-09', 'Negombo', 'Accountant', 'B005'),
+(625, 'C0625', 'Ruwan Alwis', 'Female', '1995-02-10', 'Kurunegala', 'Business Owner', 'B006'),
+(626, 'C0626', 'Roshan Karunaratne', 'Male', '1996-03-11', 'Matara', 'Executive', 'B007'),
+(627, 'C0627', 'Nadeesha Mendis', 'Female', '1997-04-12', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(628, 'C0628', 'Chathura Fonseka', 'Male', '1998-05-13', 'Batticaloa', 'IT Professional', 'B009'),
+(629, 'C0629', 'Janaka Abeysekara', 'Female', '1999-06-14', 'Anuradhapura', 'Consultant', 'B010'),
+(630, 'C0630', 'Priyanka Perera', 'Male', '1965-07-15', 'Colombo', 'Engineer', 'B001'),
+(631, 'C0631', 'Sangeeth Silva', 'Female', '1966-08-16', 'Kandy', 'Doctor', 'B002'),
+(632, 'C0632', 'Malinda Fernando', 'Male', '1967-09-17', 'Galle', 'Teacher', 'B003'),
+(633, 'C0633', 'Thilina Jayawardena', 'Female', '1968-10-18', 'Jaffna', 'Accountant', 'B004'),
+(634, 'C0634', 'Buddhika Wickramasinghe', 'Male', '1969-11-19', 'Negombo', 'Business Owner', 'B005'),
+(635, 'C0635', 'Nuwan Gunaratne', 'Female', '1970-12-20', 'Kurunegala', 'Executive', 'B006'),
+(636, 'C0636', 'Anushka Bandara', 'Male', '1971-01-21', 'Matara', 'Government Officer', 'B007'),
+(637, 'C0637', 'Indika Dissanayake', 'Female', '1972-02-22', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(638, 'C0638', 'Pradeep Rajapaksa', 'Male', '1973-03-23', 'Batticaloa', 'Consultant', 'B009'),
+(639, 'C0639', 'Gayan Senanayake', 'Female', '1974-04-24', 'Anuradhapura', 'Engineer', 'B010'),
+(640, 'C0640', 'Amal Alwis', 'Male', '1975-05-25', 'Colombo', 'Doctor', 'B001'),
+(641, 'C0641', 'Kamal Karunaratne', 'Female', '1976-06-26', 'Kandy', 'Teacher', 'B002'),
+(642, 'C0642', 'Sunil Mendis', 'Male', '1977-07-27', 'Galle', 'Accountant', 'B003'),
+(643, 'C0643', 'Kavinda Fonseka', 'Female', '1978-08-28', 'Jaffna', 'Business Owner', 'B004'),
+(644, 'C0644', 'Dilan Abeysekara', 'Male', '1979-09-01', 'Negombo', 'Executive', 'B005'),
+(645, 'C0645', 'Ruwan Perera', 'Female', '1980-10-02', 'Kurunegala', 'Government Officer', 'B006'),
+(646, 'C0646', 'Roshan Silva', 'Male', '1981-11-03', 'Matara', 'IT Professional', 'B007'),
+(647, 'C0647', 'Nadeesha Fernando', 'Female', '1982-12-04', 'Nuwara Eliya', 'Consultant', 'B008'),
+(648, 'C0648', 'Chathura Jayawardena', 'Male', '1983-01-05', 'Batticaloa', 'Engineer', 'B009'),
+(649, 'C0649', 'Janaka Wickramasinghe', 'Female', '1984-02-06', 'Anuradhapura', 'Doctor', 'B010'),
+(650, 'C0650', 'Priyanka Gunaratne', 'Male', '1985-03-07', 'Colombo', 'Teacher', 'B001'),
+(651, 'C0651', 'Sangeeth Bandara', 'Female', '1986-04-08', 'Kandy', 'Accountant', 'B002'),
+(652, 'C0652', 'Malinda Dissanayake', 'Male', '1987-05-09', 'Galle', 'Business Owner', 'B003'),
+(653, 'C0653', 'Thilina Rajapaksa', 'Female', '1988-06-10', 'Jaffna', 'Executive', 'B004'),
+(654, 'C0654', 'Buddhika Senanayake', 'Male', '1989-07-11', 'Negombo', 'Government Officer', 'B005'),
+(655, 'C0655', 'Nuwan Alwis', 'Female', '1990-08-12', 'Kurunegala', 'IT Professional', 'B006'),
+(656, 'C0656', 'Anushka Karunaratne', 'Male', '1991-09-13', 'Matara', 'Consultant', 'B007'),
+(657, 'C0657', 'Indika Mendis', 'Female', '1992-10-14', 'Nuwara Eliya', 'Engineer', 'B008'),
+(658, 'C0658', 'Pradeep Fonseka', 'Male', '1993-11-15', 'Batticaloa', 'Doctor', 'B009'),
+(659, 'C0659', 'Gayan Abeysekara', 'Female', '1994-12-16', 'Anuradhapura', 'Teacher', 'B010'),
+(660, 'C0660', 'Amal Perera', 'Male', '1995-01-17', 'Colombo', 'Accountant', 'B001'),
+(661, 'C0661', 'Kamal Silva', 'Female', '1996-02-18', 'Kandy', 'Business Owner', 'B002'),
+(662, 'C0662', 'Sunil Fernando', 'Male', '1997-03-19', 'Galle', 'Executive', 'B003'),
+(663, 'C0663', 'Kavinda Jayawardena', 'Female', '1998-04-20', 'Jaffna', 'Government Officer', 'B004'),
+(664, 'C0664', 'Dilan Wickramasinghe', 'Male', '1999-05-21', 'Negombo', 'IT Professional', 'B005'),
+(665, 'C0665', 'Ruwan Gunaratne', 'Female', '1965-06-22', 'Kurunegala', 'Consultant', 'B006'),
+(666, 'C0666', 'Roshan Bandara', 'Male', '1966-07-23', 'Matara', 'Engineer', 'B007'),
+(667, 'C0667', 'Nadeesha Dissanayake', 'Female', '1967-08-24', 'Nuwara Eliya', 'Doctor', 'B008'),
+(668, 'C0668', 'Chathura Rajapaksa', 'Male', '1968-09-25', 'Batticaloa', 'Teacher', 'B009'),
+(669, 'C0669', 'Janaka Senanayake', 'Female', '1969-10-26', 'Anuradhapura', 'Accountant', 'B010'),
+(670, 'C0670', 'Priyanka Alwis', 'Male', '1970-11-27', 'Colombo', 'Business Owner', 'B001'),
+(671, 'C0671', 'Sangeeth Karunaratne', 'Female', '1971-12-28', 'Kandy', 'Executive', 'B002'),
+(672, 'C0672', 'Malinda Mendis', 'Male', '1972-01-01', 'Galle', 'Government Officer', 'B003'),
+(673, 'C0673', 'Thilina Fonseka', 'Female', '1973-02-02', 'Jaffna', 'IT Professional', 'B004'),
+(674, 'C0674', 'Buddhika Abeysekara', 'Male', '1974-03-03', 'Negombo', 'Consultant', 'B005'),
+(675, 'C0675', 'Nuwan Perera', 'Female', '1975-04-04', 'Kurunegala', 'Engineer', 'B006'),
+(676, 'C0676', 'Anushka Silva', 'Male', '1976-05-05', 'Matara', 'Doctor', 'B007'),
+(677, 'C0677', 'Indika Fernando', 'Female', '1977-06-06', 'Nuwara Eliya', 'Teacher', 'B008'),
+(678, 'C0678', 'Pradeep Jayawardena', 'Male', '1978-07-07', 'Batticaloa', 'Accountant', 'B009'),
+(679, 'C0679', 'Gayan Wickramasinghe', 'Female', '1979-08-08', 'Anuradhapura', 'Business Owner', 'B010'),
+(680, 'C0680', 'Amal Gunaratne', 'Male', '1980-09-09', 'Colombo', 'Executive', 'B001'),
+(681, 'C0681', 'Kamal Bandara', 'Female', '1981-10-10', 'Kandy', 'Government Officer', 'B002'),
+(682, 'C0682', 'Sunil Dissanayake', 'Male', '1982-11-11', 'Galle', 'IT Professional', 'B003'),
+(683, 'C0683', 'Kavinda Rajapaksa', 'Female', '1983-12-12', 'Jaffna', 'Consultant', 'B004'),
+(684, 'C0684', 'Dilan Senanayake', 'Male', '1984-01-13', 'Negombo', 'Engineer', 'B005'),
+(685, 'C0685', 'Ruwan Alwis', 'Female', '1985-02-14', 'Kurunegala', 'Doctor', 'B006'),
+(686, 'C0686', 'Roshan Karunaratne', 'Male', '1986-03-15', 'Matara', 'Teacher', 'B007'),
+(687, 'C0687', 'Nadeesha Mendis', 'Female', '1987-04-16', 'Nuwara Eliya', 'Accountant', 'B008'),
+(688, 'C0688', 'Chathura Fonseka', 'Male', '1988-05-17', 'Batticaloa', 'Business Owner', 'B009'),
+(689, 'C0689', 'Janaka Abeysekara', 'Female', '1989-06-18', 'Anuradhapura', 'Executive', 'B010'),
+(690, 'C0690', 'Priyanka Perera', 'Male', '1990-07-19', 'Colombo', 'Government Officer', 'B001'),
+(691, 'C0691', 'Sangeeth Silva', 'Female', '1991-08-20', 'Kandy', 'IT Professional', 'B002'),
+(692, 'C0692', 'Malinda Fernando', 'Male', '1992-09-21', 'Galle', 'Consultant', 'B003'),
+(693, 'C0693', 'Thilina Jayawardena', 'Female', '1993-10-22', 'Jaffna', 'Engineer', 'B004'),
+(694, 'C0694', 'Buddhika Wickramasinghe', 'Male', '1994-11-23', 'Negombo', 'Doctor', 'B005'),
+(695, 'C0695', 'Nuwan Gunaratne', 'Female', '1995-12-24', 'Kurunegala', 'Teacher', 'B006'),
+(696, 'C0696', 'Anushka Bandara', 'Male', '1996-01-25', 'Matara', 'Accountant', 'B007'),
+(697, 'C0697', 'Indika Dissanayake', 'Female', '1997-02-26', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(698, 'C0698', 'Pradeep Rajapaksa', 'Male', '1998-03-27', 'Batticaloa', 'Executive', 'B009'),
+(699, 'C0699', 'Gayan Senanayake', 'Female', '1999-04-28', 'Anuradhapura', 'Government Officer', 'B010'),
+(700, 'C0700', 'Amal Alwis', 'Male', '1965-05-01', 'Colombo', 'IT Professional', 'B001'),
+(701, 'C0701', 'Kamal Karunaratne', 'Female', '1966-06-02', 'Kandy', 'Consultant', 'B002'),
+(702, 'C0702', 'Sunil Mendis', 'Male', '1967-07-03', 'Galle', 'Engineer', 'B003'),
+(703, 'C0703', 'Kavinda Fonseka', 'Female', '1968-08-04', 'Jaffna', 'Doctor', 'B004'),
+(704, 'C0704', 'Dilan Abeysekara', 'Male', '1969-09-05', 'Negombo', 'Teacher', 'B005'),
+(705, 'C0705', 'Ruwan Perera', 'Female', '1970-10-06', 'Kurunegala', 'Accountant', 'B006'),
+(706, 'C0706', 'Roshan Silva', 'Male', '1971-11-07', 'Matara', 'Business Owner', 'B007'),
+(707, 'C0707', 'Nadeesha Fernando', 'Female', '1972-12-08', 'Nuwara Eliya', 'Executive', 'B008'),
+(708, 'C0708', 'Chathura Jayawardena', 'Male', '1973-01-09', 'Batticaloa', 'Government Officer', 'B009'),
+(709, 'C0709', 'Janaka Wickramasinghe', 'Female', '1974-02-10', 'Anuradhapura', 'IT Professional', 'B010'),
+(710, 'C0710', 'Priyanka Gunaratne', 'Male', '1975-03-11', 'Colombo', 'Consultant', 'B001'),
+(711, 'C0711', 'Sangeeth Bandara', 'Female', '1976-04-12', 'Kandy', 'Engineer', 'B002'),
+(712, 'C0712', 'Malinda Dissanayake', 'Male', '1977-05-13', 'Galle', 'Doctor', 'B003'),
+(713, 'C0713', 'Thilina Rajapaksa', 'Female', '1978-06-14', 'Jaffna', 'Teacher', 'B004'),
+(714, 'C0714', 'Buddhika Senanayake', 'Male', '1979-07-15', 'Negombo', 'Accountant', 'B005'),
+(715, 'C0715', 'Nuwan Alwis', 'Female', '1980-08-16', 'Kurunegala', 'Business Owner', 'B006'),
+(716, 'C0716', 'Anushka Karunaratne', 'Male', '1981-09-17', 'Matara', 'Executive', 'B007'),
+(717, 'C0717', 'Indika Mendis', 'Female', '1982-10-18', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(718, 'C0718', 'Pradeep Fonseka', 'Male', '1983-11-19', 'Batticaloa', 'IT Professional', 'B009'),
+(719, 'C0719', 'Gayan Abeysekara', 'Female', '1984-12-20', 'Anuradhapura', 'Consultant', 'B010'),
+(720, 'C0720', 'Amal Perera', 'Male', '1985-01-21', 'Colombo', 'Engineer', 'B001'),
+(721, 'C0721', 'Kamal Silva', 'Female', '1986-02-22', 'Kandy', 'Doctor', 'B002'),
+(722, 'C0722', 'Sunil Fernando', 'Male', '1987-03-23', 'Galle', 'Teacher', 'B003'),
+(723, 'C0723', 'Kavinda Jayawardena', 'Female', '1988-04-24', 'Jaffna', 'Accountant', 'B004'),
+(724, 'C0724', 'Dilan Wickramasinghe', 'Male', '1989-05-25', 'Negombo', 'Business Owner', 'B005'),
+(725, 'C0725', 'Ruwan Gunaratne', 'Female', '1990-06-26', 'Kurunegala', 'Executive', 'B006'),
+(726, 'C0726', 'Roshan Bandara', 'Male', '1991-07-27', 'Matara', 'Government Officer', 'B007'),
+(727, 'C0727', 'Nadeesha Dissanayake', 'Female', '1992-08-28', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(728, 'C0728', 'Chathura Rajapaksa', 'Male', '1993-09-01', 'Batticaloa', 'Consultant', 'B009'),
+(729, 'C0729', 'Janaka Senanayake', 'Female', '1994-10-02', 'Anuradhapura', 'Engineer', 'B010'),
+(730, 'C0730', 'Priyanka Alwis', 'Male', '1995-11-03', 'Colombo', 'Doctor', 'B001'),
+(731, 'C0731', 'Sangeeth Karunaratne', 'Female', '1996-12-04', 'Kandy', 'Teacher', 'B002'),
+(732, 'C0732', 'Malinda Mendis', 'Male', '1997-01-05', 'Galle', 'Accountant', 'B003'),
+(733, 'C0733', 'Thilina Fonseka', 'Female', '1998-02-06', 'Jaffna', 'Business Owner', 'B004'),
+(734, 'C0734', 'Buddhika Abeysekara', 'Male', '1999-03-07', 'Negombo', 'Executive', 'B005'),
+(735, 'C0735', 'Nuwan Perera', 'Female', '1965-04-08', 'Kurunegala', 'Government Officer', 'B006'),
+(736, 'C0736', 'Anushka Silva', 'Male', '1966-05-09', 'Matara', 'IT Professional', 'B007'),
+(737, 'C0737', 'Indika Fernando', 'Female', '1967-06-10', 'Nuwara Eliya', 'Consultant', 'B008'),
+(738, 'C0738', 'Pradeep Jayawardena', 'Male', '1968-07-11', 'Batticaloa', 'Engineer', 'B009'),
+(739, 'C0739', 'Gayan Wickramasinghe', 'Female', '1969-08-12', 'Anuradhapura', 'Doctor', 'B010'),
+(740, 'C0740', 'Amal Gunaratne', 'Male', '1970-09-13', 'Colombo', 'Teacher', 'B001'),
+(741, 'C0741', 'Kamal Bandara', 'Female', '1971-10-14', 'Kandy', 'Accountant', 'B002'),
+(742, 'C0742', 'Sunil Dissanayake', 'Male', '1972-11-15', 'Galle', 'Business Owner', 'B003'),
+(743, 'C0743', 'Kavinda Rajapaksa', 'Female', '1973-12-16', 'Jaffna', 'Executive', 'B004'),
+(744, 'C0744', 'Dilan Senanayake', 'Male', '1974-01-17', 'Negombo', 'Government Officer', 'B005'),
+(745, 'C0745', 'Ruwan Alwis', 'Female', '1975-02-18', 'Kurunegala', 'IT Professional', 'B006'),
+(746, 'C0746', 'Roshan Karunaratne', 'Male', '1976-03-19', 'Matara', 'Consultant', 'B007'),
+(747, 'C0747', 'Nadeesha Mendis', 'Female', '1977-04-20', 'Nuwara Eliya', 'Engineer', 'B008'),
+(748, 'C0748', 'Chathura Fonseka', 'Male', '1978-05-21', 'Batticaloa', 'Doctor', 'B009'),
+(749, 'C0749', 'Janaka Abeysekara', 'Female', '1979-06-22', 'Anuradhapura', 'Teacher', 'B010'),
+(750, 'C0750', 'Priyanka Perera', 'Male', '1980-07-23', 'Colombo', 'Accountant', 'B001'),
+(751, 'C0751', 'Sangeeth Silva', 'Female', '1981-08-24', 'Kandy', 'Business Owner', 'B002'),
+(752, 'C0752', 'Malinda Fernando', 'Male', '1982-09-25', 'Galle', 'Executive', 'B003'),
+(753, 'C0753', 'Thilina Jayawardena', 'Female', '1983-10-26', 'Jaffna', 'Government Officer', 'B004'),
+(754, 'C0754', 'Buddhika Wickramasinghe', 'Male', '1984-11-27', 'Negombo', 'IT Professional', 'B005'),
+(755, 'C0755', 'Nuwan Gunaratne', 'Female', '1985-12-28', 'Kurunegala', 'Consultant', 'B006'),
+(756, 'C0756', 'Anushka Bandara', 'Male', '1986-01-01', 'Matara', 'Engineer', 'B007'),
+(757, 'C0757', 'Indika Dissanayake', 'Female', '1987-02-02', 'Nuwara Eliya', 'Doctor', 'B008'),
+(758, 'C0758', 'Pradeep Rajapaksa', 'Male', '1988-03-03', 'Batticaloa', 'Teacher', 'B009'),
+(759, 'C0759', 'Gayan Senanayake', 'Female', '1989-04-04', 'Anuradhapura', 'Accountant', 'B010'),
+(760, 'C0760', 'Amal Alwis', 'Male', '1990-05-05', 'Colombo', 'Business Owner', 'B001'),
+(761, 'C0761', 'Kamal Karunaratne', 'Female', '1991-06-06', 'Kandy', 'Executive', 'B002'),
+(762, 'C0762', 'Sunil Mendis', 'Male', '1992-07-07', 'Galle', 'Government Officer', 'B003'),
+(763, 'C0763', 'Kavinda Fonseka', 'Female', '1993-08-08', 'Jaffna', 'IT Professional', 'B004'),
+(764, 'C0764', 'Dilan Abeysekara', 'Male', '1994-09-09', 'Negombo', 'Consultant', 'B005'),
+(765, 'C0765', 'Ruwan Perera', 'Female', '1995-10-10', 'Kurunegala', 'Engineer', 'B006'),
+(766, 'C0766', 'Roshan Silva', 'Male', '1996-11-11', 'Matara', 'Doctor', 'B007'),
+(767, 'C0767', 'Nadeesha Fernando', 'Female', '1997-12-12', 'Nuwara Eliya', 'Teacher', 'B008'),
+(768, 'C0768', 'Chathura Jayawardena', 'Male', '1998-01-13', 'Batticaloa', 'Accountant', 'B009'),
+(769, 'C0769', 'Janaka Wickramasinghe', 'Female', '1999-02-14', 'Anuradhapura', 'Business Owner', 'B010'),
+(770, 'C0770', 'Priyanka Gunaratne', 'Male', '1965-03-15', 'Colombo', 'Executive', 'B001'),
+(771, 'C0771', 'Sangeeth Bandara', 'Female', '1966-04-16', 'Kandy', 'Government Officer', 'B002'),
+(772, 'C0772', 'Malinda Dissanayake', 'Male', '1967-05-17', 'Galle', 'IT Professional', 'B003'),
+(773, 'C0773', 'Thilina Rajapaksa', 'Female', '1968-06-18', 'Jaffna', 'Consultant', 'B004'),
+(774, 'C0774', 'Buddhika Senanayake', 'Male', '1969-07-19', 'Negombo', 'Engineer', 'B005'),
+(775, 'C0775', 'Nuwan Alwis', 'Female', '1970-08-20', 'Kurunegala', 'Doctor', 'B006'),
+(776, 'C0776', 'Anushka Karunaratne', 'Male', '1971-09-21', 'Matara', 'Teacher', 'B007'),
+(777, 'C0777', 'Indika Mendis', 'Female', '1972-10-22', 'Nuwara Eliya', 'Accountant', 'B008'),
+(778, 'C0778', 'Pradeep Fonseka', 'Male', '1973-11-23', 'Batticaloa', 'Business Owner', 'B009'),
+(779, 'C0779', 'Gayan Abeysekara', 'Female', '1974-12-24', 'Anuradhapura', 'Executive', 'B010'),
+(780, 'C0780', 'Amal Perera', 'Male', '1975-01-25', 'Colombo', 'Government Officer', 'B001'),
+(781, 'C0781', 'Kamal Silva', 'Female', '1976-02-26', 'Kandy', 'IT Professional', 'B002'),
+(782, 'C0782', 'Sunil Fernando', 'Male', '1977-03-27', 'Galle', 'Consultant', 'B003'),
+(783, 'C0783', 'Kavinda Jayawardena', 'Female', '1978-04-28', 'Jaffna', 'Engineer', 'B004'),
+(784, 'C0784', 'Dilan Wickramasinghe', 'Male', '1979-05-01', 'Negombo', 'Doctor', 'B005'),
+(785, 'C0785', 'Ruwan Gunaratne', 'Female', '1980-06-02', 'Kurunegala', 'Teacher', 'B006'),
+(786, 'C0786', 'Roshan Bandara', 'Male', '1981-07-03', 'Matara', 'Accountant', 'B007'),
+(787, 'C0787', 'Nadeesha Dissanayake', 'Female', '1982-08-04', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(788, 'C0788', 'Chathura Rajapaksa', 'Male', '1983-09-05', 'Batticaloa', 'Executive', 'B009'),
+(789, 'C0789', 'Janaka Senanayake', 'Female', '1984-10-06', 'Anuradhapura', 'Government Officer', 'B010'),
+(790, 'C0790', 'Priyanka Alwis', 'Male', '1985-11-07', 'Colombo', 'IT Professional', 'B001'),
+(791, 'C0791', 'Sangeeth Karunaratne', 'Female', '1986-12-08', 'Kandy', 'Consultant', 'B002'),
+(792, 'C0792', 'Malinda Mendis', 'Male', '1987-01-09', 'Galle', 'Engineer', 'B003'),
+(793, 'C0793', 'Thilina Fonseka', 'Female', '1988-02-10', 'Jaffna', 'Doctor', 'B004'),
+(794, 'C0794', 'Buddhika Abeysekara', 'Male', '1989-03-11', 'Negombo', 'Teacher', 'B005'),
+(795, 'C0795', 'Nuwan Perera', 'Female', '1990-04-12', 'Kurunegala', 'Accountant', 'B006'),
+(796, 'C0796', 'Anushka Silva', 'Male', '1991-05-13', 'Matara', 'Business Owner', 'B007'),
+(797, 'C0797', 'Indika Fernando', 'Female', '1992-06-14', 'Nuwara Eliya', 'Executive', 'B008'),
+(798, 'C0798', 'Pradeep Jayawardena', 'Male', '1993-07-15', 'Batticaloa', 'Government Officer', 'B009'),
+(799, 'C0799', 'Gayan Wickramasinghe', 'Female', '1994-08-16', 'Anuradhapura', 'IT Professional', 'B010'),
+(800, 'C0800', 'Amal Gunaratne', 'Male', '1995-09-17', 'Colombo', 'Consultant', 'B001'),
+(801, 'C0801', 'Kamal Bandara', 'Female', '1996-10-18', 'Kandy', 'Engineer', 'B002'),
+(802, 'C0802', 'Sunil Dissanayake', 'Male', '1997-11-19', 'Galle', 'Doctor', 'B003'),
+(803, 'C0803', 'Kavinda Rajapaksa', 'Female', '1998-12-20', 'Jaffna', 'Teacher', 'B004'),
+(804, 'C0804', 'Dilan Senanayake', 'Male', '1999-01-21', 'Negombo', 'Accountant', 'B005'),
+(805, 'C0805', 'Ruwan Alwis', 'Female', '1965-02-22', 'Kurunegala', 'Business Owner', 'B006'),
+(806, 'C0806', 'Roshan Karunaratne', 'Male', '1966-03-23', 'Matara', 'Executive', 'B007'),
+(807, 'C0807', 'Nadeesha Mendis', 'Female', '1967-04-24', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(808, 'C0808', 'Chathura Fonseka', 'Male', '1968-05-25', 'Batticaloa', 'IT Professional', 'B009'),
+(809, 'C0809', 'Janaka Abeysekara', 'Female', '1969-06-26', 'Anuradhapura', 'Consultant', 'B010'),
+(810, 'C0810', 'Priyanka Perera', 'Male', '1970-07-27', 'Colombo', 'Engineer', 'B001'),
+(811, 'C0811', 'Sangeeth Silva', 'Female', '1971-08-28', 'Kandy', 'Doctor', 'B002'),
+(812, 'C0812', 'Malinda Fernando', 'Male', '1972-09-01', 'Galle', 'Teacher', 'B003'),
+(813, 'C0813', 'Thilina Jayawardena', 'Female', '1973-10-02', 'Jaffna', 'Accountant', 'B004'),
+(814, 'C0814', 'Buddhika Wickramasinghe', 'Male', '1974-11-03', 'Negombo', 'Business Owner', 'B005'),
+(815, 'C0815', 'Nuwan Gunaratne', 'Female', '1975-12-04', 'Kurunegala', 'Executive', 'B006'),
+(816, 'C0816', 'Anushka Bandara', 'Male', '1976-01-05', 'Matara', 'Government Officer', 'B007'),
+(817, 'C0817', 'Indika Dissanayake', 'Female', '1977-02-06', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(818, 'C0818', 'Pradeep Rajapaksa', 'Male', '1978-03-07', 'Batticaloa', 'Consultant', 'B009'),
+(819, 'C0819', 'Gayan Senanayake', 'Female', '1979-04-08', 'Anuradhapura', 'Engineer', 'B010'),
+(820, 'C0820', 'Amal Alwis', 'Male', '1980-05-09', 'Colombo', 'Doctor', 'B001'),
+(821, 'C0821', 'Kamal Karunaratne', 'Female', '1981-06-10', 'Kandy', 'Teacher', 'B002'),
+(822, 'C0822', 'Sunil Mendis', 'Male', '1982-07-11', 'Galle', 'Accountant', 'B003'),
+(823, 'C0823', 'Kavinda Fonseka', 'Female', '1983-08-12', 'Jaffna', 'Business Owner', 'B004'),
+(824, 'C0824', 'Dilan Abeysekara', 'Male', '1984-09-13', 'Negombo', 'Executive', 'B005'),
+(825, 'C0825', 'Ruwan Perera', 'Female', '1985-10-14', 'Kurunegala', 'Government Officer', 'B006'),
+(826, 'C0826', 'Roshan Silva', 'Male', '1986-11-15', 'Matara', 'IT Professional', 'B007'),
+(827, 'C0827', 'Nadeesha Fernando', 'Female', '1987-12-16', 'Nuwara Eliya', 'Consultant', 'B008'),
+(828, 'C0828', 'Chathura Jayawardena', 'Male', '1988-01-17', 'Batticaloa', 'Engineer', 'B009'),
+(829, 'C0829', 'Janaka Wickramasinghe', 'Female', '1989-02-18', 'Anuradhapura', 'Doctor', 'B010'),
+(830, 'C0830', 'Priyanka Gunaratne', 'Male', '1990-03-19', 'Colombo', 'Teacher', 'B001'),
+(831, 'C0831', 'Sangeeth Bandara', 'Female', '1991-04-20', 'Kandy', 'Accountant', 'B002'),
+(832, 'C0832', 'Malinda Dissanayake', 'Male', '1992-05-21', 'Galle', 'Business Owner', 'B003'),
+(833, 'C0833', 'Thilina Rajapaksa', 'Female', '1993-06-22', 'Jaffna', 'Executive', 'B004'),
+(834, 'C0834', 'Buddhika Senanayake', 'Male', '1994-07-23', 'Negombo', 'Government Officer', 'B005'),
+(835, 'C0835', 'Nuwan Alwis', 'Female', '1995-08-24', 'Kurunegala', 'IT Professional', 'B006'),
+(836, 'C0836', 'Anushka Karunaratne', 'Male', '1996-09-25', 'Matara', 'Consultant', 'B007'),
+(837, 'C0837', 'Indika Mendis', 'Female', '1997-10-26', 'Nuwara Eliya', 'Engineer', 'B008'),
+(838, 'C0838', 'Pradeep Fonseka', 'Male', '1998-11-27', 'Batticaloa', 'Doctor', 'B009'),
+(839, 'C0839', 'Gayan Abeysekara', 'Female', '1999-12-28', 'Anuradhapura', 'Teacher', 'B010'),
+(840, 'C0840', 'Amal Perera', 'Male', '1965-01-01', 'Colombo', 'Accountant', 'B001'),
+(841, 'C0841', 'Kamal Silva', 'Female', '1966-02-02', 'Kandy', 'Business Owner', 'B002'),
+(842, 'C0842', 'Sunil Fernando', 'Male', '1967-03-03', 'Galle', 'Executive', 'B003'),
+(843, 'C0843', 'Kavinda Jayawardena', 'Female', '1968-04-04', 'Jaffna', 'Government Officer', 'B004'),
+(844, 'C0844', 'Dilan Wickramasinghe', 'Male', '1969-05-05', 'Negombo', 'IT Professional', 'B005'),
+(845, 'C0845', 'Ruwan Gunaratne', 'Female', '1970-06-06', 'Kurunegala', 'Consultant', 'B006'),
+(846, 'C0846', 'Roshan Bandara', 'Male', '1971-07-07', 'Matara', 'Engineer', 'B007'),
+(847, 'C0847', 'Nadeesha Dissanayake', 'Female', '1972-08-08', 'Nuwara Eliya', 'Doctor', 'B008'),
+(848, 'C0848', 'Chathura Rajapaksa', 'Male', '1973-09-09', 'Batticaloa', 'Teacher', 'B009'),
+(849, 'C0849', 'Janaka Senanayake', 'Female', '1974-10-10', 'Anuradhapura', 'Accountant', 'B010'),
+(850, 'C0850', 'Priyanka Alwis', 'Male', '1975-11-11', 'Colombo', 'Business Owner', 'B001'),
+(851, 'C0851', 'Sangeeth Karunaratne', 'Female', '1976-12-12', 'Kandy', 'Executive', 'B002'),
+(852, 'C0852', 'Malinda Mendis', 'Male', '1977-01-13', 'Galle', 'Government Officer', 'B003'),
+(853, 'C0853', 'Thilina Fonseka', 'Female', '1978-02-14', 'Jaffna', 'IT Professional', 'B004'),
+(854, 'C0854', 'Buddhika Abeysekara', 'Male', '1979-03-15', 'Negombo', 'Consultant', 'B005'),
+(855, 'C0855', 'Nuwan Perera', 'Female', '1980-04-16', 'Kurunegala', 'Engineer', 'B006'),
+(856, 'C0856', 'Anushka Silva', 'Male', '1981-05-17', 'Matara', 'Doctor', 'B007'),
+(857, 'C0857', 'Indika Fernando', 'Female', '1982-06-18', 'Nuwara Eliya', 'Teacher', 'B008'),
+(858, 'C0858', 'Pradeep Jayawardena', 'Male', '1983-07-19', 'Batticaloa', 'Accountant', 'B009'),
+(859, 'C0859', 'Gayan Wickramasinghe', 'Female', '1984-08-20', 'Anuradhapura', 'Business Owner', 'B010'),
+(860, 'C0860', 'Amal Gunaratne', 'Male', '1985-09-21', 'Colombo', 'Executive', 'B001'),
+(861, 'C0861', 'Kamal Bandara', 'Female', '1986-10-22', 'Kandy', 'Government Officer', 'B002'),
+(862, 'C0862', 'Sunil Dissanayake', 'Male', '1987-11-23', 'Galle', 'IT Professional', 'B003'),
+(863, 'C0863', 'Kavinda Rajapaksa', 'Female', '1988-12-24', 'Jaffna', 'Consultant', 'B004'),
+(864, 'C0864', 'Dilan Senanayake', 'Male', '1989-01-25', 'Negombo', 'Engineer', 'B005'),
+(865, 'C0865', 'Ruwan Alwis', 'Female', '1990-02-26', 'Kurunegala', 'Doctor', 'B006'),
+(866, 'C0866', 'Roshan Karunaratne', 'Male', '1991-03-27', 'Matara', 'Teacher', 'B007'),
+(867, 'C0867', 'Nadeesha Mendis', 'Female', '1992-04-28', 'Nuwara Eliya', 'Accountant', 'B008'),
+(868, 'C0868', 'Chathura Fonseka', 'Male', '1993-05-01', 'Batticaloa', 'Business Owner', 'B009'),
+(869, 'C0869', 'Janaka Abeysekara', 'Female', '1994-06-02', 'Anuradhapura', 'Executive', 'B010'),
+(870, 'C0870', 'Priyanka Perera', 'Male', '1995-07-03', 'Colombo', 'Government Officer', 'B001'),
+(871, 'C0871', 'Sangeeth Silva', 'Female', '1996-08-04', 'Kandy', 'IT Professional', 'B002'),
+(872, 'C0872', 'Malinda Fernando', 'Male', '1997-09-05', 'Galle', 'Consultant', 'B003'),
+(873, 'C0873', 'Thilina Jayawardena', 'Female', '1998-10-06', 'Jaffna', 'Engineer', 'B004'),
+(874, 'C0874', 'Buddhika Wickramasinghe', 'Male', '1999-11-07', 'Negombo', 'Doctor', 'B005'),
+(875, 'C0875', 'Nuwan Gunaratne', 'Female', '1965-12-08', 'Kurunegala', 'Teacher', 'B006'),
+(876, 'C0876', 'Anushka Bandara', 'Male', '1966-01-09', 'Matara', 'Accountant', 'B007'),
+(877, 'C0877', 'Indika Dissanayake', 'Female', '1967-02-10', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(878, 'C0878', 'Pradeep Rajapaksa', 'Male', '1968-03-11', 'Batticaloa', 'Executive', 'B009'),
+(879, 'C0879', 'Gayan Senanayake', 'Female', '1969-04-12', 'Anuradhapura', 'Government Officer', 'B010'),
+(880, 'C0880', 'Amal Alwis', 'Male', '1970-05-13', 'Colombo', 'IT Professional', 'B001'),
+(881, 'C0881', 'Kamal Karunaratne', 'Female', '1971-06-14', 'Kandy', 'Consultant', 'B002'),
+(882, 'C0882', 'Sunil Mendis', 'Male', '1972-07-15', 'Galle', 'Engineer', 'B003'),
+(883, 'C0883', 'Kavinda Fonseka', 'Female', '1973-08-16', 'Jaffna', 'Doctor', 'B004'),
+(884, 'C0884', 'Dilan Abeysekara', 'Male', '1974-09-17', 'Negombo', 'Teacher', 'B005'),
+(885, 'C0885', 'Ruwan Perera', 'Female', '1975-10-18', 'Kurunegala', 'Accountant', 'B006'),
+(886, 'C0886', 'Roshan Silva', 'Male', '1976-11-19', 'Matara', 'Business Owner', 'B007'),
+(887, 'C0887', 'Nadeesha Fernando', 'Female', '1977-12-20', 'Nuwara Eliya', 'Executive', 'B008'),
+(888, 'C0888', 'Chathura Jayawardena', 'Male', '1978-01-21', 'Batticaloa', 'Government Officer', 'B009'),
+(889, 'C0889', 'Janaka Wickramasinghe', 'Female', '1979-02-22', 'Anuradhapura', 'IT Professional', 'B010'),
+(890, 'C0890', 'Priyanka Gunaratne', 'Male', '1980-03-23', 'Colombo', 'Consultant', 'B001'),
+(891, 'C0891', 'Sangeeth Bandara', 'Female', '1981-04-24', 'Kandy', 'Engineer', 'B002'),
+(892, 'C0892', 'Malinda Dissanayake', 'Male', '1982-05-25', 'Galle', 'Doctor', 'B003'),
+(893, 'C0893', 'Thilina Rajapaksa', 'Female', '1983-06-26', 'Jaffna', 'Teacher', 'B004'),
+(894, 'C0894', 'Buddhika Senanayake', 'Male', '1984-07-27', 'Negombo', 'Accountant', 'B005'),
+(895, 'C0895', 'Nuwan Alwis', 'Female', '1985-08-28', 'Kurunegala', 'Business Owner', 'B006'),
+(896, 'C0896', 'Anushka Karunaratne', 'Male', '1986-09-01', 'Matara', 'Executive', 'B007'),
+(897, 'C0897', 'Indika Mendis', 'Female', '1987-10-02', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(898, 'C0898', 'Pradeep Fonseka', 'Male', '1988-11-03', 'Batticaloa', 'IT Professional', 'B009'),
+(899, 'C0899', 'Gayan Abeysekara', 'Female', '1989-12-04', 'Anuradhapura', 'Consultant', 'B010'),
+(900, 'C0900', 'Amal Perera', 'Male', '1990-01-05', 'Colombo', 'Engineer', 'B001'),
+(901, 'C0901', 'Kamal Silva', 'Female', '1991-02-06', 'Kandy', 'Doctor', 'B002'),
+(902, 'C0902', 'Sunil Fernando', 'Male', '1992-03-07', 'Galle', 'Teacher', 'B003'),
+(903, 'C0903', 'Kavinda Jayawardena', 'Female', '1993-04-08', 'Jaffna', 'Accountant', 'B004'),
+(904, 'C0904', 'Dilan Wickramasinghe', 'Male', '1994-05-09', 'Negombo', 'Business Owner', 'B005'),
+(905, 'C0905', 'Ruwan Gunaratne', 'Female', '1995-06-10', 'Kurunegala', 'Executive', 'B006'),
+(906, 'C0906', 'Roshan Bandara', 'Male', '1996-07-11', 'Matara', 'Government Officer', 'B007'),
+(907, 'C0907', 'Nadeesha Dissanayake', 'Female', '1997-08-12', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(908, 'C0908', 'Chathura Rajapaksa', 'Male', '1998-09-13', 'Batticaloa', 'Consultant', 'B009'),
+(909, 'C0909', 'Janaka Senanayake', 'Female', '1999-10-14', 'Anuradhapura', 'Engineer', 'B010'),
+(910, 'C0910', 'Priyanka Alwis', 'Male', '1965-11-15', 'Colombo', 'Doctor', 'B001'),
+(911, 'C0911', 'Sangeeth Karunaratne', 'Female', '1966-12-16', 'Kandy', 'Teacher', 'B002'),
+(912, 'C0912', 'Malinda Mendis', 'Male', '1967-01-17', 'Galle', 'Accountant', 'B003'),
+(913, 'C0913', 'Thilina Fonseka', 'Female', '1968-02-18', 'Jaffna', 'Business Owner', 'B004'),
+(914, 'C0914', 'Buddhika Abeysekara', 'Male', '1969-03-19', 'Negombo', 'Executive', 'B005'),
+(915, 'C0915', 'Nuwan Perera', 'Female', '1970-04-20', 'Kurunegala', 'Government Officer', 'B006'),
+(916, 'C0916', 'Anushka Silva', 'Male', '1971-05-21', 'Matara', 'IT Professional', 'B007'),
+(917, 'C0917', 'Indika Fernando', 'Female', '1972-06-22', 'Nuwara Eliya', 'Consultant', 'B008'),
+(918, 'C0918', 'Pradeep Jayawardena', 'Male', '1973-07-23', 'Batticaloa', 'Engineer', 'B009'),
+(919, 'C0919', 'Gayan Wickramasinghe', 'Female', '1974-08-24', 'Anuradhapura', 'Doctor', 'B010'),
+(920, 'C0920', 'Amal Gunaratne', 'Male', '1975-09-25', 'Colombo', 'Teacher', 'B001'),
+(921, 'C0921', 'Kamal Bandara', 'Female', '1976-10-26', 'Kandy', 'Accountant', 'B002'),
+(922, 'C0922', 'Sunil Dissanayake', 'Male', '1977-11-27', 'Galle', 'Business Owner', 'B003'),
+(923, 'C0923', 'Kavinda Rajapaksa', 'Female', '1978-12-28', 'Jaffna', 'Executive', 'B004'),
+(924, 'C0924', 'Dilan Senanayake', 'Male', '1979-01-01', 'Negombo', 'Government Officer', 'B005'),
+(925, 'C0925', 'Ruwan Alwis', 'Female', '1980-02-02', 'Kurunegala', 'IT Professional', 'B006'),
+(926, 'C0926', 'Roshan Karunaratne', 'Male', '1981-03-03', 'Matara', 'Consultant', 'B007'),
+(927, 'C0927', 'Nadeesha Mendis', 'Female', '1982-04-04', 'Nuwara Eliya', 'Engineer', 'B008'),
+(928, 'C0928', 'Chathura Fonseka', 'Male', '1983-05-05', 'Batticaloa', 'Doctor', 'B009'),
+(929, 'C0929', 'Janaka Abeysekara', 'Female', '1984-06-06', 'Anuradhapura', 'Teacher', 'B010'),
+(930, 'C0930', 'Priyanka Perera', 'Male', '1985-07-07', 'Colombo', 'Accountant', 'B001'),
+(931, 'C0931', 'Sangeeth Silva', 'Female', '1986-08-08', 'Kandy', 'Business Owner', 'B002'),
+(932, 'C0932', 'Malinda Fernando', 'Male', '1987-09-09', 'Galle', 'Executive', 'B003'),
+(933, 'C0933', 'Thilina Jayawardena', 'Female', '1988-10-10', 'Jaffna', 'Government Officer', 'B004'),
+(934, 'C0934', 'Buddhika Wickramasinghe', 'Male', '1989-11-11', 'Negombo', 'IT Professional', 'B005'),
+(935, 'C0935', 'Nuwan Gunaratne', 'Female', '1990-12-12', 'Kurunegala', 'Consultant', 'B006'),
+(936, 'C0936', 'Anushka Bandara', 'Male', '1991-01-13', 'Matara', 'Engineer', 'B007'),
+(937, 'C0937', 'Indika Dissanayake', 'Female', '1992-02-14', 'Nuwara Eliya', 'Doctor', 'B008'),
+(938, 'C0938', 'Pradeep Rajapaksa', 'Male', '1993-03-15', 'Batticaloa', 'Teacher', 'B009'),
+(939, 'C0939', 'Gayan Senanayake', 'Female', '1994-04-16', 'Anuradhapura', 'Accountant', 'B010'),
+(940, 'C0940', 'Amal Alwis', 'Male', '1995-05-17', 'Colombo', 'Business Owner', 'B001'),
+(941, 'C0941', 'Kamal Karunaratne', 'Female', '1996-06-18', 'Kandy', 'Executive', 'B002'),
+(942, 'C0942', 'Sunil Mendis', 'Male', '1997-07-19', 'Galle', 'Government Officer', 'B003'),
+(943, 'C0943', 'Kavinda Fonseka', 'Female', '1998-08-20', 'Jaffna', 'IT Professional', 'B004'),
+(944, 'C0944', 'Dilan Abeysekara', 'Male', '1999-09-21', 'Negombo', 'Consultant', 'B005'),
+(945, 'C0945', 'Ruwan Perera', 'Female', '1965-10-22', 'Kurunegala', 'Engineer', 'B006'),
+(946, 'C0946', 'Roshan Silva', 'Male', '1966-11-23', 'Matara', 'Doctor', 'B007'),
+(947, 'C0947', 'Nadeesha Fernando', 'Female', '1967-12-24', 'Nuwara Eliya', 'Teacher', 'B008'),
+(948, 'C0948', 'Chathura Jayawardena', 'Male', '1968-01-25', 'Batticaloa', 'Accountant', 'B009'),
+(949, 'C0949', 'Janaka Wickramasinghe', 'Female', '1969-02-26', 'Anuradhapura', 'Business Owner', 'B010'),
+(950, 'C0950', 'Priyanka Gunaratne', 'Male', '1970-03-27', 'Colombo', 'Executive', 'B001'),
+(951, 'C0951', 'Sangeeth Bandara', 'Female', '1971-04-28', 'Kandy', 'Government Officer', 'B002'),
+(952, 'C0952', 'Malinda Dissanayake', 'Male', '1972-05-01', 'Galle', 'IT Professional', 'B003'),
+(953, 'C0953', 'Thilina Rajapaksa', 'Female', '1973-06-02', 'Jaffna', 'Consultant', 'B004'),
+(954, 'C0954', 'Buddhika Senanayake', 'Male', '1974-07-03', 'Negombo', 'Engineer', 'B005'),
+(955, 'C0955', 'Nuwan Alwis', 'Female', '1975-08-04', 'Kurunegala', 'Doctor', 'B006'),
+(956, 'C0956', 'Anushka Karunaratne', 'Male', '1976-09-05', 'Matara', 'Teacher', 'B007'),
+(957, 'C0957', 'Indika Mendis', 'Female', '1977-10-06', 'Nuwara Eliya', 'Accountant', 'B008'),
+(958, 'C0958', 'Pradeep Fonseka', 'Male', '1978-11-07', 'Batticaloa', 'Business Owner', 'B009'),
+(959, 'C0959', 'Gayan Abeysekara', 'Female', '1979-12-08', 'Anuradhapura', 'Executive', 'B010'),
+(960, 'C0960', 'Amal Perera', 'Male', '1980-01-09', 'Colombo', 'Government Officer', 'B001'),
+(961, 'C0961', 'Kamal Silva', 'Female', '1981-02-10', 'Kandy', 'IT Professional', 'B002'),
+(962, 'C0962', 'Sunil Fernando', 'Male', '1982-03-11', 'Galle', 'Consultant', 'B003'),
+(963, 'C0963', 'Kavinda Jayawardena', 'Female', '1983-04-12', 'Jaffna', 'Engineer', 'B004'),
+(964, 'C0964', 'Dilan Wickramasinghe', 'Male', '1984-05-13', 'Negombo', 'Doctor', 'B005'),
+(965, 'C0965', 'Ruwan Gunaratne', 'Female', '1985-06-14', 'Kurunegala', 'Teacher', 'B006'),
+(966, 'C0966', 'Roshan Bandara', 'Male', '1986-07-15', 'Matara', 'Accountant', 'B007'),
+(967, 'C0967', 'Nadeesha Dissanayake', 'Female', '1987-08-16', 'Nuwara Eliya', 'Business Owner', 'B008'),
+(968, 'C0968', 'Chathura Rajapaksa', 'Male', '1988-09-17', 'Batticaloa', 'Executive', 'B009'),
+(969, 'C0969', 'Janaka Senanayake', 'Female', '1989-10-18', 'Anuradhapura', 'Government Officer', 'B010'),
+(970, 'C0970', 'Priyanka Alwis', 'Male', '1990-11-19', 'Colombo', 'IT Professional', 'B001'),
+(971, 'C0971', 'Sangeeth Karunaratne', 'Female', '1991-12-20', 'Kandy', 'Consultant', 'B002'),
+(972, 'C0972', 'Malinda Mendis', 'Male', '1992-01-21', 'Galle', 'Engineer', 'B003'),
+(973, 'C0973', 'Thilina Fonseka', 'Female', '1993-02-22', 'Jaffna', 'Doctor', 'B004'),
+(974, 'C0974', 'Buddhika Abeysekara', 'Male', '1994-03-23', 'Negombo', 'Teacher', 'B005'),
+(975, 'C0975', 'Nuwan Perera', 'Female', '1995-04-24', 'Kurunegala', 'Accountant', 'B006'),
+(976, 'C0976', 'Anushka Silva', 'Male', '1996-05-25', 'Matara', 'Business Owner', 'B007'),
+(977, 'C0977', 'Indika Fernando', 'Female', '1997-06-26', 'Nuwara Eliya', 'Executive', 'B008'),
+(978, 'C0978', 'Pradeep Jayawardena', 'Male', '1998-07-27', 'Batticaloa', 'Government Officer', 'B009'),
+(979, 'C0979', 'Gayan Wickramasinghe', 'Female', '1999-08-28', 'Anuradhapura', 'IT Professional', 'B010'),
+(980, 'C0980', 'Amal Gunaratne', 'Male', '1965-09-01', 'Colombo', 'Consultant', 'B001'),
+(981, 'C0981', 'Kamal Bandara', 'Female', '1966-10-02', 'Kandy', 'Engineer', 'B002'),
+(982, 'C0982', 'Sunil Dissanayake', 'Male', '1967-11-03', 'Galle', 'Doctor', 'B003'),
+(983, 'C0983', 'Kavinda Rajapaksa', 'Female', '1968-12-04', 'Jaffna', 'Teacher', 'B004'),
+(984, 'C0984', 'Dilan Senanayake', 'Male', '1969-01-05', 'Negombo', 'Accountant', 'B005'),
+(985, 'C0985', 'Ruwan Alwis', 'Female', '1970-02-06', 'Kurunegala', 'Business Owner', 'B006'),
+(986, 'C0986', 'Roshan Karunaratne', 'Male', '1971-03-07', 'Matara', 'Executive', 'B007'),
+(987, 'C0987', 'Nadeesha Mendis', 'Female', '1972-04-08', 'Nuwara Eliya', 'Government Officer', 'B008'),
+(988, 'C0988', 'Chathura Fonseka', 'Male', '1973-05-09', 'Batticaloa', 'IT Professional', 'B009'),
+(989, 'C0989', 'Janaka Abeysekara', 'Female', '1974-06-10', 'Anuradhapura', 'Consultant', 'B010'),
+(990, 'C0990', 'Priyanka Perera', 'Male', '1975-07-11', 'Colombo', 'Engineer', 'B001'),
+(991, 'C0991', 'Sangeeth Silva', 'Female', '1976-08-12', 'Kandy', 'Doctor', 'B002'),
+(992, 'C0992', 'Malinda Fernando', 'Male', '1977-09-13', 'Galle', 'Teacher', 'B003'),
+(993, 'C0993', 'Thilina Jayawardena', 'Female', '1978-10-14', 'Jaffna', 'Accountant', 'B004'),
+(994, 'C0994', 'Buddhika Wickramasinghe', 'Male', '1979-11-15', 'Negombo', 'Business Owner', 'B005'),
+(995, 'C0995', 'Nuwan Gunaratne', 'Female', '1980-12-16', 'Kurunegala', 'Executive', 'B006'),
+(996, 'C0996', 'Anushka Bandara', 'Male', '1981-01-17', 'Matara', 'Government Officer', 'B007'),
+(997, 'C0997', 'Indika Dissanayake', 'Female', '1982-02-18', 'Nuwara Eliya', 'IT Professional', 'B008'),
+(998, 'C0998', 'Pradeep Rajapaksa', 'Male', '1983-03-19', 'Batticaloa', 'Consultant', 'B009'),
+(999, 'C0999', 'Gayan Senanayake', 'Female', '1984-04-20', 'Anuradhapura', 'Engineer', 'B010'),
+(1000, 'C1000', 'Amal Alwis', 'Male', '1985-05-21', 'Colombo', 'Doctor', 'B001');
+
 CREATE TABLE IF NOT EXISTS loans (
     loan_id INT PRIMARY KEY,
     customer_id INT NOT NULL,
@@ -11,7 +1050,8 @@ CREATE TABLE IF NOT EXISTS loans (
     interest_rate DECIMAL(5,2),
     loan_start_date DATE,
     loan_end_date DATE,
-    loan_status VARCHAR(30)
+    loan_status VARCHAR(30),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
 );
 
 CREATE TABLE IF NOT EXISTS loan_payments (
@@ -2030,3 +3070,951 @@ INSERT INTO loan_payments (payment_id, loan_id, payment_date, payment_amount, pa
 
 SELECT * FROM loans;
 SELECT * FROM loan_payments;
+
+-- ============================================================================
+-- PRODUCTION EXTENSION SCHEMA: ENTERPRISE LOAN MANAGEMENT SYSTEM
+-- ============================================================================
+-- The following extensions upgrade banking_loan_source from a raw seed dump
+-- into a production-grade operational banking loan subsystem.
+-- It equips branch loan officers, credit managers, and compliance auditors with:
+--   1. Performance B-Tree Secondary Indexes
+--   2. Operational Audit & Compliance Tables (loan_audit_log, loan_payment_audit_log)
+--   3. Data Integrity & Business Logic Triggers
+--   4. User Defined Functions (UDFs) for Financial Calculations (EMI, Interest, Balance, Risk Tier, Days Overdue)
+--   5. Stored Procedures with ACID Transactions & Rollback Protection
+--   6. Automated MySQL Scheduled Events (Daily status & overdue evaluation)
+--   7. Role-Based Operational Views for End-Users
+--   8. Role-Based Access Control (RBAC) Security Setup
+-- NOTE: Base columns of `loans` and `loan_payments` remain 100% untouched to
+--       maintain strict compatibility with the downstream Data Warehouse ETL.
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- SECTION 1: PERFORMANCE SECONDARY INDEXES
+-- ----------------------------------------------------------------------------
+CREATE INDEX idx_loans_customer ON loans(customer_id);
+CREATE INDEX idx_loans_account ON loans(account_id);
+CREATE INDEX idx_loans_status ON loans(loan_status);
+CREATE INDEX idx_loans_dates ON loans(loan_start_date, loan_end_date);
+CREATE INDEX idx_loans_type_status ON loans(loan_type, loan_status);
+
+CREATE INDEX idx_payments_loan ON loan_payments(loan_id);
+CREATE INDEX idx_payments_date ON loan_payments(payment_date);
+CREATE INDEX idx_payments_status ON loan_payments(payment_status);
+CREATE INDEX idx_payments_method ON loan_payments(payment_method);
+
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- SECTION 2: EXTENDED PRODUCTION OPERATIONAL TABLES & CATALOG
+-- ============================================================================
+
+-- 2.1 Loan Products Master Catalog
+CREATE TABLE IF NOT EXISTS loan_products (
+    product_id VARCHAR(10) PRIMARY KEY,
+    product_code VARCHAR(20) NOT NULL UNIQUE,
+    product_name VARCHAR(100) NOT NULL,
+    loan_category VARCHAR(50) NOT NULL,
+    min_amount DECIMAL(15,2) NOT NULL,
+    max_amount DECIMAL(15,2) NOT NULL,
+    base_interest_rate DECIMAL(5,2) NOT NULL,
+    max_tenure_months INT NOT NULL,
+    is_collateral_required BOOLEAN NOT NULL DEFAULT FALSE,
+    processing_fee_percentage DECIMAL(4,2) DEFAULT 1.00,
+    INDEX idx_prod_category (loan_category),
+    INDEX idx_prod_rate (base_interest_rate)
+);
+
+INSERT INTO loan_products (product_id, product_code, product_name, loan_category, min_amount, max_amount, base_interest_rate, max_tenure_months, is_collateral_required, processing_fee_percentage) VALUES
+('PRD01', 'PERS-STD', 'Standard Personal Flexi Loan', 'Personal', 50000.00, 5000000.00, 13.50, 60, FALSE, 1.00),
+('PRD02', 'HOME-PRM', 'Prime Residential Housing Loan', 'Housing', 500000.00, 25000000.00, 11.25, 240, TRUE, 0.75),
+('PRD03', 'AUTO-DRV', 'DrivePlus Commercial & Personal Vehicle Loan', 'Vehicle', 250000.00, 10000000.00, 14.00, 84, TRUE, 1.25),
+('PRD04', 'EDU-SCH', 'Higher Education & Scholar Loan', 'Education', 100000.00, 5000000.00, 8.50, 84, FALSE, 0.50),
+('PRD05', 'BIZ-GROW', 'SME Business Expansion & Working Capital Loan', 'Business', 500000.00, 20000000.00, 12.75, 120, TRUE, 1.50);
+
+-- 2.2 Loan Officers & Credit Staff
+CREATE TABLE IF NOT EXISTS loan_officers (
+    officer_id INT PRIMARY KEY,
+    employee_code VARCHAR(20) NOT NULL UNIQUE,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    phone_number VARCHAR(20) NOT NULL,
+    branch_id VARCHAR(10) NOT NULL,
+    role_title VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Active',
+    FOREIGN KEY (branch_id) REFERENCES branches(branch_id),
+    INDEX idx_officer_branch (branch_id),
+    INDEX idx_officer_status (status)
+);
+
+INSERT INTO loan_officers (officer_id, employee_code, first_name, last_name, email, phone_number, branch_id, role_title, status) VALUES
+(101, 'EMP0101', 'Sunil', 'Perera', 'sunil.perera@bank.lk', '+94 77 123 4567', 'B001', 'Branch Loan Manager', 'Active'),
+(102, 'EMP0102', 'Kamal', 'Silva', 'kamal.silva@bank.lk', '+94 77 234 5678', 'B001', 'Senior Loan Officer', 'Active'),
+(103, 'EMP0103', 'Dilani', 'Jayasinghe', 'dilani.j@bank.lk', '+94 77 345 6789', 'B002', 'Branch Loan Manager', 'Active'),
+(104, 'EMP0104', 'Ruwan', 'Wickrama', 'ruwan.w@bank.lk', '+94 77 456 7890', 'B003', 'Senior Loan Officer', 'Active'),
+(105, 'EMP0105', 'Ayesha', 'Fernando', 'ayesha.f@bank.lk', '+94 77 567 8901', 'B004', 'Credit Analyst', 'Active'),
+(106, 'EMP0106', 'Pradeep', 'Bandara', 'pradeep.b@bank.lk', '+94 77 678 9012', 'B005', 'Senior Loan Officer', 'Active'),
+(107, 'EMP0107', 'Nadeesha', 'Dissanayake', 'nadeesha.d@bank.lk', '+94 77 789 0123', 'B006', 'Credit Analyst', 'Active'),
+(108, 'EMP0108', 'Chathura', 'Gunaratne', 'chathura.g@bank.lk', '+94 77 890 1234', 'B007', 'Recovery Officer', 'Active'),
+(109, 'EMP0109', 'Sangeeth', 'Senanayake', 'sangeeth.s@bank.lk', '+94 77 901 2345', 'B008', 'Branch Loan Manager', 'Active'),
+(110, 'EMP0110', 'Buddhika', 'Alwis', 'buddhika.a@bank.lk', '+94 77 012 3456', 'B009', 'Recovery Officer', 'Active'),
+(111, 'EMP0111', 'Malinda', 'Mendis', 'malinda.m@bank.lk', '+94 77 112 2334', 'B010', 'Branch Loan Manager', 'Active');
+
+-- 2.3 Loan Applications / Underwriting Pipeline
+CREATE TABLE IF NOT EXISTS loan_applications (
+    application_id INT PRIMARY KEY,
+    customer_id INT NOT NULL,
+    product_id VARCHAR(10) NOT NULL,
+    assigned_officer_id INT,
+    applied_amount DECIMAL(15,2) NOT NULL,
+    requested_tenure_months INT NOT NULL,
+    application_date DATE NOT NULL,
+    credit_score INT NOT NULL,
+    approval_status VARCHAR(30) NOT NULL DEFAULT 'Submitted',
+    approved_amount DECIMAL(15,2),
+    approval_date DATE,
+    decision_notes VARCHAR(500),
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
+    FOREIGN KEY (product_id) REFERENCES loan_products(product_id),
+    FOREIGN KEY (assigned_officer_id) REFERENCES loan_officers(officer_id),
+    INDEX idx_app_customer (customer_id),
+    INDEX idx_app_product (product_id),
+    INDEX idx_app_officer (assigned_officer_id),
+    INDEX idx_app_status (approval_status),
+    INDEX idx_app_date (application_date)
+);
+
+INSERT INTO loan_applications (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, approved_amount, approval_date, decision_notes) VALUES
+(7001, 1, 'PRD01', 101, 3500000.00, 36, '2023-01-10', 740, 'Approved', 3233200.00, '2023-01-20', 'Solid credit history and repayment capacity confirmed.'),
+(7002, 2, 'PRD02', 102, 1500000.00, 240, '2021-02-01', 780, 'Approved', 1300000.00, '2021-02-15', 'Primary residential title verified and cleared by legal team.'),
+(7003, 3, 'PRD03', 103, 3500000.00, 60, '2020-12-05', 690, 'Approved', 3415800.00, '2020-12-18', 'Vehicle proforma invoice appraised and approved.'),
+(7004, 4, 'PRD04', 104, 3000000.00, 84, '2021-01-05', 720, 'Approved', 2993400.00, '2021-01-15', 'University enrolment proof validated, guarantor verified.'),
+(7005, 5, 'PRD05', 105, 1200000.00, 120, '2020-04-01', 650, 'Approved', 1171300.00, '2020-04-12', 'Audited SME balance sheet accepted with hypothecation.'),
+(7006, 6, 'PRD01', 106, 2900000.00, 36, '2024-08-25', 710, 'Approved', 2850100.00, '2024-09-08', 'Approved within personal loan risk threshold.'),
+(7007, 7, 'PRD02', 107, 1250000.00, 240, '2020-01-12', 760, 'Approved', 1180200.00, '2020-01-24', 'Mortgage deed registered with Land Registry.'),
+(7008, 8, 'PRD03', 108, 4000000.00, 60, '2024-09-10', 730, 'Approved', 3818200.00, '2024-09-22', 'Commercial van facility approved.'),
+(7009, 9, 'PRD04', 109, 1800000.00, 84, '2023-09-20', 705, 'Approved', 1767200.00, '2023-10-05', 'Postgraduate degree sponsorship approved.'),
+(7010, 10, 'PRD05', 110, 700000.00, 120, '2023-12-15', 640, 'Approved', 600800.00, '2024-01-05', 'Working capital line cleared by regional credit committee.'),
+(7011, 11, 'PRD01', 111, 4500000.00, 36, '2020-06-05', 715, 'Approved', 4252700.00, '2020-06-20', 'Approved on executive salary assignment.'),
+(7012, 12, 'PRD02', 101, 3800000.00, 240, '2024-03-10', 775, 'Approved', 3675700.00, '2024-03-25', 'Condominium purchase facility sanctioned.');
+
+-- 2.4 Loan Collateral & Asset Securities
+CREATE TABLE IF NOT EXISTS loan_collaterals (
+    collateral_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    collateral_type VARCHAR(50) NOT NULL,
+    collateral_description VARCHAR(255) NOT NULL,
+    valuation_amount DECIMAL(15,2) NOT NULL,
+    valuation_date DATE NOT NULL,
+    valuer_name VARCHAR(100) NOT NULL,
+    document_reference VARCHAR(100),
+    status VARCHAR(30) NOT NULL DEFAULT 'Pledged',
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_collateral_loan (loan_id),
+    INDEX idx_collateral_type (collateral_type),
+    INDEX idx_collateral_status (status)
+);
+
+INSERT INTO loan_collaterals (collateral_id, loan_id, collateral_type, collateral_description, valuation_amount, valuation_date, valuer_name, document_reference, status) VALUES
+(8001, 1002, 'Real Estate', 'Residential Land & 2-Story House, Matara (Lot 45A)', 2200000.00, '2021-02-10', 'Chartered Valuers Lanka Ltd', 'DEED-MAT-2021-45', 'Pledged'),
+(8002, 1003, 'Vehicle', 'Toyota Hilux Double Cab 2020, Reg WP-CAG-8921', 4500000.00, '2020-12-10', 'Automobile Association of Ceylon', 'CR-WP-8921', 'Pledged'),
+(8003, 1005, 'Commercial Property', 'Commercial Warehouse & Workshop, Anuradhapura', 2500000.00, '2020-04-05', 'Central Valuations Pvt Ltd', 'DEED-ANU-2020-112', 'Pledged'),
+(8004, 1007, 'Real Estate', 'Prime Residential Property, Batticaloa', 1900000.00, '2020-01-18', 'Chartered Valuers Lanka Ltd', 'DEED-BAT-2020-78', 'Pledged'),
+(8005, 1008, 'Vehicle', 'Isuzu D-Max Crew Cab 2022, Reg SP-DA-4412', 5200000.00, '2024-09-18', 'Speed Valuations Ltd', 'CR-SP-4412', 'Pledged'),
+(8006, 1010, 'Fixed Deposit', 'Lien on 5-Year Term Deposit #FD-990812', 1000000.00, '2024-01-05', 'Internal Branch Lien', 'LIEN-B010-9908', 'Pledged'),
+(8007, 1012, 'Real Estate', 'Luxury Apartment Unit 4B, Colombo 03', 6000000.00, '2024-03-15', 'CBRE Property Valuation', 'DEED-COL-2024-904', 'Pledged');
+
+-- 2.5 Loan Guarantors & Co-Signers
+CREATE TABLE IF NOT EXISTS loan_guarantors (
+    guarantor_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    guarantor_name VARCHAR(100) NOT NULL,
+    nic_number VARCHAR(20) NOT NULL,
+    relationship_to_borrower VARCHAR(50) NOT NULL,
+    phone_number VARCHAR(20) NOT NULL,
+    monthly_income DECIMAL(15,2) NOT NULL,
+    employer_name VARCHAR(100),
+    guarantee_amount DECIMAL(15,2),
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_guarantor_loan (loan_id),
+    INDEX idx_guarantor_nic (nic_number)
+);
+
+INSERT INTO loan_guarantors (guarantor_id, loan_id, guarantor_name, nic_number, relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount) VALUES
+(9001, 1001, 'Jayantha Jayasinghe', '196512345678', 'Brother', '+94 71 223 3445', 250000.00, 'State Pharmaceuticals Corp', 3233200.00),
+(9002, 1004, 'Professor Nimal Rajapaksa', '197023456789', 'Father', '+94 71 334 4556', 320000.00, 'University of Colombo', 2993400.00),
+(9003, 1006, 'Chandana Wickramasinghe', '197234567890', 'Spouse', '+94 71 445 5667', 180000.00, 'Commercial Bank of Ceylon', 2850100.00),
+(9004, 1009, 'Damayanthi Gunawardena', '197545678901', 'Mother', '+94 71 556 6778', 210000.00, 'Ministry of Education', 1767200.00),
+(9005, 1011, 'Ananda Bandara', '196856789012', 'Business Partner', '+94 71 667 7889', 450000.00, 'Lanka Agro Exports Ltd', 4252700.00);
+
+-- 2.6 Loan Disbursements Execution
+CREATE TABLE IF NOT EXISTS loan_disbursements (
+    disbursement_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    disbursement_date DATE NOT NULL,
+    disbursed_amount DECIMAL(15,2) NOT NULL,
+    disbursement_method VARCHAR(50) NOT NULL,
+    reference_number VARCHAR(100) NOT NULL UNIQUE,
+    authorized_by_officer_id INT,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    FOREIGN KEY (authorized_by_officer_id) REFERENCES loan_officers(officer_id),
+    INDEX idx_disbursement_loan (loan_id),
+    INDEX idx_disbursement_date (disbursement_date),
+    INDEX idx_disbursement_officer (authorized_by_officer_id)
+);
+
+INSERT INTO loan_disbursements (disbursement_id, loan_id, disbursement_date, disbursed_amount, disbursement_method, reference_number, authorized_by_officer_id) VALUES
+(3001, 1001, '2023-01-31', 3233200.00, 'Account Transfer', 'TXN-DISB-1001-A', 101),
+(3002, 1002, '2021-02-23', 1300000.00, 'Pay Order', 'TXN-DISB-1002-PO', 102),
+(3003, 1003, '2020-12-22', 3415800.00, 'Pay Order', 'TXN-DISB-1003-PO', 103),
+(3004, 1004, '2021-01-18', 2993400.00, 'Account Transfer', 'TXN-DISB-1004-A', 104),
+(3005, 1005, '2020-04-18', 1171300.00, 'Account Transfer', 'TXN-DISB-1005-A', 105),
+(3006, 1006, '2024-09-14', 2850100.00, 'Account Transfer', 'TXN-DISB-1006-A', 106),
+(3007, 1007, '2020-01-27', 1180200.00, 'Pay Order', 'TXN-DISB-1007-PO', 107),
+(3008, 1008, '2024-09-27', 3818200.00, 'Pay Order', 'TXN-DISB-1008-PO', 108),
+(3009, 1009, '2023-10-10', 1767200.00, 'Account Transfer', 'TXN-DISB-1009-A', 109),
+(3010, 1010, '2024-01-10', 600800.00, 'Account Transfer', 'TXN-DISB-1010-A', 110);
+
+-- 2.7 Loan Repayment Schedule & Amortization Installments
+CREATE TABLE IF NOT EXISTS loan_repayment_schedules (
+    schedule_id INT PRIMARY KEY AUTO_INCREMENT,
+    loan_id INT NOT NULL,
+    installment_number INT NOT NULL,
+    due_date DATE NOT NULL,
+    installment_amount DECIMAL(15,2) NOT NULL,
+    principal_component DECIMAL(15,2) NOT NULL,
+    interest_component DECIMAL(15,2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+    paid_date DATE NULL,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_schedule_loan (loan_id),
+    INDEX idx_schedule_due_date (due_date),
+    INDEX idx_schedule_status (status)
+);
+
+INSERT INTO loan_repayment_schedules (loan_id, installment_number, due_date, installment_amount, principal_component, interest_component, status, paid_date) VALUES
+(1001, 1, '2023-02-28', 99540.00, 81250.00, 18290.00, 'Paid', '2023-02-27'),
+(1001, 2, '2023-03-31', 99540.00, 81710.00, 17830.00, 'Paid', '2023-03-30'),
+(1001, 3, '2023-04-30', 99540.00, 82170.00, 17370.00, 'Paid', '2023-04-28'),
+(1002, 1, '2021-03-23', 10980.00, 2205.00, 8775.00, 'Paid', '2021-03-20'),
+(1002, 2, '2021-04-23', 10980.00, 2220.00, 8760.00, 'Paid', '2021-04-22'),
+(1003, 1, '2021-01-22', 84450.00, 36790.00, 47660.00, 'Paid', '2021-01-20'),
+(1005, 1, '2020-05-18', 17050.00, 5035.00, 12015.00, 'Overdue', NULL),
+(1010, 1, '2024-02-10', 8250.00, 2810.00, 5440.00, 'Overdue', NULL);
+
+-- 2.8 Loan Fees, Charges & Penalties
+CREATE TABLE IF NOT EXISTS loan_fees_and_penalties (
+    fee_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    fee_type VARCHAR(50) NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    assessed_date DATE NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Unpaid',
+    settled_date DATE NULL,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    INDEX idx_fee_loan (loan_id),
+    INDEX idx_fee_status (status),
+    INDEX idx_fee_date (assessed_date)
+);
+
+INSERT INTO loan_fees_and_penalties (fee_id, loan_id, fee_type, amount, assessed_date, status, settled_date) VALUES
+(4001, 1001, 'Documentation Fee', 25000.00, '2023-01-31', 'Settled', '2023-01-31'),
+(4002, 1002, 'Valuation & Legal Fee', 35000.00, '2021-02-23', 'Settled', '2021-02-23'),
+(4003, 1005, 'Late Payment Penalty', 5000.00, '2020-06-01', 'Unpaid', NULL),
+(4004, 1010, 'Late Payment Penalty', 3500.00, '2024-03-01', 'Unpaid', NULL),
+(4005, 1015, 'Late Payment Penalty', 8000.00, '2021-01-01', 'Unpaid', NULL);
+
+-- 2.9 Delinquency Recovery & Debt Collections Log
+CREATE TABLE IF NOT EXISTS loan_recovery_actions (
+    action_id INT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    officer_id INT NOT NULL,
+    action_date DATE NOT NULL,
+    action_type VARCHAR(50) NOT NULL,
+    officer_notes VARCHAR(500) NOT NULL,
+    borrower_commitment VARCHAR(255),
+    next_followup_date DATE,
+    FOREIGN KEY (loan_id) REFERENCES loans(loan_id),
+    FOREIGN KEY (officer_id) REFERENCES loan_officers(officer_id),
+    INDEX idx_recovery_loan (loan_id),
+    INDEX idx_recovery_officer (officer_id),
+    INDEX idx_recovery_date (action_date),
+    INDEX idx_recovery_followup (next_followup_date)
+);
+
+INSERT INTO loan_recovery_actions (action_id, loan_id, officer_id, action_date, action_type, officer_notes, borrower_commitment, next_followup_date) VALUES
+(6001, 1005, 108, '2024-05-15', 'Telephone Call', 'Contacted borrower regarding 60+ days overdue installment.', 'Promised to settle via Cash by end of month', '2024-06-01'),
+(6002, 1005, 108, '2024-06-05', 'Physical Field Visit', 'Visited commercial workshop in Anuradhapura. Business operating under cash constraints.', 'Agreed to enter formal restructuring discussion', '2024-06-20'),
+(6003, 1010, 110, '2024-07-10', 'SMS Reminder', 'Automated and manual delinquency alert dispatched to borrower phone.', 'No response received', '2024-07-20'),
+(6004, 1010, 110, '2024-07-25', 'Telephone Call', 'Spoke with account holder. Promised payment next week.', 'Promised LKR 50,000 partial payment', '2024-08-05'),
+(6005, 1015, 108, '2024-08-12', 'Legal Demand Notice', 'Formal 14-day Letter of Demand issued by Bank Legal Department.', 'Awaiting legal response from attorney', '2024-08-30');
+
+-- 2.10 Loan Facility Lifecycle Audit Log
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS loan_audit_log (
+    audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    loan_id INT NOT NULL,
+    action_type VARCHAR(30) NOT NULL, -- 'INSERT', 'UPDATE', 'STATUS_CHANGE', 'DISBURSEMENT', 'RESTRUCTURE'
+    old_status VARCHAR(30) NULL,
+    new_status VARCHAR(30) NULL,
+    old_amount DECIMAL(15,2) NULL,
+    new_amount DECIMAL(15,2) NULL,
+    old_interest_rate DECIMAL(5,2) NULL,
+    new_interest_rate DECIMAL(5,2) NULL,
+    modified_by VARCHAR(100) DEFAULT (CURRENT_USER()),
+    modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    notes VARCHAR(500) NULL,
+    INDEX idx_audit_loan (loan_id),
+    INDEX idx_audit_date (modified_at)
+);
+
+CREATE TABLE IF NOT EXISTS loan_payment_audit_log (
+    audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    payment_id INT NOT NULL,
+    loan_id INT NOT NULL,
+    action_type VARCHAR(30) NOT NULL, -- 'PAYMENT_RECEIVED', 'PAYMENT_REVERSED', 'PAYMENT_UPDATE'
+    old_amount DECIMAL(15,2) NULL,
+    new_amount DECIMAL(15,2) NULL,
+    old_status VARCHAR(30) NULL,
+    new_status VARCHAR(30) NULL,
+    modified_by VARCHAR(100) DEFAULT (CURRENT_USER()),
+    modified_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    notes VARCHAR(500) NULL,
+    INDEX idx_payment_audit_loan (loan_id),
+    INDEX idx_payment_audit_payment (payment_id)
+);
+
+-- ----------------------------------------------------------------------------
+-- SECTION 3: USER DEFINED FUNCTIONS (UDFs) FOR BANKING CALCULATIONS
+-- ----------------------------------------------------------------------------
+DELIMITER $$
+
+-- 3.1 Function: Calculate Monthly EMI using Equated Monthly Installment Formula
+-- Formula: EMI = [P x r x (1+r)^n] / [(1+r)^n - 1]
+DROP FUNCTION IF EXISTS fn_calculate_monthly_emi$$
+CREATE FUNCTION fn_calculate_monthly_emi(
+    p_principal DECIMAL(15,2),
+    p_annual_rate DECIMAL(5,2),
+    p_tenure_months INT
+)
+RETURNS DECIMAL(15,2)
+DETERMINISTIC
+NO SQL
+BEGIN
+    DECLARE v_monthly_rate DOUBLE;
+    DECLARE v_factor DOUBLE;
+    DECLARE v_emi DECIMAL(15,2);
+    
+    IF p_principal IS NULL OR p_principal <= 0 OR p_tenure_months IS NULL OR p_tenure_months <= 0 THEN
+        RETURN 0.00;
+    END IF;
+    
+    IF p_annual_rate IS NULL OR p_annual_rate = 0 THEN
+        RETURN ROUND(p_principal / p_tenure_months, 2);
+    END IF;
+    
+    SET v_monthly_rate = (p_annual_rate / 100.0) / 12.0;
+    SET v_factor = POW(1.0 + v_monthly_rate, p_tenure_months);
+    SET v_emi = ROUND(p_principal * v_monthly_rate * v_factor / (v_factor - 1.0), 2);
+    
+    RETURN v_emi;
+END$$
+
+-- 3.2 Function: Calculate Total Interest Payable Over Lifetime
+DROP FUNCTION IF EXISTS fn_calculate_total_interest$$
+CREATE FUNCTION fn_calculate_total_interest(
+    p_principal DECIMAL(15,2),
+    p_annual_rate DECIMAL(5,2),
+    p_tenure_months INT
+)
+RETURNS DECIMAL(15,2)
+DETERMINISTIC
+NO SQL
+BEGIN
+    DECLARE v_emi DECIMAL(15,2);
+    IF p_principal IS NULL OR p_principal <= 0 OR p_tenure_months IS NULL OR p_tenure_months <= 0 THEN
+        RETURN 0.00;
+    END IF;
+    SET v_emi = fn_calculate_monthly_emi(p_principal, p_annual_rate, p_tenure_months);
+    RETURN ROUND((v_emi * p_tenure_months) - p_principal, 2);
+END$$
+
+-- 3.3 Function: Calculate Outstanding Loan Balance
+DROP FUNCTION IF EXISTS fn_loan_outstanding_balance$$
+CREATE FUNCTION fn_loan_outstanding_balance(p_loan_id INT)
+RETURNS DECIMAL(15,2)
+READS SQL DATA
+BEGIN
+    DECLARE v_principal DECIMAL(15,2);
+    DECLARE v_paid DECIMAL(15,2);
+    
+    SELECT COALESCE(loan_amount, 0.00) INTO v_principal
+    FROM loans
+    WHERE loan_id = p_loan_id;
+    
+    IF v_principal IS NULL THEN
+        RETURN 0.00;
+    END IF;
+    
+    SELECT COALESCE(SUM(payment_amount), 0.00) INTO v_paid
+    FROM loan_payments
+    WHERE loan_id = p_loan_id AND payment_status = 'Paid';
+    
+    RETURN GREATEST(0.00, v_principal - v_paid);
+END$$
+
+-- 3.4 Function: Calculate Days Overdue for a Loan Facility
+DROP FUNCTION IF EXISTS fn_days_overdue$$
+CREATE FUNCTION fn_days_overdue(p_loan_id INT)
+RETURNS INT
+READS SQL DATA
+BEGIN
+    DECLARE v_end_date DATE;
+    DECLARE v_status VARCHAR(30);
+    DECLARE v_balance DECIMAL(15,2);
+    
+    SELECT loan_end_date, loan_status INTO v_end_date, v_status
+    FROM loans
+    WHERE loan_id = p_loan_id;
+    
+    IF v_status IS NULL OR v_status = 'Closed' THEN
+        RETURN 0;
+    END IF;
+    
+    SET v_balance = fn_loan_outstanding_balance(p_loan_id);
+    IF v_balance <= 0 THEN
+        RETURN 0;
+    END IF;
+    
+    IF CURDATE() > v_end_date THEN
+        RETURN DATEDIFF(CURDATE(), v_end_date);
+    ELSE
+        RETURN 0;
+    END IF;
+END$$
+
+-- 3.5 Function: Evaluate Loan Risk Tier ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'NO_RISK')
+DROP FUNCTION IF EXISTS fn_loan_risk_tier$$
+CREATE FUNCTION fn_loan_risk_tier(p_loan_id INT)
+RETURNS VARCHAR(20)
+READS SQL DATA
+BEGIN
+    DECLARE v_status VARCHAR(30);
+    DECLARE v_days_overdue INT;
+    DECLARE v_late_payments INT;
+    DECLARE v_rate DECIMAL(5,2);
+    
+    SELECT loan_status, interest_rate INTO v_status, v_rate
+    FROM loans
+    WHERE loan_id = p_loan_id;
+    
+    IF v_status IS NULL THEN
+        RETURN 'UNKNOWN';
+    END IF;
+    
+    IF v_status = 'Closed' THEN
+        RETURN 'NO_RISK';
+    END IF;
+    
+    SET v_days_overdue = fn_days_overdue(p_loan_id);
+    
+    SELECT COUNT(*) INTO v_late_payments
+    FROM loan_payments
+    WHERE loan_id = p_loan_id AND payment_status = 'Late';
+    
+    IF v_status = 'Overdue' OR v_days_overdue > 90 THEN
+        RETURN 'CRITICAL';
+    ELSEIF v_days_overdue > 0 OR v_late_payments >= 2 THEN
+        RETURN 'HIGH';
+    ELSEIF v_late_payments = 1 OR v_rate >= 15.00 THEN
+        RETURN 'MEDIUM';
+    ELSE
+        RETURN 'LOW';
+    END IF;
+END$$
+
+-- ----------------------------------------------------------------------------
+-- SECTION 4: DATA INTEGRITY & AUDIT TRIGGERS
+-- ----------------------------------------------------------------------------
+
+-- 4.1 Trigger: Validate Loan Parameters Before Insertion
+DROP TRIGGER IF EXISTS trg_loans_before_insert$$
+CREATE TRIGGER trg_loans_before_insert
+BEFORE INSERT ON loans
+FOR EACH ROW
+BEGIN
+    IF NEW.loan_amount <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Loan amount must be strictly greater than zero.';
+    END IF;
+    IF NEW.interest_rate < 0 OR NEW.interest_rate > 100 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Interest rate must be between 0.00% and 100.00%.';
+    END IF;
+    IF NEW.loan_end_date <= NEW.loan_start_date THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Loan maturity date must be after start date.';
+    END IF;
+    IF NEW.loan_type NOT IN ('Personal', 'Housing', 'Vehicle', 'Education', 'Business') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Invalid loan type specified.';
+    END IF;
+    IF NEW.loan_status NOT IN ('Active', 'Closed', 'Overdue', 'Pending', 'Defaulted') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Invalid loan status specified.';
+    END IF;
+END$$
+
+-- 4.2 Trigger: Audit Trail on Loan Update
+DROP TRIGGER IF EXISTS trg_loans_after_update$$
+CREATE TRIGGER trg_loans_after_update
+AFTER UPDATE ON loans
+FOR EACH ROW
+BEGIN
+    IF OLD.loan_status <> NEW.loan_status OR OLD.loan_amount <> NEW.loan_amount OR OLD.interest_rate <> NEW.interest_rate THEN
+        INSERT INTO loan_audit_log (
+            loan_id, action_type, old_status, new_status,
+            old_amount, new_amount, old_interest_rate, new_interest_rate, notes
+        ) VALUES (
+            NEW.loan_id,
+            CASE WHEN OLD.loan_status <> NEW.loan_status THEN 'STATUS_CHANGE' ELSE 'UPDATE' END,
+            OLD.loan_status, NEW.loan_status,
+            OLD.loan_amount, NEW.loan_amount,
+            OLD.interest_rate, NEW.interest_rate,
+            'Automated audit recorded by database trigger trg_loans_after_update'
+        );
+    END IF;
+END$$
+
+-- 4.3 Trigger: Validate Loan Payment Before Insertion
+DROP TRIGGER IF EXISTS trg_loan_payments_before_insert$$
+CREATE TRIGGER trg_loan_payments_before_insert
+BEFORE INSERT ON loan_payments
+FOR EACH ROW
+BEGIN
+    DECLARE v_status VARCHAR(30);
+    
+    IF NEW.payment_amount <= 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Payment amount must be strictly positive.';
+    END IF;
+    IF NEW.payment_status NOT IN ('Paid', 'Pending', 'Late', 'Reversed') THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Invalid payment status.';
+    END IF;
+    
+    SELECT loan_status INTO v_status FROM loans WHERE loan_id = NEW.loan_id;
+    IF v_status IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Associated loan facility does not exist.';
+    ELSEIF v_status = 'Closed' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Cannot post payment against an already Closed loan facility.';
+    END IF;
+END$$
+
+-- 4.4 Trigger: Audit Trail on Payment Insertion
+DROP TRIGGER IF EXISTS trg_loan_payments_after_insert$$
+CREATE TRIGGER trg_loan_payments_after_insert
+AFTER INSERT ON loan_payments
+FOR EACH ROW
+BEGIN
+    INSERT INTO loan_payment_audit_log (
+        payment_id, loan_id, action_type, new_amount, new_status, notes
+    ) VALUES (
+        NEW.payment_id, NEW.loan_id, 'PAYMENT_RECEIVED', NEW.payment_amount, NEW.payment_status,
+        CONCAT('Payment processed via ', NEW.payment_method)
+    );
+END$$
+
+-- ----------------------------------------------------------------------------
+-- SECTION 5: STORED PROCEDURES WITH ACID TRANSACTIONS
+-- ----------------------------------------------------------------------------
+
+-- 5.1 Procedure: Disburse New Loan Facility with Atomic Transaction
+DROP PROCEDURE IF EXISTS sp_disburse_new_loan$$
+CREATE PROCEDURE sp_disburse_new_loan(
+    IN p_loan_id INT,
+    IN p_customer_id INT,
+    IN p_account_id INT,
+    IN p_loan_type VARCHAR(50),
+    IN p_loan_amount DECIMAL(15,2),
+    IN p_interest_rate DECIMAL(5,2),
+    IN p_loan_start_date DATE,
+    IN p_loan_end_date DATE,
+    OUT p_status_code VARCHAR(20),
+    OUT p_status_message VARCHAR(255)
+)
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_status_code = 'ERROR';
+        SET p_status_message = 'Disbursement failed. Transaction rolled back.';
+    END;
+
+    START TRANSACTION;
+    
+    IF p_loan_id IS NULL OR EXISTS (SELECT 1 FROM loans WHERE loan_id = p_loan_id) THEN
+        SET p_status_code = 'DUPLICATE_KEY';
+        SET p_status_message = 'Loan ID already exists or is invalid.';
+        ROLLBACK;
+    ELSEIF p_loan_amount <= 0 THEN
+        SET p_status_code = 'INVALID_AMOUNT';
+        SET p_status_message = 'Loan amount must be greater than zero.';
+        ROLLBACK;
+    ELSEIF p_loan_end_date <= p_loan_start_date THEN
+        SET p_status_code = 'INVALID_DATES';
+        SET p_status_message = 'Maturity date must be after disbursement date.';
+        ROLLBACK;
+    ELSE
+        INSERT INTO loans (
+            loan_id, customer_id, account_id, loan_type,
+            loan_amount, interest_rate, loan_start_date, loan_end_date, loan_status
+        ) VALUES (
+            p_loan_id, p_customer_id, p_account_id, p_loan_type,
+            p_loan_amount, p_interest_rate, p_loan_start_date, p_loan_end_date, 'Active'
+        );
+
+        INSERT INTO loan_audit_log (
+            loan_id, action_type, old_status, new_status,
+            old_amount, new_amount, old_interest_rate, new_interest_rate, notes
+        ) VALUES (
+            p_loan_id, 'DISBURSEMENT', NULL, 'Active',
+            NULL, p_loan_amount, NULL, p_interest_rate,
+            'New facility disbursed via sp_disburse_new_loan'
+        );
+
+        COMMIT;
+        SET p_status_code = 'SUCCESS';
+        SET p_status_message = CONCAT('Loan facility ', p_loan_id, ' disbursed successfully.');
+    END IF;
+END$$
+
+-- 5.2 Procedure: Process Loan Repayment with Automated Payoff Detection
+DROP PROCEDURE IF EXISTS sp_process_loan_payment$$
+CREATE PROCEDURE sp_process_loan_payment(
+    IN p_payment_id INT,
+    IN p_loan_id INT,
+    IN p_payment_date DATE,
+    IN p_payment_amount DECIMAL(15,2),
+    IN p_payment_method VARCHAR(30),
+    IN p_payment_status VARCHAR(30),
+    OUT p_status_code VARCHAR(20),
+    OUT p_status_message VARCHAR(255)
+)
+BEGIN
+    DECLARE v_current_status VARCHAR(30);
+    DECLARE v_remaining_balance DECIMAL(15,2);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_status_code = 'ERROR';
+        SET p_status_message = 'Repayment transaction failed. Rolled back.';
+    END;
+
+    START TRANSACTION;
+
+    SELECT loan_status INTO v_current_status
+    FROM loans
+    WHERE loan_id = p_loan_id;
+
+    IF v_current_status IS NULL THEN
+        SET p_status_code = 'NOT_FOUND';
+        SET p_status_message = 'Loan facility does not exist.';
+        ROLLBACK;
+    ELSEIF v_current_status = 'Closed' THEN
+        SET p_status_code = 'ALREADY_CLOSED';
+        SET p_status_message = 'Cannot accept payment for an already Closed facility.';
+        ROLLBACK;
+    ELSEIF p_payment_amount <= 0 THEN
+        SET p_status_code = 'INVALID_AMOUNT';
+        SET p_status_message = 'Payment amount must be greater than zero.';
+        ROLLBACK;
+    ELSEIF EXISTS (SELECT 1 FROM loan_payments WHERE payment_id = p_payment_id) THEN
+        SET p_status_code = 'DUPLICATE_ID';
+        SET p_status_message = 'Payment ID already exists.';
+        ROLLBACK;
+    ELSE
+        INSERT INTO loan_payments (
+            payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
+        ) VALUES (
+            p_payment_id, p_loan_id, p_payment_date, p_payment_amount, p_payment_method, p_payment_status
+        );
+
+        -- If payment is fully paid, evaluate if the loan should close
+        IF p_payment_status = 'Paid' THEN
+            SET v_remaining_balance = fn_loan_outstanding_balance(p_loan_id);
+            IF v_remaining_balance <= 0 THEN
+                UPDATE loans
+                SET loan_status = 'Closed'
+                WHERE loan_id = p_loan_id;
+
+                INSERT INTO loan_audit_log (
+                    loan_id, action_type, old_status, new_status, notes
+                ) VALUES (
+                    p_loan_id, 'STATUS_CHANGE', v_current_status, 'Closed',
+                    'Loan facility fully settled and closed by payment.'
+                );
+            END IF;
+        END IF;
+
+        COMMIT;
+        SET p_status_code = 'SUCCESS';
+        SET p_status_message = CONCAT('Payment ', p_payment_id, ' successfully posted.');
+    END IF;
+END$$
+
+-- 5.3 Procedure: Restructure Struggling Facility (Loan Officer Rescheduling)
+DROP PROCEDURE IF EXISTS sp_restructure_loan$$
+CREATE PROCEDURE sp_restructure_loan(
+    IN p_loan_id INT,
+    IN p_new_interest_rate DECIMAL(5,2),
+    IN p_new_end_date DATE,
+    IN p_officer_reason VARCHAR(255),
+    OUT p_status_code VARCHAR(20),
+    OUT p_status_message VARCHAR(255)
+)
+BEGIN
+    DECLARE v_old_rate DECIMAL(5,2);
+    DECLARE v_old_end_date DATE;
+    DECLARE v_status VARCHAR(30);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_status_code = 'ERROR';
+        SET p_status_message = 'Facility restructuring failed. Rolled back.';
+    END;
+
+    START TRANSACTION;
+
+    SELECT interest_rate, loan_end_date, loan_status
+    INTO v_old_rate, v_old_end_date, v_status
+    FROM loans
+    WHERE loan_id = p_loan_id;
+
+    IF v_status IS NULL THEN
+        SET p_status_code = 'NOT_FOUND';
+        SET p_status_message = 'Loan ID does not exist.';
+        ROLLBACK;
+    ELSEIF v_status = 'Closed' THEN
+        SET p_status_code = 'INVALID_STATE';
+        SET p_status_message = 'Cannot restructure an already closed loan.';
+        ROLLBACK;
+    ELSEIF p_new_end_date <= CURDATE() THEN
+        SET p_status_code = 'INVALID_DATE';
+        SET p_status_message = 'New end date must be strictly in the future.';
+        ROLLBACK;
+    ELSE
+        UPDATE loans
+        SET interest_rate = p_new_interest_rate,
+            loan_end_date = p_new_end_date,
+            loan_status = 'Active'
+        WHERE loan_id = p_loan_id;
+
+        INSERT INTO loan_audit_log (
+            loan_id, action_type, old_status, new_status,
+            old_interest_rate, new_interest_rate, notes
+        ) VALUES (
+            p_loan_id, 'RESTRUCTURE', v_status, 'Active',
+            v_old_rate, p_new_interest_rate,
+            CONCAT('Restructure: ', p_officer_reason, ' Extended to: ', p_new_end_date)
+        );
+
+        COMMIT;
+        SET p_status_code = 'SUCCESS';
+        SET p_status_message = CONCAT('Loan ', p_loan_id, ' successfully restructured.');
+    END IF;
+END$$
+
+-- 5.4 Procedure: Batch Overdue Facility Evaluation
+DROP PROCEDURE IF EXISTS sp_mark_overdue_facilities$$
+CREATE PROCEDURE sp_mark_overdue_facilities()
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE v_loan_id INT;
+    DECLARE cur_loans CURSOR FOR
+        SELECT loan_id
+        FROM loans
+        WHERE loan_status = 'Active'
+          AND loan_end_date < CURDATE()
+          AND fn_loan_outstanding_balance(loan_id) > 0;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    START TRANSACTION;
+
+    OPEN cur_loans;
+    read_loop: LOOP
+        FETCH cur_loans INTO v_loan_id;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+
+        UPDATE loans
+        SET loan_status = 'Overdue'
+        WHERE loan_id = v_loan_id;
+
+        INSERT INTO loan_audit_log (
+            loan_id, action_type, old_status, new_status, notes
+        ) VALUES (
+            v_loan_id, 'STATUS_CHANGE', 'Active', 'Overdue',
+            'Facility automatically transitioned to Overdue past maturity date.'
+        );
+    END LOOP;
+    CLOSE cur_loans;
+
+    COMMIT;
+END$$
+
+DELIMITER ;
+
+-- ----------------------------------------------------------------------------
+-- SECTION 6: MYSQL SCHEDULED EVENTS (AUTOMATED BACKGROUND TASKS)
+-- ----------------------------------------------------------------------------
+SET GLOBAL event_scheduler = ON;
+
+DROP EVENT IF EXISTS evt_daily_loan_status_check;
+DELIMITER $$
+CREATE EVENT evt_daily_loan_status_check
+ON SCHEDULE EVERY 1 DAY
+STARTS (TIMESTAMP(CURRENT_DATE) + INTERVAL 1 DAY)
+COMMENT 'Evaluates active loans past maturity daily at midnight and flags them Overdue'
+DO
+BEGIN
+    CALL sp_mark_overdue_facilities();
+END$$
+DELIMITER ;
+
+-- ----------------------------------------------------------------------------
+-- SECTION 7: PRODUCTION OPERATIONAL VIEWS FOR NORMAL USERS
+-- ----------------------------------------------------------------------------
+
+-- 7.1 View: Loan Officer Active Facilities Console
+CREATE OR REPLACE VIEW vw_loan_officer_active_facilities AS
+SELECT 
+    l.loan_id,
+    l.customer_id,
+    l.account_id,
+    l.loan_type,
+    l.loan_amount AS principal_amount,
+    l.interest_rate,
+    l.loan_start_date,
+    l.loan_end_date,
+    TIMESTAMPDIFF(MONTH, l.loan_start_date, l.loan_end_date) AS tenure_months,
+    fn_calculate_monthly_emi(
+        l.loan_amount, 
+        l.interest_rate, 
+        GREATEST(1, TIMESTAMPDIFF(MONTH, l.loan_start_date, l.loan_end_date))
+    ) AS estimated_monthly_emi,
+    COALESCE(SUM(CASE WHEN p.payment_status = 'Paid' THEN p.payment_amount ELSE 0 END), 0.00) AS total_repaid,
+    fn_loan_outstanding_balance(l.loan_id) AS outstanding_balance,
+    DATEDIFF(l.loan_end_date, CURDATE()) AS days_to_maturity,
+    fn_loan_risk_tier(l.loan_id) AS risk_tier
+FROM loans l
+LEFT JOIN loan_payments p ON p.loan_id = l.loan_id
+WHERE l.loan_status = 'Active'
+GROUP BY 
+    l.loan_id, l.customer_id, l.account_id, l.loan_type,
+    l.loan_amount, l.interest_rate, l.loan_start_date, l.loan_end_date;
+
+-- 7.2 View: Collections & Recovery Queue (Prioritized Overdue Worklist)
+CREATE OR REPLACE VIEW vw_overdue_collections_queue AS
+SELECT 
+    l.loan_id,
+    l.customer_id,
+    l.loan_type,
+    l.loan_amount AS principal_amount,
+    l.interest_rate,
+    l.loan_end_date AS maturity_date,
+    fn_days_overdue(l.loan_id) AS days_overdue,
+    fn_loan_outstanding_balance(l.loan_id) AS overdue_balance,
+    MAX(p.payment_date) AS last_payment_date,
+    COUNT(CASE WHEN p.payment_status = 'Late' THEN 1 END) AS late_payment_incidents,
+    fn_loan_risk_tier(l.loan_id) AS risk_tier
+FROM loans l
+LEFT JOIN loan_payments p ON p.loan_id = l.loan_id
+WHERE l.loan_status = 'Overdue'
+GROUP BY 
+    l.loan_id, l.customer_id, l.loan_type, l.loan_amount,
+    l.interest_rate, l.loan_end_date;
+
+-- 7.3 View: Customer Loan Summary & Total Net Exposure
+CREATE OR REPLACE VIEW vw_customer_loan_statement AS
+SELECT 
+    l.customer_id,
+    COUNT(l.loan_id) AS total_facilities_count,
+    SUM(CASE WHEN l.loan_status = 'Active' THEN 1 ELSE 0 END) AS active_facilities_count,
+    SUM(CASE WHEN l.loan_status = 'Overdue' THEN 1 ELSE 0 END) AS overdue_facilities_count,
+    SUM(CASE WHEN l.loan_status = 'Closed' THEN 1 ELSE 0 END) AS closed_facilities_count,
+    SUM(l.loan_amount) AS total_principal_borrowed,
+    COALESCE(SUM(CASE WHEN p.payment_status = 'Paid' THEN p.payment_amount ELSE 0 END), 0.00) AS total_amount_repaid,
+    SUM(fn_loan_outstanding_balance(l.loan_id)) AS net_outstanding_exposure
+FROM loans l
+LEFT JOIN loan_payments p ON p.loan_id = l.loan_id
+GROUP BY l.customer_id;
+
+-- 7.4 View: Daily Branch Payment Reconciliation (Tellers & Finance)
+CREATE OR REPLACE VIEW vw_daily_payment_reconciliation AS
+SELECT 
+    payment_date,
+    payment_method,
+    payment_status,
+    COUNT(payment_id) AS payment_count,
+    SUM(payment_amount) AS total_amount_collected,
+    ROUND(AVG(payment_amount), 2) AS average_amount
+FROM loan_payments
+GROUP BY payment_date, payment_method, payment_status;
+
+-- 7.5 View: Portfolio Health & Risk Metrics (Management Dashboard)
+CREATE OR REPLACE VIEW vw_loan_portfolio_health_metrics AS
+SELECT 
+    loan_type,
+    COUNT(*) AS total_facilities,
+    SUM(CASE WHEN loan_status = 'Active' THEN 1 ELSE 0 END) AS active_count,
+    SUM(CASE WHEN loan_status = 'Overdue' THEN 1 ELSE 0 END) AS overdue_count,
+    SUM(CASE WHEN loan_status = 'Closed' THEN 1 ELSE 0 END) AS closed_count,
+    ROUND(SUM(CASE WHEN loan_status = 'Overdue' THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS overdue_rate_pct,
+    SUM(loan_amount) AS total_portfolio_principal,
+    ROUND(AVG(interest_rate), 2) AS avg_interest_rate
+FROM loans
+GROUP BY loan_type;
+
+-- ----------------------------------------------------------------------------
+-- SECTION 8: ROLE-BASED ACCESS CONTROL (RBAC) FOR OPERATIONAL USERS
+-- ----------------------------------------------------------------------------
+CREATE ROLE IF NOT EXISTS role_loan_officer;
+CREATE ROLE IF NOT EXISTS role_loan_manager;
+CREATE ROLE IF NOT EXISTS role_loan_auditor;
+
+-- Loan Officer: Operational access to view loans, post payments, calculate EMIs
+GRANT SELECT ON banking_loan_source.loans TO role_loan_officer;
+GRANT SELECT ON banking_loan_source.loan_payments TO role_loan_officer;
+GRANT SELECT ON banking_loan_source.vw_loan_officer_active_facilities TO role_loan_officer;
+GRANT SELECT ON banking_loan_source.vw_customer_loan_statement TO role_loan_officer;
+GRANT SELECT ON banking_loan_source.vw_daily_payment_reconciliation TO role_loan_officer;
+GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_process_loan_payment TO role_loan_officer;
+GRANT EXECUTE ON FUNCTION banking_loan_source.fn_calculate_monthly_emi TO role_loan_officer;
+GRANT EXECUTE ON FUNCTION banking_loan_source.fn_loan_outstanding_balance TO role_loan_officer;
+
+-- Loan Manager: Comprehensive managerial access, disbursement, restructuring
+GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loans TO role_loan_manager;
+GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_payments TO role_loan_manager;
+GRANT SELECT ON banking_loan_source.* TO role_loan_manager;
+GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_disburse_new_loan TO role_loan_manager;
+GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_process_loan_payment TO role_loan_manager;
+GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_restructure_loan TO role_loan_manager;
+GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_mark_overdue_facilities TO role_loan_manager;
+
+-- Loan Auditor: Read-only compliance and audit access
+GRANT SELECT ON banking_loan_source.loan_audit_log TO role_loan_auditor;
+GRANT SELECT ON banking_loan_source.loan_payment_audit_log TO role_loan_auditor;
+GRANT SELECT ON banking_loan_source.vw_loan_portfolio_health_metrics TO role_loan_auditor;
+GRANT SELECT ON banking_loan_source.vw_overdue_collections_queue TO role_loan_auditor;
+GRANT SELECT ON banking_loan_source.vw_daily_payment_reconciliation TO role_loan_auditor;
+
+FLUSH PRIVILEGES;
+
+-- ============================================================================
+-- VERIFICATION & DEMONSTRATION QUERIES FOR NORMAL USERS
+-- ============================================================================
+SELECT 'Active Facilities Sample' AS report_title;
+SELECT * FROM vw_loan_officer_active_facilities LIMIT 5;
+
+SELECT 'Overdue Collections Queue Sample' AS report_title;
+SELECT * FROM vw_overdue_collections_queue LIMIT 5;
+
+SELECT 'Portfolio Health Metrics' AS report_title;
+SELECT * FROM vw_loan_portfolio_health_metrics;
