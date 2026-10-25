@@ -243,31 +243,38 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                className={`preset-pill ${selectedProc === 'sp_process_loan_payment' ? 'active' : ''}`}
-                onClick={() => setSelectedProc('sp_process_loan_payment')}
+                className={`preset-pill ${selectedProc === 'sp_underwrite_loan_application' ? 'active' : ''}`}
+                onClick={() => setSelectedProc('sp_underwrite_loan_application')}
               >
-                1. sp_process_loan_payment (Repayment & Payoff)
+                1. sp_underwrite_loan_application (M01: Underwriting)
               </button>
               <button
                 type="button"
                 className={`preset-pill ${selectedProc === 'sp_disburse_new_loan' ? 'active' : ''}`}
                 onClick={() => setSelectedProc('sp_disburse_new_loan')}
               >
-                2. sp_disburse_new_loan (Disbursement)
+                2. sp_disburse_new_loan (M02: Disbursal)
+              </button>
+              <button
+                type="button"
+                className={`preset-pill ${selectedProc === 'sp_process_loan_payment' ? 'active' : ''}`}
+                onClick={() => setSelectedProc('sp_process_loan_payment')}
+              >
+                3. sp_process_loan_payment (M03: Repayment)
+              </button>
+              <button
+                type="button"
+                className={`preset-pill ${selectedProc === 'sp_mark_overdue_facilities' ? 'active' : ''}`}
+                onClick={() => setSelectedProc('sp_mark_overdue_facilities')}
+              >
+                4. sp_mark_overdue_facilities (M04: Batch Overdue)
               </button>
               <button
                 type="button"
                 className={`preset-pill ${selectedProc === 'sp_restructure_loan' ? 'active' : ''}`}
                 onClick={() => setSelectedProc('sp_restructure_loan')}
               >
-                3. sp_restructure_loan (Restructuring)
-              </button>
-              <button
-                type="button"
-                className={`preset-pill ${selectedProc === 'sp_underwrite_loan_application' ? 'active' : ''}`}
-                onClick={() => setSelectedProc('sp_underwrite_loan_application')}
-              >
-                4. sp_underwrite_loan_application (Member 2 Underwriting)
+                5. sp_restructure_loan (M05: Restructure)
               </button>
             </div>
 
@@ -464,6 +471,23 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
               )}
 
+              {selectedProc === 'sp_mark_overdue_facilities' && (
+                <div>
+                  <div style={{ fontSize: '0.82rem', color: '#94a3b8', marginBottom: '12px' }}>
+                    <strong>Procedure Signature:</strong> CALL banking_loan_source.sp_mark_overdue_facilities();
+                  </div>
+                  <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '6px', padding: '14px', fontSize: '0.82rem', color: '#93c5fd' }}>
+                    <div style={{ fontWeight: '600', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>⚙️</span>
+                      <span>Member 04: Batch Delinquency Classification (MySQL Cursor Engine)</span>
+                    </div>
+                    <p style={{ margin: 0, lineHeight: 1.5, color: '#cbd5e1' }}>
+                      Uses an InnoDB cursor to iterate active loans with outstanding balance past maturity date (<code>loan_end_date &lt; CURDATE()</code>), transitions status to <strong>Overdue</strong>, and appends immutable audit trail entries into <code>loan_audit_log</code> autonomously.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button
                   type="submit"
@@ -484,38 +508,38 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                className={`preset-pill ${selectedFunc === 'fn_loan_outstanding_balance' ? 'active' : ''}`}
-                onClick={() => setSelectedFunc('fn_loan_outstanding_balance')}
-              >
-                1. fn_loan_outstanding_balance
-              </button>
-              <button
-                type="button"
                 className={`preset-pill ${selectedFunc === 'fn_calculate_monthly_emi' ? 'active' : ''}`}
                 onClick={() => setSelectedFunc('fn_calculate_monthly_emi')}
               >
-                2. fn_calculate_monthly_emi
-              </button>
-              <button
-                type="button"
-                className={`preset-pill ${selectedFunc === 'fn_loan_risk_tier' ? 'active' : ''}`}
-                onClick={() => setSelectedFunc('fn_loan_risk_tier')}
-              >
-                3. fn_loan_risk_tier
-              </button>
-              <button
-                type="button"
-                className={`preset-pill ${selectedFunc === 'fn_days_overdue' ? 'active' : ''}`}
-                onClick={() => setSelectedFunc('fn_days_overdue')}
-              >
-                4. fn_days_overdue
+                1. fn_calculate_monthly_emi (M01: Amortization Math)
               </button>
               <button
                 type="button"
                 className={`preset-pill ${selectedFunc === 'fn_calculate_total_interest' ? 'active' : ''}`}
                 onClick={() => setSelectedFunc('fn_calculate_total_interest')}
               >
-                5. fn_calculate_total_interest
+                2. fn_calculate_total_interest (M02: Total Interest)
+              </button>
+              <button
+                type="button"
+                className={`preset-pill ${selectedFunc === 'fn_loan_outstanding_balance' ? 'active' : ''}`}
+                onClick={() => setSelectedFunc('fn_loan_outstanding_balance')}
+              >
+                3. fn_loan_outstanding_balance (M03: Real-Time Balance)
+              </button>
+              <button
+                type="button"
+                className={`preset-pill ${selectedFunc === 'fn_days_overdue' ? 'active' : ''}`}
+                onClick={() => setSelectedFunc('fn_days_overdue')}
+              >
+                4. fn_days_overdue (M04: Overdue Aging Days)
+              </button>
+              <button
+                type="button"
+                className={`preset-pill ${selectedFunc === 'fn_loan_risk_tier' ? 'active' : ''}`}
+                onClick={() => setSelectedFunc('fn_loan_risk_tier')}
+              >
+                5. fn_loan_risk_tier (M05: Multi-Factor Risk Tier)
               </button>
             </div>
 
@@ -588,11 +612,11 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           <div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
               {[
-                { id: 'vw_loan_portfolio_health_metrics', label: '1. Portfolio Health & NPL Rates' },
-                { id: 'vw_loan_officer_active_facilities', label: '2. Active Facilities & Risk Tiers' },
-                { id: 'vw_overdue_collections_queue', label: '3. Overdue Collections Queue' },
-                { id: 'vw_daily_payment_reconciliation', label: '4. Daily Payment Reconciliation' },
-                { id: 'vw_customer_loan_statement', label: '5. Customer Net Exposure' },
+                { id: 'vw_customer_loan_statement', label: '1. vw_customer_loan_statement (M01: Customer Exposure)' },
+                { id: 'vw_loan_officer_active_facilities', label: '2. vw_loan_officer_active_facilities (M02: Officer Workload)' },
+                { id: 'vw_daily_payment_reconciliation', label: '3. vw_daily_payment_reconciliation (M03: Daily Payment Recon)' },
+                { id: 'vw_overdue_collections_queue', label: '4. vw_overdue_collections_queue (M04: Overdue Recovery Queue)' },
+                { id: 'vw_loan_portfolio_health_metrics', label: '5. vw_loan_portfolio_health_metrics (M05: Portfolio Health & NPL)' },
               ].map((v) => (
                 <button
                   key={v.id}
@@ -785,65 +809,98 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           <div>
             <div style={{ marginBottom: '14px' }}>
               <h4 style={{ margin: '0 0 4px', color: '#f8fafc', fontSize: '1rem' }}>
-                5-Member ADBMS Engineering Team Allocation
+                5-Member Balanced Full-Stack & ADBMS Core Deliverables
               </h4>
               <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
-                Individual technical contributions for the Retail Banking Loan & Credit Management Subsystem
+                Equal technical distribution across the Retail Banking Loan & Credit Management Subsystem (1 Procedure + 1 UDF + 1 Trigger + 1 View + 1 Index + 1 UI Screen per member)
               </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
-              <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 01</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Relational Schema & Relational Views</div>
-                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>8 Normalized Core Tables (3NF/BCNF Schema Architecture)</li>
-                  <li>Foreign Key Constraints & Referential Integrity</li>
-                  <li>5 Production Relational Views (Portfolio Health, Active Facilities, etc.)</li>
-                </ul>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+              {/* Member 1 */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(59, 130, 246, 0.35)', borderRadius: '10px', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(59, 130, 246, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 01</span>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Application Domain</span>
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Loan Application & Credit Underwriting</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> ApplicationWizard.jsx & Official Printable Slip</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#60a5fa' }}>sp_underwrite_loan_application</span> (ACID evaluation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_calculate_monthly_emi</span> (Amortization formula)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loans_before_insert</span> (Boundary & NIC checks)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_customer_loan_statement</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_applications_status</span> on loan_applications</div>
+                </div>
               </div>
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 02</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Transaction Management & Stored Procedures</div>
-                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>Pessimistic Concurrency Control (InnoDB FOR UPDATE Row-Locking)</li>
-                  <li>4 Core Procedures: sp_process_loan_payment, sp_disburse_new_loan</li>
-                  <li>sp_restructure_loan & sp_underwrite_loan_application</li>
-                  <li>ACID Properties, SQLEXCEPTION Handlers & Rollback Safety</li>
-                </ul>
+              {/* Member 2 */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '10px', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 02</span>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Core Ledger Domain</span>
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Facility Disbursement & Schedule Generation</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> RoleWorkstation.jsx (Manager Disbursal Worklist)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#34d399' }}>sp_disburse_new_loan</span> (Atomic ledger insert & schedule)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_calculate_total_interest</span> (Total borrowing cost)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_prevent_excess_disbursement</span> (Limit safeguard)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_loan_officer_active_facilities</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_officers_branch</span> on loan_officers</div>
+                </div>
               </div>
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 03</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>In-Engine Financial Math & Cursors</div>
-                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>5 User Defined Functions (fn_calculate_monthly_emi amortization formula)</li>
-                  <li>fn_loan_outstanding_balance, fn_days_overdue & fn_calculate_total_interest</li>
-                  <li>fn_loan_risk_tier multi-factor credit risk scoring algorithm</li>
-                  <li>MySQL Cursors in sp_mark_overdue_facilities for batch records processing</li>
-                </ul>
+              {/* Member 3 */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(168, 85, 247, 0.35)', borderRadius: '10px', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(168, 85, 247, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 03</span>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Accounting Domain</span>
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Teller Collections, Payments & Payoff</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> RoleWorkstation.jsx (Officer Collections) & LoanTracker.jsx</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#c084fc' }}>sp_process_loan_payment</span> (Principal/Interest allocation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_loan_outstanding_balance</span> (Real-time net balance)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loan_payments_before_insert</span> (Overpayment guard)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_daily_payment_reconciliation</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_payments_loan_date</span> on loan_payments</div>
+                </div>
               </div>
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 04</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Active Database Automation & Triggers</div>
-                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>Active Database Trigger: trg_payments_after_insert_update_loan</li>
-                  <li>Autonomous Midnight Scheduled Event: evt_daily_loan_status_check</li>
-                  <li>Immutable Audit Logging (Change Data Capture into loan_audit_log)</li>
-                </ul>
+              {/* Member 4 */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '10px', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 04</span>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Risk & Recovery Domain</span>
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Credit Delinquency & Autonomous Scheduling</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> AdbmsConsoleModal.jsx (Overdue Queue & Evaluation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#fbbf24' }}>sp_mark_overdue_facilities</span> (InnoDB cursor batch scan)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_days_overdue</span> (Aging bucket calculation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Trigger & Event:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loan_payments_after_insert</span> & <span className="mono" style={{ color: '#38bdf8' }}>evt_daily_loan_status_check</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_overdue_collections_queue</span> (30/60/90+ days)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_schedules_due_date</span> on loan_repayment_schedules</div>
+                </div>
               </div>
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(236, 72, 153, 0.3)', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: '#f472b6', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 05</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Database Security (RBAC) & Optimization</div>
-                <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>Role-Based Access Control: role_loan_officer, role_loan_manager, role_loan_auditor</li>
-                  <li>Principle of Least Privilege (Separation of duties & granular grants)</li>
-                  <li>Composite Indexing & EXPLAIN ANALYZE Query Optimization Benchmark</li>
-                  <li>Subsystem Client Integration & Interactive Execution Terminal</li>
-                </ul>
+              {/* Member 5 - Isuru */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(236, 72, 153, 0.4)', borderRadius: '10px', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#f472b6', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(236, 72, 153, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 05</span>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>DBA & Governance Domain</span>
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Restructuring, Security RBAC & Optimization</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> RoleWorkstation.jsx (Restructure Card) & AdbmsConsoleModal.jsx</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#f472b6' }}>sp_restructure_loan</span> (Concessionary rate & term extension)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_loan_risk_tier</span> (Low/Med/High/Default risk model)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loans_after_update</span> (Audit logging to loan_audit_log)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_loan_portfolio_health_metrics</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Optimization:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_loans_status_enddate</span> with <strong style={{ color: '#38bdf8' }}>EXPLAIN ANALYZE</strong></div>
+                  <div><strong style={{ color: '#e2e8f0' }}>🔐 Security (RBAC):</strong> role_loan_officer, role_loan_manager, role_customer_portal</div>
+                </div>
               </div>
             </div>
           </div>
