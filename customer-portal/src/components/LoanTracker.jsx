@@ -107,7 +107,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
         <div className="search-box">
           <input 
             type="text" 
-            placeholder="Enter Facility Account ID (e.g. 2001, 1001, 1005) or Customer CIF (e.g. C0001)..."
+            placeholder="Enter Facility Account ID (e.g. 2001, 1001, 1005) or Customer ID (e.g. C0001)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -150,7 +150,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               <div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.8rem', color: '#fde68a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Application Reference: #{data.application.application_id} • Borrower CIF: {data.application.customer_code}
+                    Application Reference: #{data.application.application_id} • Customer ID: {data.application.customer_code}
                   </span>
                   <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
                     🟡 {data.application.approval_status} Underwriting Review
@@ -278,7 +278,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               <div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Facility Account: #{loan.loan_id} • Borrower CIF: C{String(loan.customer_id).padStart(4, '0')}
+                    Facility Account: #{loan.loan_id} • Customer ID: C{String(loan.customer_id).padStart(4, '0')}
                   </span>
                   {data.application && (
                     <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
