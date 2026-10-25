@@ -571,70 +571,46 @@ app.post('/api/customer/loans/apply', async (request, response) => {
     }
 
     const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || (targetCustomerId * 10 + 1)
-
-    const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
-    const newLoanId = (maxRows[0]?.max_id || 2000) + 1
-
-    let procedureSucceeded = false
-    try {
-      await connection.query('SET @code = "", @msg = ""')
-      await connection.query(`
-        CALL banking_loan_source.sp_disburse_new_loan(
-          ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @code, @msg
-        )
-      `, [newLoanId, targetCustomerId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
-      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
-      if (outRows[0]?.code === 'SUCCESS') {
-        procedureSucceeded = true
-      }
-    } catch (spErr) {
-      console.warn('sp_disburse_new_loan failed or not found, falling back to direct insert:', spErr.message)
+    const productMap = {
+      Personal: 'PRD01',
+      Housing: 'PRD02',
+      Vehicle: 'PRD03',
+      Education: 'PRD04',
+      Business: 'PRD05',
     }
+    const mappedProduct = productMap[loanType] || 'PRD01'
 
-    if (!procedureSucceeded) {
-      await connection.query(`
-        INSERT INTO banking_loan_source.loans
-          (loan_id, customer_id, account_id, loan_type, loan_amount, interest_rate, loan_start_date, loan_end_date, loan_status)
-        VALUES (?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), 'Active')
-      `, [newLoanId, targetCustomerId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
-    }
+    // Compute credit score based on applicant declared income
+    const incomeNum = Number(monthlyIncome) || 85000
+    const calculatedCreditScore = incomeNum >= 150000 ? 765 : incomeNum >= 75000 ? 720 : 650
 
-    // Record application in underwriting pipeline
-    try {
-      const [appMax] = await connection.query('SELECT COALESCE(MAX(application_id), 7000) AS max_app FROM banking_loan_source.loan_applications')
-      const newAppId = (appMax[0]?.max_app || 7000) + 1
-      const productMap = {
-        Personal: 'PRD01',
-        Housing: 'PRD02',
-        Vehicle: 'PRD03',
-        Education: 'PRD04',
-        Business: 'PRD05',
-      }
-      const mappedProduct = productMap[loanType] || 'PRD01'
-      await connection.query(`
-        INSERT INTO banking_loan_source.loan_applications
-          (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, approved_amount, approval_date, decision_notes)
-        VALUES (?, ?, ?, 101, ?, ?, CURDATE(), 720, 'Approved', ?, CURDATE(), 'Automated instant approval via Customer Online Portal')
-      `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, parsedAmount])
-    } catch (appErr) {
-      console.warn('Could not record application in pipeline:', appErr.message)
-    }
+    // Record formal application into loan_applications table with status 'Pending'
+    const [appMax] = await connection.query('SELECT COALESCE(MAX(application_id), 7000) AS max_app FROM banking_loan_source.loan_applications')
+    const newAppId = (appMax[0]?.max_app || 7000) + 1
+
+    await connection.query(`
+      INSERT INTO banking_loan_source.loan_applications
+        (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, decision_notes)
+      VALUES (?, ?, ?, 101, ?, ?, CURDATE(), ?, 'Pending', 'Submitted online - Queued for Manager Underwriting Review')
+    `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, calculatedCreditScore])
 
     response.json({
       success: true,
-      loanId: newLoanId,
+      pendingApproval: true,
+      applicationId: newAppId,
       customerCode: targetCustomerCode,
-      referenceNo: `LN-${new Date().getFullYear()}-${newLoanId}`,
-      message: 'Loan facility approved and recorded successfully in core banking database!',
+      referenceNo: `APP-${new Date().getFullYear()}-${newAppId}`,
+      message: 'Loan application submitted successfully! Queued for Credit Manager underwriting review.',
       details: {
-        loanId: newLoanId,
+        applicationId: newAppId,
         customerName: cleanName || `Customer #${targetCustomerId}`,
         customerCode: targetCustomerCode,
         loanType: loanType || 'Personal',
         loanAmount: parsedAmount,
         interestRate: parsedRate,
         tenureMonths: tenure,
-        status: 'Active',
+        status: 'Pending Underwriting',
+        creditScore: calculatedCreditScore,
         startDate: new Date().toISOString().split('T')[0],
       },
     })
@@ -799,6 +775,24 @@ app.post('/api/customer/loans/pay', async (request, response) => {
   }
 })
 
+app.get('/api/customer/loans/applications', async (request, response) => {
+  try {
+    const rows = await query(`
+      SELECT a.application_id, a.customer_id, c.customer_name, c.customer_code,
+             a.product_id, a.applied_amount, a.requested_tenure_months,
+             a.credit_score, a.approval_status, a.approval_date, a.decision_notes,
+             DATE_FORMAT(a.application_date, '%Y-%m-%d') AS application_date
+      FROM banking_loan_source.loan_applications a
+      LEFT JOIN banking_loan_source.customers c ON c.customer_id = a.customer_id
+      ORDER BY a.application_id DESC
+      LIMIT 30
+    `)
+    response.json({ applications: rows })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
 // ==========================================
 // ADBMS LIVE PLAYGROUND & EXECUTION CONSOLE
 // ==========================================
@@ -895,7 +889,7 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
         transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
       })
     } else if (procedure === 'sp_underwrite_loan_application') {
-      const applicationId = Number(params.applicationId) || 7001
+      const applicationId = Number(params.applicationId) || 7103
       const officerId = Number(params.officerId) || 101
 
       const sql = `CALL banking_loan_source.sp_underwrite_loan_application(${applicationId}, ${officerId}, @decision, @reason);`
@@ -907,12 +901,43 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       const [outRows] = await connection.query('SELECT @decision AS decision, @reason AS reason')
       const execTime = (performance.now() - start).toFixed(2)
 
+      let generatedLoanId = null
+      let disbursementMsg = ''
+      if (outRows[0]?.decision === 'APPROVED') {
+        try {
+          const [appRows] = await connection.query('SELECT * FROM banking_loan_source.loan_applications WHERE application_id = ?', [applicationId])
+          if (appRows.length) {
+            const app = appRows[0]
+            const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
+            generatedLoanId = (maxRows[0]?.max_id || 2000) + 1
+            const numericAccId = app.customer_id * 10 + 1
+            const rateMap = { PRD01: 12.5, PRD02: 8.5, PRD03: 11.0, PRD04: 6.5, PRD05: 14.0 }
+            const pTypeMap = { PRD01: 'Personal', PRD02: 'Housing', PRD03: 'Vehicle', PRD04: 'Education', PRD05: 'Business' }
+            const lRate = rateMap[app.product_id] || 10.0
+            const lType = pTypeMap[app.product_id] || 'Personal'
+            const tenure = app.requested_tenure_months || 36
+
+            await connection.query('SET @d_code = "", @d_msg = ""')
+            await connection.query(`
+              CALL banking_loan_source.sp_disburse_new_loan(
+                ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @d_code, @d_msg
+              )
+            `, [generatedLoanId, app.customer_id, numericAccId, lType, app.applied_amount, lRate, tenure])
+            disbursementMsg = `Facility #${generatedLoanId} disbursed successfully into core ledger.`
+          }
+        } catch (dErr) {
+          console.warn('Auto disbursement post-approval warning:', dErr.message)
+        }
+      }
+
       return response.json({
         success: true,
         procedure: 'sp_underwrite_loan_application',
         sqlExecuted: sql,
         statusCode: outRows[0]?.decision || 'UNKNOWN',
         statusMessage: outRows[0]?.reason || 'Underwriting completed',
+        disbursedLoanId: generatedLoanId,
+        disbursementMsg,
         executionTimeMs: execTime,
         database: 'banking_loan_source',
         transactionStatus: outRows[0]?.decision === 'APPROVED' ? 'COMMITTED (APPROVED)' : outRows[0]?.decision === 'REJECTED' ? 'COMMITTED (REJECTED)' : 'ROLLED_BACK',

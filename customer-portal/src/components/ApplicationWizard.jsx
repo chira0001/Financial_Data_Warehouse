@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { CheckIcon, ArrowRightIcon, FileTextIcon, ShieldCheckIcon, PrinterIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
-export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
+export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onSwitchToManager }) {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -147,20 +147,22 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
   const estimatedEmi = n > 0 && r > 0 ? Math.round((P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)) : Math.round(P / n)
 
   if (submittedResult) {
+    const isPending = submittedResult.pendingApproval
+
     return (
       <section className="section" id="apply">
-        <div className="app-card success-card">
-          <div className="success-icon">
-            <CheckIcon size={32} />
+        <div className="app-card success-card" style={{ borderColor: isPending ? 'rgba(245, 158, 11, 0.4)' : undefined }}>
+          <div className="success-icon" style={{ background: isPending ? 'rgba(245, 158, 11, 0.15)' : undefined, color: isPending ? '#fbbf24' : undefined }}>
+            {isPending ? '⏳' : <CheckIcon size={32} />}
           </div>
 
-          <h2>Credit Facility Application Acknowledged</h2>
+          <h2>{isPending ? 'Credit Application Queued for Underwriting' : 'Credit Facility Application Acknowledged'}</h2>
           <p style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '0.96rem' }}>
-            Dear <strong>{submittedResult.details.customerName}</strong>, your formal credit application has been recorded and processed under the retail credit framework.
+            Dear <strong>{submittedResult.details.customerName}</strong>, your formal credit application has been recorded in MySQL under application reference <strong>#{submittedResult.applicationId}</strong>.
           </p>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', margin: '14px 0' }}>
-            <div className="success-ref" style={{ margin: 0 }}>
+            <div className="success-ref" style={{ margin: 0, borderColor: isPending ? 'rgba(245, 158, 11, 0.4)' : undefined, color: isPending ? '#fef08a' : undefined }}>
               Application Reference: {submittedResult.referenceNo}
             </div>
             <button
@@ -177,17 +179,24 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
             </button>
           </div>
 
-          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', padding: '22px', borderRadius: 'var(--radius-sm)', maxWidth: '540px', margin: '22px auto', textAlign: 'left' }}>
+          {/* RBAC Governance Notice */}
+          {isPending && (
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '12px 16px', maxWidth: '540px', margin: '14px auto', textAlign: 'left', fontSize: '0.82rem', color: '#fde68a' }}>
+              <strong>⚖️ Institutional RBAC Compliance:</strong> In accordance with ADBMS retail credit separation of duties, customers cannot self-disburse credit facilities. This application is now queued in the database for the <strong>Loan Manager</strong> to execute Stored Procedure <code>sp_underwrite_loan_application</code>.
+            </div>
+          )}
+
+          <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', padding: '22px', borderRadius: 'var(--radius-sm)', maxWidth: '540px', margin: '18px auto', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Assigned Facility ID:</span>
-              <strong className="mono" style={{ fontSize: '1.05rem' }}>#{submittedResult.loanId}</strong>
+              <span style={{ color: 'var(--text-muted)' }}>Assigned Application ID:</span>
+              <strong className="mono" style={{ fontSize: '1.05rem', color: '#93c5fd' }}>#{submittedResult.applicationId || submittedResult.loanId}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Facility Classification:</span>
               <strong>{submittedResult.details.loanType} Loan Facility</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Sanctioned Principal:</span>
+              <span style={{ color: 'var(--text-muted)' }}>Requested Principal:</span>
               <strong style={{ color: 'var(--emerald-400)', fontSize: '1.05rem' }}>LKR {Number(submittedResult.details.loanAmount).toLocaleString()}</strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
@@ -198,21 +207,39 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
               <span style={{ color: 'var(--text-muted)' }}>Tenure Schedule:</span>
               <strong>{submittedResult.details.tenureMonths} Monthly Installments</strong>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Credit Score Assessed:</span>
+              <span style={{ color: '#60a5fa', fontWeight: '600' }}>{submittedResult.details.creditScore || 720} (Threshold: 620)</span>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
               <span style={{ color: 'var(--text-muted)' }}>Current Status:</span>
-              <span style={{ color: 'var(--emerald-400)', fontWeight: '700' }}>Active Facility</span>
+              <span style={{ color: isPending ? '#fbbf24' : 'var(--emerald-400)', fontWeight: '700' }}>
+                {isPending ? '🟡 Pending Manager Underwriting' : 'Active Facility'}
+              </span>
             </div>
           </div>
 
-          <div className="no-print" style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginTop: '28px', flexWrap: 'wrap' }}>
-            <button 
-              type="button"
-              className="btn-primary"
-              onClick={() => onCompleteAndTrack(submittedResult.loanId)}
-            >
-              <span>Inspect Facility & Repayments</span>
-              <ArrowRightIcon size={16} />
-            </button>
+          <div className="no-print" style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginTop: '24px', flexWrap: 'wrap' }}>
+            {isPending && onSwitchToManager ? (
+              <button 
+                type="button"
+                className="btn-primary"
+                onClick={onSwitchToManager}
+                style={{ background: 'linear-gradient(135deg, #9333ea, #7e22ce)', boxShadow: '0 4px 14px rgba(147, 51, 234, 0.4)' }}
+              >
+                <span>🟣 Switch to Loan Manager & Underwrite Facility</span>
+                <ArrowRightIcon size={16} />
+              </button>
+            ) : (
+              <button 
+                type="button"
+                className="btn-primary"
+                onClick={() => onCompleteAndTrack(submittedResult.loanId)}
+              >
+                <span>Inspect Facility & Repayments</span>
+                <ArrowRightIcon size={16} />
+              </button>
+            )}
             <button 
               type="button"
               className="btn-secondary"
@@ -220,7 +247,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack }) {
               style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
             >
               <PrinterIcon size={16} />
-              <span>Print Official Approval Letter</span>
+              <span>Print Application Slip</span>
             </button>
             <button 
               type="button"

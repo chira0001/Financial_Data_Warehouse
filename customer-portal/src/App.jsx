@@ -109,6 +109,7 @@ export default function App() {
               <ApplicationWizard 
                 initialPlan={selectedPlan}
                 onCompleteAndTrack={handleCompleteAndTrack}
+                onSwitchToManager={() => setCurrentRole('manager')}
               />
             </div>
           )}

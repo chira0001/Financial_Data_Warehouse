@@ -15,12 +15,13 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
   const [activeFacilities, setActiveFacilities] = useState([])
 
   // Manager States
-  const [underwriteAppId, setUnderwriteAppId] = useState('7001')
+  const [underwriteAppId, setUnderwriteAppId] = useState('7103')
   const [restructureLoanId, setRestructureLoanId] = useState('2008')
   const [restructureRate, setRestructureRate] = useState('7.25')
   const [restructureDate, setRestructureDate] = useState('2030-06-30')
   const [restructureReason, setRestructureReason] = useState('Hardship rate concession approved by credit committee')
   const [portfolioMetrics, setPortfolioMetrics] = useState([])
+  const [applications, setApplications] = useState([])
 
   // Auditor States
   const [auditLogs, setAuditLogs] = useState([])
@@ -40,8 +41,12 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
         const res = await loanApi.getView('vw_loan_officer_active_facilities')
         setActiveFacilities(res.data || [])
       } else if (currentRole === 'manager') {
-        const res = await loanApi.getView('vw_loan_portfolio_health_metrics')
+        const [res, appRes] = await Promise.all([
+          loanApi.getView('vw_loan_portfolio_health_metrics'),
+          loanApi.getApplications(),
+        ])
         setPortfolioMetrics(res.data || [])
+        setApplications(appRes.applications || [])
       } else if (currentRole === 'auditor') {
         const [aRes, qRes] = await Promise.all([
           loanApi.getAuditLog(),
@@ -83,8 +88,9 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
   }
 
   // Manager Action: Underwrite Application
-  const handleUnderwriteApp = async (e) => {
-    e.preventDefault()
+  const handleUnderwriteApp = async (e, customAppId = null) => {
+    if (e && e.preventDefault) e.preventDefault()
+    const targetAppId = customAppId || underwriteAppId
     setLoading(true)
     setError('')
     setFeedback(null)
@@ -92,15 +98,17 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
       const res = await loanApi.executeProcedure({
         procedure: 'sp_underwrite_loan_application',
         params: {
-          applicationId: Number(underwriteAppId),
+          applicationId: Number(targetAppId),
           officerId: 101,
         },
       })
+      const isApproved = res.statusCode === 'APPROVED'
       setFeedback({
-        type: 'SUCCESS',
-        title: `Application #${underwriteAppId} Underwriting Completed`,
-        message: `Decision: ${res.statusCode} • Reason: ${res.statusMessage} • Execution time: ${res.executionTimeMs} ms`,
+        type: isApproved ? 'SUCCESS' : 'WARNING',
+        title: `Application #${targetAppId} Underwriting Completed`,
+        message: `Decision: ${res.statusCode} • Reason: ${res.statusMessage}${res.disbursedLoanId ? ' • Loan Facility #' + res.disbursedLoanId + ' Disbursed & Activated in Core Ledger!' : ''} (InnoDB FOR UPDATE Row-Lock: ${res.executionTimeMs} ms)`,
       })
+      loadRoleData()
     } catch (err) {
       setError(err.message || 'Underwriting failed')
     } finally {
@@ -351,6 +359,109 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
       {/* ROLE 2: LOAN MANAGER CONSOLE */}
       {currentRole === 'manager' && (
         <div>
+          {/* Live Underwriting Worklist Queue */}
+          <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '18px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', color: '#f8fafc', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>📋 Live Underwriting Worklist (loan_applications Queue)</span>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.25)', color: '#d8b4fe', padding: '2px 8px', borderRadius: '4px' }}>
+                    {applications.filter(a => a.approval_status === 'Pending').length} Pending Committee Review
+                  </span>
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>
+                  Credit applications submitted online waiting for manager approval via <code>sp_underwrite_loan_application</code> (threshold: 620).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={loadRoleData}
+                className="btn-secondary"
+                style={{ fontSize: '0.75rem', padding: '6px 12px' }}
+              >
+                🔄 Refresh Worklist
+              </button>
+            </div>
+
+            <div style={{ overflowX: 'auto', maxHeight: '280px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                <thead>
+                  <tr style={{ background: 'rgba(30, 41, 59, 0.8)', textAlign: 'left', borderBottom: '1px solid var(--border-subtle)', position: 'sticky', top: 0, zIndex: 1 }}>
+                    <th style={{ padding: '8px 10px' }}>App ID</th>
+                    <th style={{ padding: '8px 10px' }}>Applicant</th>
+                    <th style={{ padding: '8px 10px' }}>Product</th>
+                    <th style={{ padding: '8px 10px' }}>Applied Principal</th>
+                    <th style={{ padding: '8px 10px' }}>Credit Score</th>
+                    <th style={{ padding: '8px 10px' }}>Decision Notes</th>
+                    <th style={{ padding: '8px 10px' }}>Status</th>
+                    <th style={{ padding: '8px 10px', textAlign: 'center' }}>Manager Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {applications.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ padding: '16px', textAlign: 'center', color: '#64748b' }}>
+                        No applications currently in queue. Submit a loan from Customer Portal to test!
+                      </td>
+                    </tr>
+                  ) : (
+                    applications.slice(0, 8).map((app) => (
+                      <tr key={app.application_id} style={{ borderBottom: '1px solid rgba(148, 163, 184, 0.1)', background: app.approval_status === 'Pending' ? 'rgba(245, 158, 11, 0.06)' : 'transparent' }}>
+                        <td style={{ padding: '8px 10px', fontWeight: 'bold', color: '#93c5fd' }}>#{app.application_id}</td>
+                        <td style={{ padding: '8px 10px', color: '#f8fafc' }}>
+                          <div>{app.customer_name || `Customer #${app.customer_id}`}</div>
+                          <div style={{ fontSize: '0.7rem', color: '#64748b' }}>{app.customer_code}</div>
+                        </td>
+                        <td style={{ padding: '8px 10px' }}>{app.product_id}</td>
+                        <td style={{ padding: '8px 10px', fontWeight: '600' }}>LKR {Number(app.applied_amount).toLocaleString()}</td>
+                        <td style={{ padding: '8px 10px' }}>
+                          <span style={{ color: app.credit_score >= 620 ? '#4ade80' : '#f87171', fontWeight: 'bold' }}>
+                            {app.credit_score}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 10px', fontSize: '0.75rem', color: '#94a3b8', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {app.decision_notes || 'Pending'}
+                        </td>
+                        <td style={{ padding: '8px 10px' }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '0.72rem',
+                            fontWeight: '600',
+                            background: app.approval_status === 'Approved' ? 'rgba(34, 197, 94, 0.2)' : app.approval_status === 'Pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                            color: app.approval_status === 'Approved' ? '#4ade80' : app.approval_status === 'Pending' ? '#fbbf24' : '#f87171',
+                          }}>
+                            {app.approval_status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                          {app.approval_status === 'Pending' ? (
+                            <button
+                              type="button"
+                              className="btn-primary"
+                              disabled={loading}
+                              onClick={() => {
+                                setUnderwriteAppId(String(app.application_id))
+                                handleUnderwriteApp(null, app.application_id)
+                              }}
+                              style={{ fontSize: '0.72rem', padding: '4px 10px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)', boxShadow: '0 2px 8px rgba(147, 51, 234, 0.3)' }}
+                            >
+                              ⚡ Underwrite & Approve
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              ✓ Settled
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
             {/* Underwriting Card */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '20px' }}>

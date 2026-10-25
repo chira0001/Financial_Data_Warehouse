@@ -244,4 +244,14 @@ export const loanApi = {
     }
     return await res.json()
   },
+
+  async getApplications() {
+    try {
+      const res = await fetch(`${BASE_URL}/api/customer/loans/applications`)
+      if (!res.ok) throw new Error('Failed to fetch applications')
+      return await res.json()
+    } catch {
+      return { applications: [] }
+    }
+  },
 }
