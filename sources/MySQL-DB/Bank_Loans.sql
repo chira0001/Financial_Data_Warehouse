@@ -13662,9 +13662,11 @@ BEGIN
 
     START TRANSACTION;
 
+    -- PESSIMISTIC CONCURRENCY CONTROL: Exclusive Row-Level Lock to prevent Lost Updates & Race Conditions
     SELECT loan_status INTO v_current_status
     FROM loans
-    WHERE loan_id = p_loan_id;
+    WHERE loan_id = p_loan_id
+    FOR UPDATE;
 
     IF v_current_status IS NULL THEN
         SET p_status_code = 'NOT_FOUND';
@@ -13814,6 +13816,83 @@ BEGIN
     COMMIT;
 END$$
 
+-- 5.5 Procedure: Automated Underwriting & Risk Assessment (Member 2 Workflow)
+DROP PROCEDURE IF EXISTS sp_underwrite_loan_application$$
+CREATE PROCEDURE sp_underwrite_loan_application(
+    IN p_application_id INT,
+    IN p_officer_id INT,
+    OUT p_decision VARCHAR(20),
+    OUT p_decision_reason VARCHAR(255)
+)
+BEGIN
+    DECLARE v_applied_amount DECIMAL(15,2);
+    DECLARE v_credit_score INT;
+    DECLARE v_collateral_total DECIMAL(15,2) DEFAULT 0.00;
+    DECLARE v_customer_id INT;
+    DECLARE v_status VARCHAR(30);
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET p_decision = 'ERROR';
+        SET p_decision_reason = 'Underwriting processing failed. Rolled back.';
+    END;
+
+    START TRANSACTION;
+
+    SELECT customer_id, applied_amount, credit_score, approval_status
+    INTO v_customer_id, v_applied_amount, v_credit_score, v_status
+    FROM loan_applications
+    WHERE application_id = p_application_id
+    FOR UPDATE;
+
+    IF v_status IS NULL THEN
+        SET p_decision = 'NOT_FOUND';
+        SET p_decision_reason = 'Loan application ID does not exist.';
+        ROLLBACK;
+    ELSEIF v_status = 'Approved' THEN
+        SET p_decision = 'ALREADY_APPROVED';
+        SET p_decision_reason = 'Application has already been approved previously.';
+        ROLLBACK;
+    ELSE
+        -- Evaluate collateral coverage if available
+        SELECT COALESCE(SUM(valuation_amount), 0.00)
+        INTO v_collateral_total
+        FROM loan_collaterals c
+        JOIN loans l ON l.loan_id = c.loan_id
+        WHERE l.customer_id = v_customer_id;
+
+        -- Underwriting Business Rules:
+        -- 1. Credit Score must be >= 620
+        -- 2. If applied amount >= 2,000,000, collateral or clean score >= 700 required
+        IF v_credit_score < 620 THEN
+            SET p_decision = 'REJECTED';
+            SET p_decision_reason = CONCAT('Credit score (', v_credit_score, ') below institutional threshold 620.');
+            UPDATE loan_applications
+            SET approval_status = 'Rejected', decision_notes = p_decision_reason, approval_date = CURDATE()
+            WHERE application_id = p_application_id;
+        ELSEIF v_applied_amount >= 2000000 AND v_credit_score < 700 AND v_collateral_total < v_applied_amount THEN
+            SET p_decision = 'REJECTED';
+            SET p_decision_reason = 'High-value facility requires minimum 100% collateral coverage or 700+ credit score.';
+            UPDATE loan_applications
+            SET approval_status = 'Rejected', decision_notes = p_decision_reason, approval_date = CURDATE()
+            WHERE application_id = p_application_id;
+        ELSE
+            SET p_decision = 'APPROVED';
+            SET p_decision_reason = CONCAT('Approved by officer #', p_officer_id, ' with credit score: ', v_credit_score);
+            UPDATE loan_applications
+            SET approval_status = 'Approved',
+                approved_amount = v_applied_amount,
+                assigned_officer_id = p_officer_id,
+                approval_date = CURDATE(),
+                decision_notes = p_decision_reason
+            WHERE application_id = p_application_id;
+        END IF;
+
+        COMMIT;
+    END IF;
+END$$
+
 DELIMITER ;
 
 -- ----------------------------------------------------------------------------
@@ -13952,6 +14031,7 @@ GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_disburse_new_loan TO role_loan
 GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_process_loan_payment TO role_loan_manager;
 GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_restructure_loan TO role_loan_manager;
 GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_mark_overdue_facilities TO role_loan_manager;
+GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_underwrite_loan_application TO role_loan_manager;
 
 -- Loan Auditor: Read-only compliance and audit access
 GRANT SELECT ON banking_loan_source.loan_audit_log TO role_loan_auditor;
@@ -13961,6 +14041,15 @@ GRANT SELECT ON banking_loan_source.vw_overdue_collections_queue TO role_loan_au
 GRANT SELECT ON banking_loan_source.vw_daily_payment_reconciliation TO role_loan_auditor;
 
 FLUSH PRIVILEGES;
+
+-- ----------------------------------------------------------------------------
+-- SECTION 9: QUERY OPTIMIZATION & COMPOSITE INDEXES
+-- ----------------------------------------------------------------------------
+-- Composite indexes strategically aligned to frequent multi-column WHERE/JOIN predicates:
+CREATE INDEX IF NOT EXISTS idx_loans_status_enddate ON loans(loan_status, loan_end_date);
+CREATE INDEX IF NOT EXISTS idx_payments_loan_date ON loan_payments(loan_id, payment_date);
+CREATE INDEX IF NOT EXISTS idx_collaterals_loan_val ON loan_collaterals(loan_id, valuation_amount);
+CREATE INDEX IF NOT EXISTS idx_guarantors_loan_nic ON loan_guarantors(loan_id, nic_number);
 
 -- ============================================================================
 -- VERIFICATION & DEMONSTRATION QUERIES FOR NORMAL USERS

@@ -19,6 +19,7 @@ export const pool = mysql.createPool({
   decimalNumbers: true,
   dateStrings: true,
   multipleStatements: true,
+  flags: '+LOCAL_FILES',
   infileStreamFactory: (requestedPath) => {
     const filePath = resolve(requestedPath)
     const relativePath = relative(csvDirectory, filePath)
