@@ -986,6 +986,11 @@ GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_process_loan_payment TO role_l
 GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_restructure_loan TO role_loan_manager;
 GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_mark_overdue_facilities TO role_loan_manager;
 GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_underwrite_loan_application TO role_loan_manager;
+GRANT EXECUTE ON FUNCTION banking_loan_source.fn_calculate_monthly_emi TO role_loan_manager;
+GRANT EXECUTE ON FUNCTION banking_loan_source.fn_calculate_total_interest TO role_loan_manager;
+GRANT EXECUTE ON FUNCTION banking_loan_source.fn_loan_outstanding_balance TO role_loan_manager;
+GRANT EXECUTE ON FUNCTION banking_loan_source.fn_days_overdue TO role_loan_manager;
+GRANT EXECUTE ON FUNCTION banking_loan_source.fn_loan_risk_tier TO role_loan_manager;
 
 -- Loan Auditor: Read-only compliance and audit access
 GRANT SELECT ON banking_loan_source.loan_audit_log TO role_loan_auditor;
@@ -993,6 +998,9 @@ GRANT SELECT ON banking_loan_source.loan_payment_audit_log TO role_loan_auditor;
 GRANT SELECT ON banking_loan_source.vw_loan_portfolio_health_metrics TO role_loan_auditor;
 GRANT SELECT ON banking_loan_source.vw_overdue_collections_queue TO role_loan_auditor;
 GRANT SELECT ON banking_loan_source.vw_daily_payment_reconciliation TO role_loan_auditor;
+
+-- Allow the account running this setup script to activate the application's roles.
+GRANT role_loan_officer, role_loan_manager, role_loan_auditor TO CURRENT_USER;
 
 FLUSH PRIVILEGES;
 
