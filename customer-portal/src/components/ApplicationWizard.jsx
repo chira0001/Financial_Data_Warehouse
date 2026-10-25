@@ -27,6 +27,15 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     employmentType: 'Permanent Salaried',
     monthlyIncome: 285000,
     branchId: 'B001',
+
+    // Guarantor Details (Mandatory for facilities >= LKR 1.5M)
+    hasGuarantor: (initialPlan?.amount || 1500000) >= 1500000,
+    guarantorName: '',
+    guarantorNic: '',
+    guarantorRelationship: 'Parent',
+    guarantorEmployer: '',
+    guarantorIncome: 180000,
+    guarantorPhone: '',
   })
 
   const rateMap = {
@@ -38,9 +47,22 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
   }
 
   const handleChange = (e) => {
-    let { name, value } = e.target
-    if (name === 'nic') {
+    let { name, value, type, checked } = e.target
+    if (type === 'checkbox') {
+      setFormData((prev) => ({ ...prev, [name]: checked }))
+      return
+    }
+    if (name === 'nic' || name === 'guarantorNic') {
       value = value.toUpperCase().trim()
+    }
+    if (name === 'loanAmount') {
+      const numAmt = Number(value)
+      setFormData((prev) => ({
+        ...prev,
+        loanAmount: value,
+        hasGuarantor: numAmt >= 1500000 ? true : prev.hasGuarantor,
+      }))
+      return
     }
     if (name === 'loanType') {
       const autoRate = rateMap[value] || 12.5
@@ -94,11 +116,58 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     return null
   }
 
+  const validateGuarantor = () => {
+    const isLargeFacility = Number(formData.loanAmount) >= 1500000
+    if (!isLargeFacility && !formData.hasGuarantor) {
+      return null
+    }
+
+    const gName = (formData.guarantorName || '').trim()
+    if (!gName || gName.length < 3) {
+      return 'Guarantor full legal name is required (minimum 3 characters).'
+    }
+
+    const gNicTrimmed = (formData.guarantorNic || '').trim()
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/
+    if (!gNicTrimmed || !nicRegex.test(gNicTrimmed)) {
+      return 'Invalid Guarantor NIC format. Expected 9 digits with V (e.g. 751234567V) or 12 digits (e.g. 197512345678).'
+    }
+
+    // Guarantor cannot be the same person as primary borrower
+    if (gNicTrimmed.toUpperCase() === (formData.nic || '').trim().toUpperCase()) {
+      return 'Guarantor cannot be the same individual as the primary applicant.'
+    }
+
+    const gEmp = (formData.guarantorEmployer || '').trim()
+    if (!gEmp || gEmp.length < 3) {
+      return 'Guarantor employer or business corporate institution is required.'
+    }
+
+    const gIncome = Number(formData.guarantorIncome)
+    if (!gIncome || isNaN(gIncome) || gIncome < 40000) {
+      return 'Guarantor declared gross monthly remuneration must be at least LKR 40,000.'
+    }
+
+    const gPhoneClean = (formData.guarantorPhone || '').replace(/[\s-+]/g, '')
+    const phoneRegex = /^(?:0|94)?(7[0-9]{8})$/
+    if (gPhoneClean && !phoneRegex.test(gPhoneClean)) {
+      return 'Invalid Guarantor contact phone. Please provide a valid 10-digit Sri Lankan mobile number (e.g. 077 123 4567).'
+    }
+
+    return null
+  }
+
   const validateStep3 = () => {
     const income = Number(formData.monthlyIncome)
     if (!income || isNaN(income) || income < 25000) {
       return 'Declared gross monthly remuneration must be at least LKR 25,000.'
     }
+
+    const gErr = validateGuarantor()
+    if (gErr) {
+      return gErr
+    }
+
     return null
   }
 
@@ -210,6 +279,9 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     setLoading(true)
 
     try {
+      const isLargeFacility = Number(formData.loanAmount) >= 1500000
+      const hasGuarantorAttached = isLargeFacility || !!formData.hasGuarantor
+
       const res = await loanApi.apply({
         ...formData,
         customerName: formData.customerName.trim(),
@@ -218,6 +290,13 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
         loanAmount: Number(formData.loanAmount),
         tenureMonths: Number(formData.tenureMonths),
         monthlyIncome: Number(formData.monthlyIncome),
+        hasGuarantor: hasGuarantorAttached,
+        guarantorName: hasGuarantorAttached ? (formData.guarantorName || '').trim() : '',
+        guarantorNic: hasGuarantorAttached ? (formData.guarantorNic || '').trim().toUpperCase() : '',
+        guarantorRelationship: hasGuarantorAttached ? formData.guarantorRelationship : '',
+        guarantorEmployer: hasGuarantorAttached ? (formData.guarantorEmployer || '').trim() : '',
+        guarantorIncome: hasGuarantorAttached ? (Number(formData.guarantorIncome) || 0) : 0,
+        guarantorPhone: hasGuarantorAttached ? (formData.guarantorPhone || '').trim() : '',
       })
       if (res.success) {
         setSubmittedResult(res)
@@ -303,6 +382,14 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
               <span style={{ color: 'var(--text-muted)' }}>Credit Score Assessed:</span>
               <span style={{ color: '#60a5fa', fontWeight: '600' }}>{submittedResult.details.creditScore || 720} (Threshold: 620)</span>
             </div>
+            {submittedResult.details.guarantor && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', background: 'rgba(16, 185, 129, 0.1)', padding: '6px 10px', borderRadius: '4px' }}>
+                <span style={{ color: '#34d399', fontWeight: 'bold' }}>Registered Guarantor:</span>
+                <span style={{ color: '#f8fafc', fontWeight: '600' }}>
+                  {submittedResult.details.guarantor.name} ({submittedResult.details.guarantor.relationship})
+                </span>
+              </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
               <span style={{ color: 'var(--text-muted)' }}>Current Status:</span>
               <span style={{ color: isPending ? '#fbbf24' : 'var(--emerald-400)', fontWeight: '700' }}>
@@ -373,6 +460,13 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   employmentType: 'Permanent Salaried',
                   monthlyIncome: 285000,
                   branchId: 'B001',
+                  hasGuarantor: true,
+                  guarantorName: '',
+                  guarantorNic: '',
+                  guarantorRelationship: 'Parent',
+                  guarantorEmployer: '',
+                  guarantorIncome: 180000,
+                  guarantorPhone: '',
                 })
                 setStep(1)
               }}
@@ -647,6 +741,130 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                 </select>
               </div>
 
+              {/* Mandatory or Voluntary Third-Party Guarantor Section */}
+              <div className="form-group full" style={{
+                border: Number(formData.loanAmount) >= 1500000 ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid var(--border-subtle)',
+                borderRadius: '8px',
+                padding: '18px',
+                background: Number(formData.loanAmount) >= 1500000 ? 'rgba(6, 78, 59, 0.15)' : 'rgba(15, 23, 42, 0.4)',
+                boxShadow: Number(formData.loanAmount) >= 1500000 ? '0 4px 16px rgba(16, 185, 129, 0.1)' : 'none',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '0.98rem', color: Number(formData.loanAmount) >= 1500000 ? '#34d399' : '#93c5fd', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ShieldCheckIcon size={16} />
+                      <span>{Number(formData.loanAmount) >= 1500000 ? '🛡️ Mandatory Guarantor Endorsement (Facilities ≥ LKR 1.5M)' : '🛡️ Registered Guarantor Security (Optional)'}</span>
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
+                      {Number(formData.loanAmount) >= 1500000 
+                        ? 'Institutional credit risk policy requires at least one permanent salaried or executive guarantor for credit facilities exceeding LKR 1,500,000.'
+                        : 'You may voluntarily endorse a guarantor to improve credit rating and accelerate underwriter approval.'}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', background: Number(formData.loanAmount) >= 1500000 ? 'rgba(16, 185, 129, 0.25)' : 'rgba(59, 130, 246, 0.2)', color: Number(formData.loanAmount) >= 1500000 ? '#6ee7b7' : '#93c5fd', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                    {Number(formData.loanAmount) >= 1500000 ? 'CBSL High-Value Mandate' : 'Credit Enhancement Tier'}
+                  </span>
+                </div>
+
+                {Number(formData.loanAmount) < 1500000 && (
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.82rem', color: '#cbd5e1' }}>
+                      <input 
+                        type="checkbox" 
+                        name="hasGuarantor" 
+                        checked={formData.hasGuarantor} 
+                        onChange={handleChange}
+                        style={{ accentColor: 'var(--emerald-500)', width: '16px', height: '16px' }}
+                      />
+                      <span>Endorse a third-party guarantor for this application</span>
+                    </label>
+                  </div>
+                )}
+
+                {(Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor) && (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                        Guarantor Full Legal Name (as per NIC) *
+                      </label>
+                      <input 
+                        type="text" 
+                        name="guarantorName" 
+                        placeholder="e.g. Jayantha Jayasinghe" 
+                        value={formData.guarantorName} 
+                        onChange={handleChange}
+                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                        Guarantor National Identity Card (NIC) *
+                      </label>
+                      <input 
+                        type="text" 
+                        name="guarantorNic" 
+                        placeholder="e.g. 197512345678 or 751234567V" 
+                        value={formData.guarantorNic} 
+                        onChange={handleChange}
+                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                        Relationship to Primary Borrower *
+                      </label>
+                      <select name="guarantorRelationship" value={formData.guarantorRelationship} onChange={handleChange}>
+                        <option value="Parent">Parent (Father / Mother)</option>
+                        <option value="Spouse">Spouse (Husband / Wife)</option>
+                        <option value="Brother">Brother</option>
+                        <option value="Sister">Sister</option>
+                        <option value="Relative">Relative (Uncle / Aunt)</option>
+                        <option value="Business Partner">Business Partner</option>
+                        <option value="Colleague">Corporate Colleague</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                        Guarantor Employer / Corporate Institution *
+                      </label>
+                      <input 
+                        type="text" 
+                        name="guarantorEmployer" 
+                        placeholder="e.g. State Pharmaceuticals Corp / Commercial Bank" 
+                        value={formData.guarantorEmployer} 
+                        onChange={handleChange}
+                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                        Guarantor Certified Monthly Remuneration (LKR) *
+                      </label>
+                      <input 
+                        type="number" 
+                        name="guarantorIncome" 
+                        step="10000" 
+                        value={formData.guarantorIncome} 
+                        onChange={handleChange}
+                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                        Guarantor Contact Mobile Number
+                      </label>
+                      <input 
+                        type="tel" 
+                        name="guarantorPhone" 
+                        placeholder="e.g. 071 223 3445" 
+                        value={formData.guarantorPhone} 
+                        onChange={handleChange}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div className="form-group full" style={{ border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '16px', background: 'rgba(15, 23, 42, 0.4)' }}>
                 <h4 style={{ fontSize: '0.94rem', marginBottom: '10px', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ShieldCheckIcon size={16} />
@@ -680,6 +898,11 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   <div>Principal: <strong>LKR {Number(formData.loanAmount).toLocaleString()}</strong></div>
                   <div>Amortization: <strong>{formData.tenureMonths} Months</strong></div>
                   <div>Monthly Installment: <strong style={{ color: 'var(--emerald-400)' }}>LKR {estimatedEmi.toLocaleString()}</strong></div>
+                  {(Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor) && (
+                    <div style={{ gridColumn: 'span 2', color: '#34d399', borderTop: '1px solid var(--border-subtle)', paddingTop: '6px', marginTop: '4px' }}>
+                      Guarantor: <strong>{formData.guarantorName || 'Pending'} ({formData.guarantorRelationship} • {formData.guarantorEmployer || 'Corporate'})</strong>
+                    </div>
+                  )}
                 </div>
               </div>
 

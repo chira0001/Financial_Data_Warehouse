@@ -529,6 +529,13 @@ app.post('/api/customer/loans/apply', async (request, response) => {
       branchId,
       nic,
       phone,
+      guarantorName,
+      guarantorNic,
+      guarantorRelationship,
+      guarantorEmployer,
+      guarantorIncome,
+      guarantorPhone,
+      hasGuarantor,
     } = request.body
 
     const cleanName = (customerName || '').trim()
@@ -556,6 +563,34 @@ app.post('/api/customer/loans/apply', async (request, response) => {
     }
 
     const parsedRate = Number(interestRate) || 12.5
+
+    // Guarantor Validation for High-Value Facilities (>= LKR 1.5M) or when Guarantor is provided
+    const cleanGName = (guarantorName || '').trim()
+    const cleanGNic = (guarantorNic || '').trim().toUpperCase()
+    const gRel = (guarantorRelationship || 'Parent').trim()
+    const gEmp = (guarantorEmployer || '').trim()
+    const gInc = Number(guarantorIncome) || 0
+    const gPhone = (guarantorPhone || '').trim()
+
+    if (parsedAmount >= 1500000 || hasGuarantor || cleanGName) {
+      if (parsedAmount >= 1500000 && (!cleanGName || cleanGName.length < 3)) {
+        return response.status(400).json({ error: 'Institutional credit policy requires a registered guarantor for facilities of LKR 1,500,000 or greater.' })
+      }
+      if (cleanGName) {
+        if (!cleanGNic || !nicRegex.test(cleanGNic)) {
+          return response.status(400).json({ error: 'Valid Guarantor National Identity Card (NIC) is required (9 digits with V or 12 digits).' })
+        }
+        if (cleanGNic === cleanNic) {
+          return response.status(400).json({ error: 'Guarantor cannot be the same individual as the primary applicant.' })
+        }
+        if (!gEmp || gEmp.length < 3) {
+          return response.status(400).json({ error: 'Guarantor employer or business corporate institution is required.' })
+        }
+        if (gInc < 40000) {
+          return response.status(400).json({ error: 'Guarantor monthly remuneration must be at least LKR 40,000.' })
+        }
+      }
+    }
 
     // 1. Manage Customer record: Ensure unique applicant profile without fallback hijacking
     let targetCustomerId = null
@@ -603,11 +638,27 @@ app.post('/api/customer/loans/apply', async (request, response) => {
     const [appMax] = await connection.query('SELECT COALESCE(MAX(application_id), 7000) AS max_app FROM banking_loan_source.loan_applications')
     const newAppId = (appMax[0]?.max_app || 7000) + 1
 
+    let guarantorNote = ''
+    let guarantorDetail = null
+    if (cleanGName) {
+      guarantorNote = ` • Endorsed Guarantor: ${cleanGName} (${gRel}, NIC: ${cleanGNic}, Employer: ${gEmp}, Income: LKR ${gInc}, Phone: ${gPhone || '071-2233445'})`
+      guarantorDetail = {
+        name: cleanGName,
+        nic: cleanGNic,
+        relationship: gRel,
+        employer: gEmp,
+        income: gInc,
+        phone: gPhone,
+      }
+    }
+
+    const decisionNotes = `Online Applicant: ${cleanName} (NIC: ${cleanNic})${guarantorNote} • Awaiting Underwriting Review`
+
     await connection.query(`
       INSERT INTO banking_loan_source.loan_applications
         (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, decision_notes)
       VALUES (?, ?, ?, 101, ?, ?, CURDATE(), ?, 'Pending', ?)
-    `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, calculatedCreditScore, `Online Applicant: ${cleanName} (NIC: ${cleanNic}) • Awaiting Underwriting Review`])
+    `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, calculatedCreditScore, decisionNotes])
 
     response.json({
       success: true,
@@ -626,6 +677,7 @@ app.post('/api/customer/loans/apply', async (request, response) => {
         tenureMonths: tenure,
         status: 'Pending Underwriting',
         creditScore: calculatedCreditScore,
+        guarantor: guarantorDetail,
         startDate: new Date().toISOString().split('T')[0],
       },
     })
@@ -887,9 +939,10 @@ app.get('/api/customer/loans/applications', async (request, response) => {
 // ==========================================
 app.post('/api/customer/loans/adbms/execute-procedure', async (request, response) => {
   const connection = await pool.getConnection()
-  const start = performance.now()
   try {
-    const { procedure, params } = request.body
+    const start = performance.now()
+    const procedure = request.body.procedure
+    const params = request.body.params || request.body || {}
 
     if (procedure === 'sp_process_loan_payment') {
       const loanId = Number(params.loanId) || 2008
@@ -981,6 +1034,56 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       const applicationId = Number(params.applicationId) || 7103
       const officerId = Number(params.officerId) || 101
 
+      // 1. Fetch application details BEFORE running procedure so we do not lose applicant & guarantor notes
+      let appPre = null
+      let guarantorInfo = null
+      try {
+        const [appRowsPre] = await connection.query(
+          'SELECT * FROM banking_loan_source.loan_applications WHERE application_id = ?',
+          [applicationId]
+        )
+        if (appRowsPre.length > 0) {
+          appPre = appRowsPre[0]
+          if (appPre.decision_notes && appPre.decision_notes.includes('Endorsed Guarantor:')) {
+            const gMatch = appPre.decision_notes.match(/Endorsed Guarantor:\s*([^(\n]+?)\s*\(([^,]+),\s*NIC:\s*([^,]+),\s*Employer:\s*([^,]+),\s*Income:\s*LKR\s*([0-9.]+)(?:,\s*Phone:\s*([^)]+))?\)/i)
+            if (gMatch) {
+              guarantorInfo = {
+                name: gMatch[1].trim(),
+                relationship: gMatch[2].trim(),
+                nic: gMatch[3].trim(),
+                employer: gMatch[4].trim(),
+                income: parseFloat(gMatch[5]) || 75000,
+                phone: (gMatch[6] || '+94 77 123 4567').trim(),
+              }
+            } else {
+              try {
+                const gPart = appPre.decision_notes.split('Endorsed Guarantor:')[1]?.split('•')[0] || ''
+                const nameMatch = gPart.match(/^([^(]+)/)
+                const nicMatch = gPart.match(/NIC:\s*([^,)]+)/i)
+                const relMatch = gPart.match(/\(([^,]+)/)
+                const empMatch = gPart.match(/Employer:\s*([^,)]+)/i)
+                const incMatch = gPart.match(/Income:\s*LKR\s*([0-9.]+)/i)
+                const phoneMatch = gPart.match(/Phone:\s*([^)]+)/i)
+                if (nameMatch && nicMatch) {
+                  guarantorInfo = {
+                    name: nameMatch[1].trim(),
+                    relationship: relMatch ? relMatch[1].trim() : 'Guarantor',
+                    nic: nicMatch[1].trim(),
+                    employer: empMatch ? empMatch[1].trim() : 'Private Enterprise',
+                    income: incMatch ? parseFloat(incMatch[1]) : 75000,
+                    phone: phoneMatch ? phoneMatch[1].trim() : '+94 77 123 4567',
+                  }
+                }
+              } catch (parseErr) {
+                console.warn('Fallback guarantor parsing warning:', parseErr.message)
+              }
+            }
+          }
+        }
+      } catch (preErr) {
+        console.warn('Could not query pre-underwriting application info:', preErr.message)
+      }
+
       const sql = `CALL banking_loan_source.sp_underwrite_loan_application(${applicationId}, ${officerId}, @decision, @reason);`
 
       await connection.query('SET @decision = "", @reason = ""')
@@ -1013,6 +1116,70 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
               )
             `, [generatedLoanId, app.customer_id, numericAccId, lType, app.applied_amount, lRate, tenure])
             disbursementMsg = `Facility #${generatedLoanId} disbursed successfully into core ledger.`
+
+            // If an endorsed guarantor was attached, insert into loan_guarantors
+            if (guarantorInfo && generatedLoanId) {
+              try {
+                const [maxG] = await connection.query(
+                  'SELECT COALESCE(MAX(guarantor_id), 9000) AS max_g FROM banking_loan_source.loan_guarantors'
+                )
+                const newGuarantorId = (maxG[0]?.max_g || 9000) + 1
+                const guaranteeAmt = app.applied_amount || 0
+
+                await connection.query(`
+                  INSERT INTO banking_loan_source.loan_guarantors
+                    (guarantor_id, loan_id, guarantor_name, nic_number, relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                  newGuarantorId,
+                  generatedLoanId,
+                  guarantorInfo.name,
+                  guarantorInfo.nic,
+                  guarantorInfo.relationship,
+                  guarantorInfo.phone,
+                  guarantorInfo.income,
+                  guarantorInfo.employer,
+                  guaranteeAmt,
+                ])
+
+                try {
+                  const [maxAudit] = await connection.query(
+                    'SELECT COALESCE(MAX(log_id), 5000) AS max_l FROM banking_loan_source.loan_audit_log'
+                  )
+                  const newLogId = (maxAudit[0]?.max_l || 5000) + 1
+                  await connection.query(`
+                    INSERT INTO banking_loan_source.loan_audit_log
+                      (log_id, loan_id, action, changed_by, old_value, new_value)
+                    VALUES (?, ?, 'GUARANTOR_ATTACHED', ?, NULL, ?)
+                  `, [
+                    newLogId,
+                    generatedLoanId,
+                    `Credit Officer #${officerId}`,
+                    `Endorsed Guarantor: ${guarantorInfo.name} (${guarantorInfo.relationship}, NIC: ${guarantorInfo.nic}, Limit: LKR ${guaranteeAmt})`,
+                  ])
+                } catch (auditErr) {
+                  console.warn('Guarantor audit log warning:', auditErr.message)
+                }
+
+                disbursementMsg += ` Registered guarantor ${guarantorInfo.name} (${guarantorInfo.relationship}) linked in loan_guarantors.`
+              } catch (gInsertErr) {
+                console.error('Failed to insert into loan_guarantors:', gInsertErr.message)
+              }
+            }
+
+            // Preserve full application lineage & guarantor note in decision_notes
+            if (appPre && appPre.decision_notes) {
+              try {
+                const baseNote = appPre.decision_notes.replace('• Awaiting Underwriting Review', '').trim()
+                const enrichedNote = `${baseNote} • Approved by Officer #${officerId} (Score: ${app.credit_score})`
+                await connection.query(
+                  'UPDATE banking_loan_source.loan_applications SET decision_notes = ? WHERE application_id = ?',
+                  [enrichedNote, applicationId]
+                )
+              } catch (noteErr) {
+                console.warn('Could not enrich application decision_notes:', noteErr.message)
+              }
+            }
           }
         } catch (dErr) {
           console.warn('Auto disbursement post-approval warning:', dErr.message)

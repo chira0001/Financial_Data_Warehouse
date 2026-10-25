@@ -203,8 +203,25 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                   To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"⚡ Underwrite & Approve"</strong> in the Live Underwriting Worklist.
                 </span>
               </p>
+
+              {data.application.decision_notes && data.application.decision_notes.includes('Endorsed Guarantor:') && (
+                <div style={{ marginTop: '12px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '8px', padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: '#34d399', fontWeight: 'bold', fontSize: '0.82rem' }}>
+                      🛡️ Nominated Guarantor (Pending Credit Committee Verification)
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: '#6ee7b7', background: 'rgba(16, 185, 129, 0.25)', padding: '2px 8px', borderRadius: '4px' }}>
+                      Large Facility Endorsement
+                    </span>
+                  </div>
+                  <div style={{ color: '#f1f5f9', fontSize: '0.82rem', lineHeight: '1.4' }}>
+                    {data.application.decision_notes.split('Endorsed Guarantor:')[1]?.split('•')[0]?.trim()}
+                  </div>
+                </div>
+              )}
+
               {onSwitchToManager && (
-                <div style={{ marginTop: '12px' }}>
+                <div style={{ marginTop: '14px' }}>
                   <button
                     type="button"
                     onClick={onSwitchToManager}
@@ -379,6 +396,9 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                       <div style={{ fontWeight: '600', color: '#f8fafc' }}>{g.guarantor_name} <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({g.relationship_to_borrower})</span></div>
                       <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '4px' }}>
                         NIC: <span className="mono">{g.nic_number}</span> • Monthly Income: LKR {Number(g.monthly_income).toLocaleString()}
+                        {Number(g.guarantee_amount) > 0 && (
+                          <span> • Guarantee Liability: <strong style={{ color: 'var(--emerald-400)' }}>LKR {Number(g.guarantee_amount).toLocaleString()}</strong></span>
+                        )}
                       </div>
                       <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
                         Employer: {g.employer_name} • Contact: {g.phone_number}

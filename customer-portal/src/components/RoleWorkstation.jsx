@@ -433,8 +433,21 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                             {app.credit_score}
                           </span>
                         </td>
-                        <td style={{ padding: '8px 10px', fontSize: '0.75rem', color: '#94a3b8', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {app.decision_notes || 'Pending'}
+                        <td style={{ padding: '8px 10px', fontSize: '0.75rem', color: '#94a3b8', maxWidth: '240px' }} title={app.decision_notes}>
+                          {app.decision_notes?.includes('Endorsed Guarantor:') ? (
+                            <div>
+                              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', marginBottom: '2px', fontWeight: '600' }}>
+                                🛡️ Guarantor Endorsed
+                              </span>
+                              <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {app.decision_notes.split('Endorsed Guarantor:')[1]?.split('•')[0]?.trim()}
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {app.decision_notes || 'Pending'}
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: '8px 10px' }}>
                           <span style={{
