@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { CheckIcon, ArrowRightIcon, FileTextIcon, ShieldCheckIcon, PrinterIcon, SearchIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
@@ -18,7 +18,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     customerId: '',
 
     loanType: initialPlan?.productName || 'Personal',
-    loanAmount: initialPlan?.amount || 1500000,
+    loanAmount: initialPlan?.amount || 500000,
     tenureMonths: initialPlan?.tenureYears ? initialPlan.tenureYears * 12 : 36,
     interestRate: initialPlan?.rate || 12.5,
     purpose: 'Residential acquisition and property improvements',
@@ -28,8 +28,8 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     monthlyIncome: 285000,
     branchId: 'B001',
 
-    // Guarantor Details (Mandatory for facilities >= LKR 1.5M)
-    hasGuarantor: (initialPlan?.amount || 1500000) >= 1500000,
+    // Guarantor Details (Mandatory only for facilities >= LKR 1.5M under CBSL policy)
+    hasGuarantor: (initialPlan?.amount || 500000) >= 1500000,
     guarantorName: '',
     guarantorNic: '',
     guarantorRelationship: 'Parent',
@@ -37,6 +37,22 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     guarantorIncome: 180000,
     guarantorPhone: '',
   })
+
+  // Synchronize when initialPlan changes (e.g., from EMI calculator or product card)
+  useEffect(() => {
+    if (initialPlan) {
+      const planAmt = initialPlan.amount || 500000
+      const isLarge = Number(planAmt) >= 1500000
+      setFormData((prev) => ({
+        ...prev,
+        loanType: initialPlan.productName || prev.loanType,
+        loanAmount: planAmt,
+        tenureMonths: initialPlan.tenureYears ? initialPlan.tenureYears * 12 : prev.tenureMonths,
+        interestRate: initialPlan.rate || prev.interestRate,
+        hasGuarantor: isLarge ? true : false,
+      }))
+    }
+  }, [initialPlan])
 
   const rateMap = {
     Personal: 12.5,
@@ -57,11 +73,16 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     }
     if (name === 'loanAmount') {
       const numAmt = Number(value)
-      setFormData((prev) => ({
-        ...prev,
-        loanAmount: value,
-        hasGuarantor: numAmt >= 1500000 ? true : prev.hasGuarantor,
-      }))
+      setFormData((prev) => {
+        const isNowMandatory = numAmt >= 1500000
+        const wasMandatory = Number(prev.loanAmount) >= 1500000
+        return {
+          ...prev,
+          loanAmount: value,
+          // When dropping below 1.5M, reset hasGuarantor to false so users are not trapped into providing a guarantor
+          hasGuarantor: isNowMandatory ? true : (wasMandatory ? false : prev.hasGuarantor),
+        }
+      })
       return
     }
     if (name === 'loanType') {
@@ -163,9 +184,12 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
       return 'Declared gross monthly remuneration must be at least LKR 25,000.'
     }
 
-    const gErr = validateGuarantor()
-    if (gErr) {
-      return gErr
+    const isLargeFacility = Number(formData.loanAmount) >= 1500000
+    if (isLargeFacility || formData.hasGuarantor) {
+      const gErr = validateGuarantor()
+      if (gErr) {
+        return gErr
+      }
     }
 
     return null
@@ -280,7 +304,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
 
     try {
       const isLargeFacility = Number(formData.loanAmount) >= 1500000
-      const hasGuarantorAttached = isLargeFacility || !!formData.hasGuarantor
+      const hasGuarantorAttached = isLargeFacility || (Boolean(formData.hasGuarantor) && (formData.guarantorName || '').trim().length > 0)
 
       const res = await loanApi.apply({
         ...formData,
@@ -350,10 +374,10 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
             </button>
           </div>
 
-          {/* RBAC Governance Notice */}
+          {/* Banking Governance Notice */}
           {isPending && (
             <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '12px 16px', maxWidth: '540px', margin: '14px auto', textAlign: 'left', fontSize: '0.82rem', color: '#fde68a' }}>
-              <strong>⚖️ Institutional RBAC Compliance:</strong> In accordance with ADBMS retail credit separation of duties, customers cannot self-disburse credit facilities. This application is now queued in the database for the <strong>Loan Manager</strong> to execute Stored Procedure <code>sp_underwrite_loan_application</code>.
+              <strong>⚖️ Credit Committee Review Notice:</strong> In accordance with statutory banking regulations and Central Bank (CBSL) guidelines, all facility applications undergo formal managerial assessment. Your application is securely recorded and queued for <strong>Credit Committee</strong> authorization.
             </div>
           )}
 
@@ -361,6 +385,15 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Assigned Application ID:</span>
               <strong className="mono" style={{ fontSize: '1.05rem', color: '#93c5fd' }}>#{submittedResult.applicationId || submittedResult.loanId}</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', background: 'rgba(56, 189, 248, 0.08)', padding: '6px 10px', borderRadius: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Customer ID:</span>
+              <strong className="mono" style={{ fontSize: '1.02rem', color: '#38bdf8' }}>
+                {submittedResult.customerCode || submittedResult.details?.customerCode || `C${String(submittedResult.customerId || 501).padStart(4, '0')}`} 
+                <span style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 'normal', marginLeft: '6px' }}>
+                  (ID: #{submittedResult.customerId || submittedResult.details?.customerId || 501})
+                </span>
+              </strong>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Facility Classification:</span>
@@ -452,7 +485,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   occupation: 'IT Professional',
                   customerId: '',
                   loanType: 'Personal',
-                  loanAmount: 1500000,
+                  loanAmount: 500000,
                   tenureMonths: 36,
                   interestRate: 12.5,
                   purpose: 'Residential acquisition and property improvements',
@@ -460,7 +493,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   employmentType: 'Permanent Salaried',
                   monthlyIncome: 285000,
                   branchId: 'B001',
-                  hasGuarantor: true,
+                  hasGuarantor: false,
                   guarantorName: '',
                   guarantorNic: '',
                   guarantorRelationship: 'Parent',
@@ -619,7 +652,9 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
               <div className="form-group">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label>Requested Principal Amount (LKR) *</label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--emerald-400)' }}>LKR 50K – 25M</span>
+                  <span style={{ fontSize: '0.72rem', color: Number(formData.loanAmount) >= 1500000 ? '#fbbf24' : 'var(--emerald-400)', fontWeight: 600 }}>
+                    {Number(formData.loanAmount) >= 1500000 ? '🛡️ Mandatory Guarantor Tier (≥ 1.5M)' : '✓ Unsecured Retail Tier (< 1.5M - No Guarantor)'}
+                  </span>
                 </div>
                 <input 
                   type="number" 
@@ -631,6 +666,11 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   onChange={handleChange}
                   required
                 />
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                  {Number(formData.loanAmount) >= 1500000 
+                    ? '⚠️ Facilities of LKR 1.5M or above require a mandatory registered third-party guarantor as per CBSL policy.'
+                    : 'ℹ️ Unsecured Retail Credit: No guarantor required. Evaluated purely on certified income and credit score.'}
+                </span>
               </div>
 
               <div className="form-group">
@@ -741,48 +781,32 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                 </select>
               </div>
 
-              {/* Mandatory or Voluntary Third-Party Guarantor Section */}
-              <div className="form-group full" style={{
-                border: Number(formData.loanAmount) >= 1500000 ? '1px solid rgba(16, 185, 129, 0.45)' : '1px solid var(--border-subtle)',
-                borderRadius: '8px',
-                padding: '18px',
-                background: Number(formData.loanAmount) >= 1500000 ? 'rgba(6, 78, 59, 0.15)' : 'rgba(15, 23, 42, 0.4)',
-                boxShadow: Number(formData.loanAmount) >= 1500000 ? '0 4px 16px rgba(16, 185, 129, 0.1)' : 'none',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-                  <div>
-                    <h4 style={{ fontSize: '0.98rem', color: Number(formData.loanAmount) >= 1500000 ? '#34d399' : '#93c5fd', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <ShieldCheckIcon size={16} />
-                      <span>{Number(formData.loanAmount) >= 1500000 ? '🛡️ Mandatory Guarantor Endorsement (Facilities ≥ LKR 1.5M)' : '🛡️ Registered Guarantor Security (Optional)'}</span>
-                    </h4>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
-                      {Number(formData.loanAmount) >= 1500000 
-                        ? 'Institutional credit risk policy requires at least one permanent salaried or executive guarantor for credit facilities exceeding LKR 1,500,000.'
-                        : 'You may voluntarily endorse a guarantor to improve credit rating and accelerate underwriter approval.'}
-                    </p>
+              {/* Guarantor Section: Dynamic based on Loan Amount (< 1.5M Unsecured vs >= 1.5M Mandatory) */}
+              {Number(formData.loanAmount) >= 1500000 ? (
+                // MANDATORY GUARANTOR CONTAINER (>= LKR 1.5M)
+                <div className="form-group full" style={{
+                  border: '1px solid rgba(245, 158, 11, 0.45)',
+                  borderRadius: '10px',
+                  padding: '20px',
+                  background: 'rgba(245, 158, 11, 0.05)',
+                  boxShadow: '0 4px 16px rgba(245, 158, 11, 0.08)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <h4 style={{ fontSize: '0.98rem', color: '#fbbf24', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <ShieldCheckIcon size={16} />
+                        <span>🛡️ Mandatory Guarantor Endorsement (Facilities ≥ LKR 1,500,000)</span>
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1' }}>
+                        Under Central Bank of Sri Lanka (CBSL) credit risk prudential directives, credit facilities of LKR 1,500,000 or above require at least one verified third-party guarantor.
+                      </p>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.25)', color: '#fef08a', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', border: '1px solid rgba(245, 158, 11, 0.5)' }}>
+                      CBSL Regulatory Mandate (Required)
+                    </span>
                   </div>
-                  <span style={{ fontSize: '0.72rem', background: Number(formData.loanAmount) >= 1500000 ? 'rgba(16, 185, 129, 0.25)' : 'rgba(59, 130, 246, 0.2)', color: Number(formData.loanAmount) >= 1500000 ? '#6ee7b7' : '#93c5fd', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
-                    {Number(formData.loanAmount) >= 1500000 ? 'CBSL High-Value Mandate' : 'Credit Enhancement Tier'}
-                  </span>
-                </div>
 
-                {Number(formData.loanAmount) < 1500000 && (
-                  <div style={{ marginBottom: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.82rem', color: '#cbd5e1' }}>
-                      <input 
-                        type="checkbox" 
-                        name="hasGuarantor" 
-                        checked={formData.hasGuarantor} 
-                        onChange={handleChange}
-                        style={{ accentColor: 'var(--emerald-500)', width: '16px', height: '16px' }}
-                      />
-                      <span>Endorse a third-party guarantor for this application</span>
-                    </label>
-                  </div>
-                )}
-
-                {(Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor) && (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', marginTop: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginTop: '12px' }}>
                     <div>
                       <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
                         Guarantor Full Legal Name (as per NIC) *
@@ -793,7 +817,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                         placeholder="e.g. Jayantha Jayasinghe" 
                         value={formData.guarantorName} 
                         onChange={handleChange}
-                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                        required
                       />
                     </div>
                     <div>
@@ -806,7 +830,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                         placeholder="e.g. 197512345678 or 751234567V" 
                         value={formData.guarantorNic} 
                         onChange={handleChange}
-                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                        required
                       />
                     </div>
                     <div>
@@ -833,7 +857,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                         placeholder="e.g. State Pharmaceuticals Corp / Commercial Bank" 
                         value={formData.guarantorEmployer} 
                         onChange={handleChange}
-                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                        required
                       />
                     </div>
                     <div>
@@ -846,7 +870,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                         step="10000" 
                         value={formData.guarantorIncome} 
                         onChange={handleChange}
-                        required={Number(formData.loanAmount) >= 1500000 || formData.hasGuarantor}
+                        required
                       />
                     </div>
                     <div>
@@ -862,8 +886,143 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                       />
                     </div>
                   </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                // OPTIONAL / UNSECURED LOAN CONTAINER (< LKR 1.5M)
+                <div className="form-group full" style={{
+                  border: formData.hasGuarantor ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid rgba(16, 185, 129, 0.35)',
+                  borderRadius: '10px',
+                  padding: '18px',
+                  background: formData.hasGuarantor ? 'rgba(30, 58, 138, 0.08)' : 'rgba(16, 185, 129, 0.04)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <h4 style={{ fontSize: '0.98rem', color: '#34d399', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <CheckIcon size={16} />
+                        <span>✓ Unsecured Facility — No Guarantor Required (Loans &lt; LKR 1.5M)</span>
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
+                        Credit facilities under LKR 1,500,000 are sanctioned as unsecured direct facilities based solely on your certified monthly income and credit score. You do NOT need to provide an apakaruwek (guarantor).
+                      </p>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.2)', color: '#6ee7b7', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+                      ✓ Direct Unsecured Credit
+                    </span>
+                  </div>
+
+                  {/* Optional Guarantor Checkbox Toggle */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.5)', padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(148, 163, 184, 0.15)', marginTop: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '0.85rem', color: '#f1f5f9' }}>
+                      <input 
+                        type="checkbox" 
+                        name="hasGuarantor" 
+                        checked={formData.hasGuarantor} 
+                        onChange={handleChange}
+                        style={{ accentColor: 'var(--emerald-500)', width: '18px', height: '18px', cursor: 'pointer' }}
+                      />
+                      <span>
+                        <strong>Add an optional third-party guarantor</strong> <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>(Optional — only if you wish to voluntarily enhance your application credit score)</span>
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* If user did not opt in, show clean reassurance */}
+                  {!formData.hasGuarantor && (
+                    <div style={{ marginTop: '10px', fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>✓ Standard unsecured application: No guarantor attached. Facility will be issued directly in your name.</span>
+                    </div>
+                  )}
+
+                  {/* If user explicitly opted in, show inputs */}
+                  {formData.hasGuarantor && (
+                    <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed rgba(148, 163, 184, 0.2)' }}>
+                      <div style={{ fontSize: '0.8rem', color: '#93c5fd', marginBottom: '12px' }}>
+                        ℹ️ Voluntary Guarantor Endorsement: Details will be recorded in the MySQL ledger to support credit underwriting:
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                            Guarantor Full Legal Name (as per NIC) *
+                          </label>
+                          <input 
+                            type="text" 
+                            name="guarantorName" 
+                            placeholder="e.g. Jayantha Jayasinghe" 
+                            value={formData.guarantorName} 
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                            Guarantor National Identity Card (NIC) *
+                          </label>
+                          <input 
+                            type="text" 
+                            name="guarantorNic" 
+                            placeholder="e.g. 197512345678 or 751234567V" 
+                            value={formData.guarantorNic} 
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                            Relationship to Primary Borrower *
+                          </label>
+                          <select name="guarantorRelationship" value={formData.guarantorRelationship} onChange={handleChange}>
+                            <option value="Parent">Parent (Father / Mother)</option>
+                            <option value="Spouse">Spouse (Husband / Wife)</option>
+                            <option value="Brother">Brother</option>
+                            <option value="Sister">Sister</option>
+                            <option value="Relative">Relative (Uncle / Aunt)</option>
+                            <option value="Business Partner">Business Partner</option>
+                            <option value="Colleague">Corporate Colleague</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                            Guarantor Employer / Corporate Institution *
+                          </label>
+                          <input 
+                            type="text" 
+                            name="guarantorEmployer" 
+                            placeholder="e.g. State Pharmaceuticals Corp / Commercial Bank" 
+                            value={formData.guarantorEmployer} 
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                            Guarantor Certified Monthly Remuneration (LKR) *
+                          </label>
+                          <input 
+                            type="number" 
+                            name="guarantorIncome" 
+                            step="10000" 
+                            value={formData.guarantorIncome} 
+                            onChange={handleChange}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.78rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                            Guarantor Contact Mobile Number
+                          </label>
+                          <input 
+                            type="tel" 
+                            name="guarantorPhone" 
+                            placeholder="e.g. 071 223 3445" 
+                            value={formData.guarantorPhone} 
+                            onChange={handleChange}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="form-group full" style={{ border: '1px solid var(--border-subtle)', borderRadius: '8px', padding: '16px', background: 'rgba(15, 23, 42, 0.4)' }}>
                 <h4 style={{ fontSize: '0.94rem', marginBottom: '10px', color: '#93c5fd', display: 'flex', alignItems: 'center', gap: '8px' }}>
