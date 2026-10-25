@@ -57,7 +57,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
     } else if (activeTab === 'audit') {
       fetchAuditLogs()
     }
-  }, [activeTab, selectedView])
+  }, [activeTab, selectedView, execRole])
 
   const handleRunExplain = async () => {
     setExplainLoading(true)
@@ -128,7 +128,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
       const res = await loanApi.executeFunction({
         functionName: selectedFunc,
         params: funcParams,
-      })
+      }, execRole)
       setConsoleOutput({
         type: 'FUNCTION',
         ...res,

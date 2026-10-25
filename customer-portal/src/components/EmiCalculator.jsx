@@ -29,7 +29,7 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
     loanApi.executeFunction({
       functionName: 'fn_calculate_monthly_emi',
       params: { principal: P, rate: Number(rate), tenure: n },
-    })
+    }, 'role_loan_officer')
       .then(({ result }) => {
         if (!cancelled) setMonthlyEmi(Number(result) || 0)
       })

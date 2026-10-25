@@ -16,6 +16,28 @@ const handleError = (response, error) => {
   console.error(error)
   response.status(503).json({ error: 'Customer loan database unavailable', detail: error.message })
 }
+
+const allowedDatabaseRoles = new Set([
+  'role_loan_officer',
+  'role_loan_manager',
+  'role_loan_auditor',
+])
+
+const setDatabaseRole = async (connection, request, defaultRole = 'role_loan_manager') => {
+  const role = request.get('X-Database-Role') || defaultRole
+  if (!allowedDatabaseRoles.has(role)) {
+    throw new Error(`Unsupported database role: ${role}`)
+  }
+  await connection.query(`SET ROLE ${role}`)
+}
+
+const resetDatabaseRole = async (connection) => {
+  try {
+    await connection.query('SET ROLE DEFAULT')
+  } catch (error) {
+    console.warn('Could not reset MySQL session role before releasing connection:', error.message)
+  }
+}
 const fallbackLoanProducts = [
   {
     id: 'personal',
@@ -611,8 +633,9 @@ app.get('/api/customer/loans/applications', async (request, response) => {
 // ==========================================
 app.post('/api/customer/loans/adbms/execute-procedure', async (request, response) => {
   const connection = await pool.getConnection()
+  const start = performance.now()
   try {
-    const start = performance.now()
+    await setDatabaseRole(connection, request)
     const procedure = request.body.procedure
     const params = request.body.params || request.body || {}
 
@@ -894,6 +917,7 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       transactionStatus: 'ROLLED_BACK',
     })
   } finally {
+    await resetDatabaseRole(connection)
     connection.release()
   }
 })
@@ -922,6 +946,7 @@ app.get('/api/customer/loans/adbms/explain-analyze', async (request, response) =
 
 app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) => {
   const start = performance.now()
+  let connection
   try {
     const { viewName } = request.params
     const allowedViews = [
@@ -936,7 +961,9 @@ app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) =
       return response.status(400).json({ error: `Unsupported view: ${viewName}` })
     }
 
-    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
+    connection = await pool.getConnection()
+    await setDatabaseRole(connection, request)
+    const [rows] = await connection.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
     const execTime = (performance.now() - start).toFixed(2)
 
     response.json({
@@ -952,6 +979,11 @@ app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) =
   } catch (error) {
     const execTime = (performance.now() - start).toFixed(2)
     response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  } finally {
+    if (connection) {
+      await resetDatabaseRole(connection)
+      connection.release()
+    }
   }
 })
 
@@ -978,40 +1010,44 @@ app.get('/api/customer/loans/adbms/audit-log', async (request, response) => {
 
 app.post('/api/customer/loans/adbms/execute-function', async (request, response) => {
   const start = performance.now()
+  let connection
   try {
-    const { functionName, params } = request.body
+    const { functionName } = request.body
+    const params = request.body.params || {}
     let sql = ''
     let queryParams = []
 
     if (functionName === 'fn_calculate_monthly_emi') {
-      const principal = Number(params.principal) || 1500000
-      const rate = Number(params.rate) || 12.5
-      const tenure = Number(params.tenure) || 36
+      const principal = Number(params.principal ?? 1500000)
+      const rate = Number(params.rate ?? 12.5)
+      const tenure = Number(params.tenure ?? 36)
       sql = `SELECT banking_loan_source.fn_calculate_monthly_emi(?, ?, ?) AS result;`
       queryParams = [principal, rate, tenure]
     } else if (functionName === 'fn_loan_outstanding_balance') {
-      const loanId = Number(params.loanId) || 2008
+      const loanId = Number(params.loanId ?? 2008)
       sql = `SELECT banking_loan_source.fn_loan_outstanding_balance(?) AS result;`
       queryParams = [loanId]
     } else if (functionName === 'fn_days_overdue') {
-      const loanId = Number(params.loanId) || 2008
+      const loanId = Number(params.loanId ?? 2008)
       sql = `SELECT banking_loan_source.fn_days_overdue(?) AS result;`
       queryParams = [loanId]
     } else if (functionName === 'fn_loan_risk_tier') {
-      const loanId = Number(params.loanId) || 2008
+      const loanId = Number(params.loanId ?? 2008)
       sql = `SELECT banking_loan_source.fn_loan_risk_tier(?) AS result;`
       queryParams = [loanId]
     } else if (functionName === 'fn_calculate_total_interest') {
-      const principal = Number(params.principal) || 1500000
-      const rate = Number(params.rate) || 12.5
-      const tenure = Number(params.tenure) || 36
+      const principal = Number(params.principal ?? 1500000)
+      const rate = Number(params.rate ?? 12.5)
+      const tenure = Number(params.tenure ?? 36)
       sql = `SELECT banking_loan_source.fn_calculate_total_interest(?, ?, ?) AS result;`
       queryParams = [principal, rate, tenure]
     } else {
       return response.status(400).json({ error: `Unsupported function: ${functionName}` })
     }
 
-    const [rows] = await pool.query(sql, queryParams)
+    connection = await pool.getConnection()
+    await setDatabaseRole(connection, request)
+    const [rows] = await connection.query(sql, queryParams)
     const execTime = (performance.now() - start).toFixed(2)
 
     // Build human readable SQL with interpolated parameters
@@ -1032,6 +1068,11 @@ app.post('/api/customer/loans/adbms/execute-function', async (request, response)
   } catch (error) {
     const execTime = (performance.now() - start).toFixed(2)
     response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  } finally {
+    if (connection) {
+      await resetDatabaseRole(connection)
+      connection.release()
+    }
   }
 })
 
