@@ -664,11 +664,13 @@ app.post('/api/customer/loans/apply', async (request, response) => {
       success: true,
       pendingApproval: true,
       applicationId: newAppId,
+      customerId: targetCustomerId,
       customerCode: targetCustomerCode,
       referenceNo: `APP-${new Date().getFullYear()}-${newAppId}`,
       message: 'Loan application submitted successfully! Queued for Credit Manager underwriting review.',
       details: {
         applicationId: newAppId,
+        customerId: targetCustomerId,
         customerName: cleanName || `Customer #${targetCustomerId}`,
         customerCode: targetCustomerCode,
         loanType: loanType || 'Personal',

@@ -386,6 +386,15 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
               <span style={{ color: 'var(--text-muted)' }}>Assigned Application ID:</span>
               <strong className="mono" style={{ fontSize: '1.05rem', color: '#93c5fd' }}>#{submittedResult.applicationId || submittedResult.loanId}</strong>
             </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', background: 'rgba(56, 189, 248, 0.08)', padding: '6px 10px', borderRadius: '4px' }}>
+              <span style={{ color: '#94a3b8' }}>Borrower CIF / Customer ID:</span>
+              <strong className="mono" style={{ fontSize: '1.02rem', color: '#38bdf8' }}>
+                {submittedResult.customerCode || submittedResult.details?.customerCode || `C${String(submittedResult.customerId || 501).padStart(4, '0')}`} 
+                <span style={{ fontSize: '0.78rem', color: '#cbd5e1', fontWeight: 'normal', marginLeft: '6px' }}>
+                  (CIF ID: #{submittedResult.customerId || submittedResult.details?.customerId || 501})
+                </span>
+              </strong>
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
               <span style={{ color: 'var(--text-muted)' }}>Facility Classification:</span>
               <strong>{submittedResult.details.loanType} Loan Facility</strong>
