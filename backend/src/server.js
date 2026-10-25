@@ -1197,8 +1197,21 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
         disbursedLoanId: generatedLoanId,
         disbursementMsg,
         executionTimeMs: execTime,
+      })
+    } else if (procedure === 'sp_mark_overdue_facilities') {
+      const sql = 'CALL banking_loan_source.sp_mark_overdue_facilities();'
+      await connection.query('CALL banking_loan_source.sp_mark_overdue_facilities()')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_mark_overdue_facilities',
+        sqlExecuted: sql,
+        statusCode: 'SUCCESS',
+        statusMessage: 'Batch evaluation completed. Overdue loans updated via cursor and logged to audit trail.',
+        executionTimeMs: execTime,
         database: 'banking_loan_source',
-        transactionStatus: outRows[0]?.decision === 'APPROVED' ? 'COMMITTED (APPROVED)' : outRows[0]?.decision === 'REJECTED' ? 'COMMITTED (REJECTED)' : 'ROLLED_BACK',
+        transactionStatus: 'COMMITTED',
       })
     } else {
       return response.status(400).json({ error: `Unsupported procedure: ${procedure}` })
