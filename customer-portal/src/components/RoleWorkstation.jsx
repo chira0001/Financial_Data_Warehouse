@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { DatabaseIcon, ClockIcon, CheckIcon, ShieldCheckIcon, SearchIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
-export default function RoleWorkstation({ currentRole, onSwitchRole }) {
+export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFacility }) {
   const [loading, setLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
   const [feedback, setFeedback] = useState(null)
@@ -107,6 +107,8 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
         type: isApproved ? 'SUCCESS' : 'WARNING',
         title: `Application #${targetAppId} Underwriting Completed`,
         message: `Decision: ${res.statusCode} • Reason: ${res.statusMessage}${res.disbursedLoanId ? ' • Loan Facility #' + res.disbursedLoanId + ' Disbursed & Activated in Core Ledger!' : ''} (InnoDB FOR UPDATE Row-Lock: ${res.executionTimeMs} ms)`,
+        disbursedLoanId: res.disbursedLoanId,
+        applicationId: targetAppId,
       })
       loadRoleData()
     } catch (err) {
@@ -209,8 +211,20 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
 
       {/* Global Alerts */}
       {feedback && (
-        <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--emerald-500)', color: '#6ee7b7', padding: '12px 16px', borderRadius: '8px', marginBottom: '18px', fontSize: '0.85rem' }}>
-          <strong>✓ {feedback.title}:</strong> {feedback.message}
+        <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--emerald-500)', color: '#6ee7b7', padding: '14px 18px', borderRadius: '8px', marginBottom: '18px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <strong>✓ {feedback.title}:</strong> {feedback.message}
+          </div>
+          {feedback.disbursedLoanId && onTrackFacility && (
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => onTrackFacility(feedback.applicationId || feedback.disbursedLoanId)}
+              style={{ fontSize: '0.78rem', padding: '6px 14px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', cursor: 'pointer', borderRadius: '6px', fontWeight: 'bold' }}
+            >
+              🔍 Track Facility #{feedback.disbursedLoanId} (App #{feedback.applicationId}) ➔
+            </button>
+          )}
         </div>
       )}
 
@@ -449,9 +463,22 @@ export default function RoleWorkstation({ currentRole, onSwitchRole }) {
                               ⚡ Underwrite & Approve
                             </button>
                           ) : (
-                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                              ✓ Settled
-                            </span>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '600' }}>
+                                ✓ Approved
+                              </span>
+                              {onTrackFacility && (
+                                <button
+                                  type="button"
+                                  className="btn-secondary"
+                                  onClick={() => onTrackFacility(app.application_id)}
+                                  style={{ fontSize: '0.7rem', padding: '3px 8px', borderColor: '#38bdf8', color: '#38bdf8' }}
+                                  title="Track this facility in Customer Portal"
+                                >
+                                  Track ➔
+                                </button>
+                              )}
+                            </div>
                           )}
                         </td>
                       </tr>

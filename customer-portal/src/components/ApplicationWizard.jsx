@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { CheckIcon, ArrowRightIcon, FileTextIcon, ShieldCheckIcon, PrinterIcon } from './Icons'
+import { CheckIcon, ArrowRightIcon, FileTextIcon, ShieldCheckIcon, PrinterIcon, SearchIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
 export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onSwitchToManager }) {
@@ -221,20 +221,31 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
 
           <div className="no-print" style={{ display: 'flex', gap: '14px', justifyContent: 'center', marginTop: '24px', flexWrap: 'wrap' }}>
             {isPending && onSwitchToManager ? (
-              <button 
-                type="button"
-                className="btn-primary"
-                onClick={onSwitchToManager}
-                style={{ background: 'linear-gradient(135deg, #9333ea, #7e22ce)', boxShadow: '0 4px 14px rgba(147, 51, 234, 0.4)' }}
-              >
-                <span>🟣 Switch to Loan Manager & Underwrite Facility</span>
-                <ArrowRightIcon size={16} />
-              </button>
+              <>
+                <button 
+                  type="button"
+                  className="btn-primary"
+                  onClick={onSwitchToManager}
+                  style={{ background: 'linear-gradient(135deg, #9333ea, #7e22ce)', boxShadow: '0 4px 14px rgba(147, 51, 234, 0.4)' }}
+                >
+                  <span>🟣 Switch to Loan Manager & Underwrite Facility</span>
+                  <ArrowRightIcon size={16} />
+                </button>
+                <button 
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => onCompleteAndTrack(submittedResult.applicationId || submittedResult.loanId)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                >
+                  <SearchIcon size={16} />
+                  <span>Track Application #{submittedResult.applicationId || submittedResult.loanId}</span>
+                </button>
+              </>
             ) : (
               <button 
                 type="button"
                 className="btn-primary"
-                onClick={() => onCompleteAndTrack(submittedResult.loanId)}
+                onClick={() => onCompleteAndTrack(submittedResult.applicationId || submittedResult.loanId)}
               >
                 <span>Inspect Facility & Repayments</span>
                 <ArrowRightIcon size={16} />

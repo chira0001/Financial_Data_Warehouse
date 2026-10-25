@@ -50,8 +50,9 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleCompleteAndTrack = (loanId) => {
-    setTrackedLoanId(loanId)
+  const handleCompleteAndTrack = (facilityOrAppId) => {
+    setTrackedLoanId(String(facilityOrAppId))
+    setCurrentRole('customer')
     setActiveTab('track')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -70,6 +71,7 @@ export default function App() {
         <RoleWorkstation 
           currentRole={currentRole} 
           onSwitchRole={setCurrentRole} 
+          onTrackFacility={handleCompleteAndTrack}
         />
       ) : (
         <main>
@@ -118,6 +120,7 @@ export default function App() {
             <div style={{ paddingTop: '20px' }}>
               <LoanTracker 
                 initialLoanId={trackedLoanId}
+                onSwitchToManager={() => setCurrentRole('manager')}
               />
             </div>
           )}

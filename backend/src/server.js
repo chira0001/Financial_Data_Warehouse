@@ -664,21 +664,43 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
 
       if (appRows.length) {
         application = appRows[0]
-        // Check if there is already a loan created for this applicant customer:
-        loans = await query(`
-          SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
-                 l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
-                 c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id,
-                 COALESCE(SUM(p.payment_amount), 0) AS total_paid
-          FROM banking_loan_source.loans l
-          LEFT JOIN banking_loan_source.customers c ON c.customer_id = l.customer_id
-          LEFT JOIN banking_loan_source.loan_payments p ON p.loan_id = l.loan_id
-          WHERE l.customer_id = ?
-          GROUP BY l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+        // If the application was approved, find the newly disbursed loan facility for this customer:
+        if (application.approval_status === 'Approved') {
+          loans = await query(`
+            SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
                    l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
-                   c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
-          ORDER BY l.loan_id DESC
-        `, [application.customer_id])
+                   c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id,
+                   COALESCE(SUM(p.payment_amount), 0) AS total_paid
+            FROM banking_loan_source.loans l
+            LEFT JOIN banking_loan_source.customers c ON c.customer_id = l.customer_id
+            LEFT JOIN banking_loan_source.loan_payments p ON p.loan_id = l.loan_id
+            WHERE l.customer_id = ?
+            GROUP BY l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+                     l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+                     c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
+            ORDER BY l.loan_id DESC
+          `, [application.customer_id])
+        }
+      }
+    } else if (loans.length > 0) {
+      // Direct loan found: also fetch any originating application for complete audit lineage
+      try {
+        const appRows = await query(`
+          SELECT a.application_id, a.customer_id, a.product_id, a.applied_amount,
+                 a.requested_tenure_months, a.credit_score, a.approval_status,
+                 a.approved_amount, a.approval_date, a.decision_notes,
+                 DATE_FORMAT(a.application_date, '%Y-%m-%d') AS application_date,
+                 c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
+          FROM banking_loan_source.loan_applications a
+          LEFT JOIN banking_loan_source.customers c ON c.customer_id = a.customer_id
+          WHERE a.customer_id = ?
+          ORDER BY a.application_id DESC LIMIT 1
+        `, [loans[0].customer_id])
+        if (appRows.length) {
+          application = appRows[0]
+        }
+      } catch (appErr) {
+        console.warn('Could not query linked application:', appErr.message)
       }
     }
 

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { SearchIcon, CreditCardIcon, CheckIcon, ClockIcon, PrinterIcon, DatabaseIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
-export default function LoanTracker({ initialLoanId }) {
-  const [searchQuery, setSearchQuery] = useState(initialLoanId ? String(initialLoanId) : '2001')
+export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
+  const [searchQuery, setSearchQuery] = useState(initialLoanId ? String(initialLoanId) : '7106')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -18,9 +18,9 @@ export default function LoanTracker({ initialLoanId }) {
   const [copiedVoucher, setCopiedVoucher] = useState(false)
 
   const quickDemoFacilities = [
-    { label: 'Application #7106 (Pending Underwriting)', id: '7106' },
-    { label: 'Loan #2001 (New Online Application)', id: '2001' },
-    { label: 'Loan #1001 (Active Core Facility)', id: '1001' },
+    { label: 'Application #7106 → Facility #2015 (Approved)', id: '7106' },
+    { label: 'Application #7103 (Pending Underwriting)', id: '7103' },
+    { label: 'Loan #2001 (Core Active Facility)', id: '2001' },
     { label: 'Loan #1005 (Commercial Overdue Facility)', id: '1005' },
     { label: 'Loan #1010 (Prime Residential Facility)', id: '1010' },
   ]
@@ -203,6 +203,53 @@ export default function LoanTracker({ initialLoanId }) {
                   To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"⚡ Underwrite & Approve"</strong> in the Live Underwriting Worklist.
                 </span>
               </p>
+              {onSwitchToManager && (
+                <div style={{ marginTop: '12px' }}>
+                  <button
+                    type="button"
+                    onClick={onSwitchToManager}
+                    className="btn-primary"
+                    style={{ fontSize: '0.78rem', padding: '6px 14px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)' }}
+                  >
+                    🟣 Switch to Loan Manager & Underwrite Application #{data.application.application_id} ➔
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Approved & Disbursed Application Banner (Connecting Application ID to Disbursed Loan Facility) */}
+        {data && data.application && data.loans && data.loans.length > 0 && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.25))',
+            border: '1px solid rgba(16, 185, 129, 0.45)',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            marginBottom: '22px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(16, 185, 129, 0.3)', color: '#4ade80', padding: '3px 10px', borderRadius: '4px', border: '1px solid #10b981' }}>
+                    ✓ APPLICATION APPROVED & FACILITY DISBURSED
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                    Application Ref: <strong style={{ color: '#93c5fd' }}>#{data.application.application_id}</strong>
+                  </span>
+                  <span style={{ color: '#64748b' }}>➔</span>
+                  <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                    Active Facility Account: <strong style={{ color: '#4ade80' }}>#{data.loans[0].loan_id}</strong>
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1' }}>
+                  Borrower: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> ({data.application.customer_code}) • Decision: <strong>{data.application.decision_notes || 'Approved by Credit Committee'}</strong> • Executed via ADBMS <code>sp_underwrite_loan_application</code> & <code>sp_disburse_new_loan</code>
+                </p>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(15, 23, 42, 0.7)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
+                ℹ️ Searchable using either App ID <strong>#{data.application.application_id}</strong> or Facility ID <strong>#{data.loans[0].loan_id}</strong>
+              </div>
             </div>
           </div>
         )}
@@ -212,10 +259,15 @@ export default function LoanTracker({ initialLoanId }) {
           <div key={loan.loan_id} className="loan-detail-card">
             <div className="loan-detail-top">
               <div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Facility Account: #{loan.loan_id} • Borrower CIF: C{String(loan.customer_id).padStart(4, '0')}
                   </span>
+                  {data.application && (
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      📋 Originated from App #{data.application.application_id}
+                    </span>
+                  )}
                   <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--emerald-400)', border: '1px solid var(--emerald-500)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
                     KYC Verified
                   </span>
