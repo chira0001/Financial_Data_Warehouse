@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { SearchIcon, CreditCardIcon, CheckIcon, ClockIcon, PrinterIcon, DatabaseIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
-export default function LoanTracker({ initialLoanId }) {
-  const [searchQuery, setSearchQuery] = useState(initialLoanId ? String(initialLoanId) : '2001')
+export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
+  const [searchQuery, setSearchQuery] = useState(initialLoanId ? String(initialLoanId) : '7106')
   const [loading, setLoading] = useState(false)
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
@@ -18,8 +18,9 @@ export default function LoanTracker({ initialLoanId }) {
   const [copiedVoucher, setCopiedVoucher] = useState(false)
 
   const quickDemoFacilities = [
-    { label: 'Loan #2001 (New Online Application)', id: '2001' },
-    { label: 'Loan #1001 (Active Core Facility)', id: '1001' },
+    { label: 'Application #7106 → Facility #2015 (Approved)', id: '7106' },
+    { label: 'Application #7103 (Pending Underwriting)', id: '7103' },
+    { label: 'Loan #2001 (Core Active Facility)', id: '2001' },
     { label: 'Loan #1005 (Commercial Overdue Facility)', id: '1005' },
     { label: 'Loan #1010 (Prime Residential Facility)', id: '1010' },
   ]
@@ -31,10 +32,10 @@ export default function LoanTracker({ initialLoanId }) {
     setError('')
     try {
       const res = await loanApi.lookup(q)
-      if (res && res.loans && res.loans.length > 0) {
+      if (res && ((res.loans && res.loans.length > 0) || res.application)) {
         setData(res)
       } else {
-        setError(`No credit facilities registered under reference: ${q}`)
+        setError(`No active credit facilities or applications registered under reference: ${q}`)
         setData(null)
       }
     } catch (err) {
@@ -142,15 +143,148 @@ export default function LoanTracker({ initialLoanId }) {
           </div>
         )}
 
+        {/* Application Status Card (When facility is Pending Underwriting) */}
+        {data && data.isApplicationOnly && data.application && (
+          <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#fde68a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Application Reference: #{data.application.application_id} • Borrower CIF: {data.application.customer_code}
+                  </span>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                    🟡 {data.application.approval_status} Underwriting Review
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '1.4rem', margin: '2px 0 6px', color: '#f8fafc' }}>
+                  {data.application.product_id} Loan Application
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.86rem', margin: 0 }}>
+                  Applicant: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> • Branch: {data.application.branch_id || 'B001 (Colombo)'} • Sector: {data.application.occupation || 'Salaried'}
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Date Received</span>
+                <span style={{ fontSize: '0.9rem', color: '#f8fafc', fontWeight: '600' }}>{data.application.application_date || 'Today'}</span>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="loan-metrics-grid" style={{ marginBottom: '18px' }}>
+              <div className="metric-cell">
+                <span>Requested Principal</span>
+                <strong style={{ color: '#f8fafc' }}>LKR {Number(data.application.applied_amount).toLocaleString()}</strong>
+              </div>
+              <div className="metric-cell">
+                <span>Requested Tenure</span>
+                <strong>{data.application.requested_tenure_months || 36} Months</strong>
+              </div>
+              <div className="metric-cell">
+                <span>Credit Score Assessed</span>
+                <strong style={{ color: data.application.credit_score >= 620 ? '#4ade80' : '#f87171' }}>
+                  {data.application.credit_score} / 850
+                </strong>
+              </div>
+              <div className="metric-cell">
+                <span>Eligibility Status</span>
+                <strong style={{ color: data.application.credit_score >= 620 ? '#4ade80' : '#fbbf24' }}>
+                  {data.application.credit_score >= 620 ? 'Pre-Qualified (Score ≥ 620)' : 'Requires Special Review'}
+                </strong>
+              </div>
+            </div>
+
+            {/* Governance Info Box */}
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '8px', padding: '14px 18px', fontSize: '0.84rem', color: '#fef08a' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>⚖️ Underwriting Pipeline Stage:</div>
+              <p style={{ margin: 0, color: '#e2e8f0', lineHeight: '1.4' }}>
+                {data.application.decision_notes || 'Application queued in MySQL database waiting for Credit Committee authorization.'}
+                <br />
+                <span style={{ color: '#fbbf24', fontSize: '0.8rem', display: 'inline-block', marginTop: '6px' }}>
+                  To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"⚡ Underwrite & Approve"</strong> in the Live Underwriting Worklist.
+                </span>
+              </p>
+
+              {data.application.decision_notes && data.application.decision_notes.includes('Endorsed Guarantor:') && (
+                <div style={{ marginTop: '12px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '8px', padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <span style={{ color: '#34d399', fontWeight: 'bold', fontSize: '0.82rem' }}>
+                      🛡️ Nominated Guarantor (Pending Credit Committee Verification)
+                    </span>
+                    <span style={{ fontSize: '0.68rem', color: '#6ee7b7', background: 'rgba(16, 185, 129, 0.25)', padding: '2px 8px', borderRadius: '4px' }}>
+                      Large Facility Endorsement
+                    </span>
+                  </div>
+                  <div style={{ color: '#f1f5f9', fontSize: '0.82rem', lineHeight: '1.4' }}>
+                    {data.application.decision_notes.split('Endorsed Guarantor:')[1]?.split('•')[0]?.trim()}
+                  </div>
+                </div>
+              )}
+
+              {onSwitchToManager && (
+                <div style={{ marginTop: '14px' }}>
+                  <button
+                    type="button"
+                    onClick={onSwitchToManager}
+                    className="btn-primary"
+                    style={{ fontSize: '0.78rem', padding: '6px 14px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)' }}
+                  >
+                    🟣 Switch to Loan Manager & Underwrite Application #{data.application.application_id} ➔
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Approved & Disbursed Application Banner (Connecting Application ID to Disbursed Loan Facility) */}
+        {data && data.application && data.loans && data.loans.length > 0 && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.25))',
+            border: '1px solid rgba(16, 185, 129, 0.45)',
+            borderRadius: '12px',
+            padding: '16px 20px',
+            marginBottom: '22px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 'bold', background: 'rgba(16, 185, 129, 0.3)', color: '#4ade80', padding: '3px 10px', borderRadius: '4px', border: '1px solid #10b981' }}>
+                    ✓ APPLICATION APPROVED & FACILITY DISBURSED
+                  </span>
+                  <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                    Application Ref: <strong style={{ color: '#93c5fd' }}>#{data.application.application_id}</strong>
+                  </span>
+                  <span style={{ color: '#64748b' }}>➔</span>
+                  <span style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>
+                    Active Facility Account: <strong style={{ color: '#4ade80' }}>#{data.loans[0].loan_id}</strong>
+                  </span>
+                </div>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1' }}>
+                  Borrower: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> ({data.application.customer_code}) • Decision: <strong>{data.application.decision_notes || 'Approved by Credit Committee'}</strong> • Executed via ADBMS <code>sp_underwrite_loan_application</code> & <code>sp_disburse_new_loan</code>
+                </p>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(15, 23, 42, 0.7)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
+                ℹ️ Searchable using either App ID <strong>#{data.application.application_id}</strong> or Facility ID <strong>#{data.loans[0].loan_id}</strong>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Loan Details List */}
         {data && data.loans && data.loans.map((loan) => (
           <div key={loan.loan_id} className="loan-detail-card">
             <div className="loan-detail-top">
               <div>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     Facility Account: #{loan.loan_id} • Borrower CIF: C{String(loan.customer_id).padStart(4, '0')}
                   </span>
+                  {data.application && (
+                    <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                      📋 Originated from App #{data.application.application_id}
+                    </span>
+                  )}
                   <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--emerald-400)', border: '1px solid var(--emerald-500)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
                     KYC Verified
                   </span>
@@ -216,6 +350,66 @@ export default function LoanTracker({ initialLoanId }) {
               </div>
               <div style={{ height: '9px', background: 'rgba(255, 255, 255, 0.08)', borderRadius: '5px', overflow: 'hidden' }}>
                 <div style={{ width: `${loan.progress_pct}%`, height: '100%', background: 'linear-gradient(90deg, var(--emerald-500), #34d399)' }}></div>
+              </div>
+            </div>
+
+            {/* Pledged Collateral & Guarantor Security (Member 2 Domain) */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+              {/* Collateral Card */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#93c5fd' }}>🏢 Pledged Collateral Security</span>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '2px 6px', borderRadius: '4px' }}>
+                    loan_collaterals
+                  </span>
+                </div>
+                {data.collaterals && data.collaterals.filter((c) => c.loan_id === loan.loan_id).length > 0 ? (
+                  data.collaterals.filter((c) => c.loan_id === loan.loan_id).map((c) => (
+                    <div key={c.collateral_id} style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                      <div style={{ fontWeight: '600', color: '#f8fafc' }}>{c.collateral_type}: {c.collateral_description}</div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '4px' }}>
+                        Valuation: <strong style={{ color: 'var(--emerald-400)' }}>LKR {Number(c.valuation_amount).toLocaleString()}</strong> • Ref: <span className="mono">{c.document_reference}</span>
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                        Assessed by: {c.valuer_name} ({c.status})
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    Standard unsecured retail credit facility (Assessed on borrower monthly cash flow).
+                  </div>
+                )}
+              </div>
+
+              {/* Guarantor Card */}
+              <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '14px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#34d399' }}>👤 Registered Guarantor</span>
+                  <span style={{ fontSize: '0.68rem', background: 'rgba(16, 185, 129, 0.2)', color: 'var(--emerald-400)', padding: '2px 6px', borderRadius: '4px' }}>
+                    loan_guarantors
+                  </span>
+                </div>
+                {data.guarantors && data.guarantors.filter((g) => g.loan_id === loan.loan_id).length > 0 ? (
+                  data.guarantors.filter((g) => g.loan_id === loan.loan_id).map((g) => (
+                    <div key={g.guarantor_id} style={{ fontSize: '0.8rem', color: '#cbd5e1', lineHeight: '1.5' }}>
+                      <div style={{ fontWeight: '600', color: '#f8fafc' }}>{g.guarantor_name} <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>({g.relationship_to_borrower})</span></div>
+                      <div style={{ color: '#94a3b8', fontSize: '0.75rem', marginTop: '4px' }}>
+                        NIC: <span className="mono">{g.nic_number}</span> • Monthly Income: LKR {Number(g.monthly_income).toLocaleString()}
+                        {Number(g.guarantee_amount) > 0 && (
+                          <span> • Guarantee Liability: <strong style={{ color: 'var(--emerald-400)' }}>LKR {Number(g.guarantee_amount).toLocaleString()}</strong></span>
+                        )}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: '0.72rem' }}>
+                        Employer: {g.employer_name} • Contact: {g.phone_number}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                    Direct primary borrower obligation without third-party guarantee endorsement.
+                  </div>
+                )}
               </div>
             </div>
 

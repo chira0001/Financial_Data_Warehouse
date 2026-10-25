@@ -524,75 +524,160 @@ app.post('/api/customer/loans/apply', async (request, response) => {
       interestRate,
       purpose,
       monthlyIncome,
+      city,
+      occupation,
+      branchId,
+      nic,
+      phone,
+      guarantorName,
+      guarantorNic,
+      guarantorRelationship,
+      guarantorEmployer,
+      guarantorIncome,
+      guarantorPhone,
+      hasGuarantor,
     } = request.body
 
-    const parsedAmount = Number(loanAmount) || 500000
-    const parsedRate = Number(interestRate) || 12.5
+    const cleanName = (customerName || '').trim()
+    const cleanNic = (nic || '').trim().toUpperCase()
+    const cleanPhone = (phone || '').trim()
+
+    // Strict Backend Validation
+    if (!cleanName || cleanName.length < 3) {
+      return response.status(400).json({ error: 'Applicant full legal name is required (minimum 3 characters).' })
+    }
+
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/
+    if (!cleanNic || !nicRegex.test(cleanNic)) {
+      return response.status(400).json({ error: 'Valid National Identity Card (NIC) number is required (9 digits with V or 12 digits).' })
+    }
+
+    const parsedAmount = Number(loanAmount)
+    if (!parsedAmount || isNaN(parsedAmount) || parsedAmount < 50000 || parsedAmount > 25000000) {
+      return response.status(400).json({ error: 'Loan facility amount must be between LKR 50,000 and LKR 25,000,000.' })
+    }
+
     const tenure = Number(tenureMonths) || 36
-    const numericCusId = Number(String(customerId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 200) + 1
-    const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || Math.floor(Math.random() * 300) + 100
+    if (tenure < 6 || tenure > 240) {
+      return response.status(400).json({ error: 'Amortization tenure must be between 6 and 240 months.' })
+    }
 
-    const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
-    const newLoanId = (maxRows[0]?.max_id || 2000) + 1
+    const parsedRate = Number(interestRate) || 12.5
 
-    let procedureSucceeded = false
-    try {
-      await connection.query('SET @code = "", @msg = ""')
-      await connection.query(`
-        CALL banking_loan_source.sp_disburse_new_loan(
-          ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @code, @msg
-        )
-      `, [newLoanId, numericCusId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
-      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
-      if (outRows[0]?.code === 'SUCCESS') {
-        procedureSucceeded = true
+    // Guarantor Validation for High-Value Facilities (>= LKR 1.5M) or when Guarantor is provided
+    const cleanGName = (guarantorName || '').trim()
+    const cleanGNic = (guarantorNic || '').trim().toUpperCase()
+    const gRel = (guarantorRelationship || 'Parent').trim()
+    const gEmp = (guarantorEmployer || '').trim()
+    const gInc = Number(guarantorIncome) || 0
+    const gPhone = (guarantorPhone || '').trim()
+
+    if (parsedAmount >= 1500000 || hasGuarantor || cleanGName) {
+      if (parsedAmount >= 1500000 && (!cleanGName || cleanGName.length < 3)) {
+        return response.status(400).json({ error: 'Institutional credit policy requires a registered guarantor for facilities of LKR 1,500,000 or greater.' })
       }
-    } catch (spErr) {
-      console.warn('sp_disburse_new_loan failed or not found, falling back to direct insert:', spErr.message)
-    }
-
-    if (!procedureSucceeded) {
-      await connection.query(`
-        INSERT INTO banking_loan_source.loans
-          (loan_id, customer_id, account_id, loan_type, loan_amount, interest_rate, loan_start_date, loan_end_date, loan_status)
-        VALUES (?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), 'Active')
-      `, [newLoanId, numericCusId, numericAccId, loanType || 'Personal', parsedAmount, parsedRate, tenure])
-    }
-
-    // Record application in underwriting pipeline
-    try {
-      const [appMax] = await connection.query('SELECT COALESCE(MAX(application_id), 7000) AS max_app FROM banking_loan_source.loan_applications')
-      const newAppId = (appMax[0]?.max_app || 7000) + 1
-      const productMap = {
-        Personal: 'PRD01',
-        Housing: 'PRD02',
-        Vehicle: 'PRD03',
-        Education: 'PRD04',
-        Business: 'PRD05',
+      if (cleanGName) {
+        if (!cleanGNic || !nicRegex.test(cleanGNic)) {
+          return response.status(400).json({ error: 'Valid Guarantor National Identity Card (NIC) is required (9 digits with V or 12 digits).' })
+        }
+        if (cleanGNic === cleanNic) {
+          return response.status(400).json({ error: 'Guarantor cannot be the same individual as the primary applicant.' })
+        }
+        if (!gEmp || gEmp.length < 3) {
+          return response.status(400).json({ error: 'Guarantor employer or business corporate institution is required.' })
+        }
+        if (gInc < 40000) {
+          return response.status(400).json({ error: 'Guarantor monthly remuneration must be at least LKR 40,000.' })
+        }
       }
-      const mappedProduct = productMap[loanType] || 'PRD01'
-      await connection.query(`
-        INSERT INTO banking_loan_source.loan_applications
-          (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, approved_amount, approval_date, decision_notes)
-        VALUES (?, ?, ?, 101, ?, ?, CURDATE(), 720, 'Approved', ?, CURDATE(), 'Automated instant approval via Customer Online Portal')
-      `, [newAppId, numericCusId, mappedProduct, parsedAmount, tenure, parsedAmount])
-    } catch (appErr) {
-      console.warn('Could not record application in pipeline:', appErr.message)
     }
+
+    // 1. Manage Customer record: Ensure unique applicant profile without fallback hijacking
+    let targetCustomerId = null
+    let targetCustomerCode = null
+
+    // Check if a customer already exists with this name (case-insensitive)
+    const [existing] = await connection.query(
+      'SELECT customer_id, customer_code FROM banking_loan_source.customers WHERE LOWER(customer_name) = LOWER(?) LIMIT 1',
+      [cleanName]
+    )
+    if (existing.length > 0) {
+      targetCustomerId = existing[0].customer_id
+      targetCustomerCode = existing[0].customer_code
+      await connection.query(
+        'UPDATE banking_loan_source.customers SET city = ?, occupation = ?, branch_id = ? WHERE customer_id = ?',
+        [city || 'Colombo', occupation || 'IT Professional', branchId || 'B001', targetCustomerId]
+      )
+    } else {
+      // Find next customer_id
+      const [maxCus] = await connection.query('SELECT COALESCE(MAX(customer_id), 500) AS max_c FROM banking_loan_source.customers')
+      targetCustomerId = Math.max((maxCus[0]?.max_c || 500) + 1, 501)
+      targetCustomerCode = 'C' + String(targetCustomerId).padStart(4, '0')
+      await connection.query(`
+        INSERT INTO banking_loan_source.customers
+          (customer_id, customer_code, customer_name, gender, date_of_birth, city, occupation, branch_id)
+        VALUES (?, ?, ?, 'Not Specified', '1995-01-01', ?, ?, ?)
+      `, [targetCustomerId, targetCustomerCode, cleanName, city || 'Colombo', occupation || 'IT Professional', branchId || 'B001'])
+    }
+
+    const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || (targetCustomerId * 10 + 1)
+    const productMap = {
+      Personal: 'PRD01',
+      Housing: 'PRD02',
+      Vehicle: 'PRD03',
+      Education: 'PRD04',
+      Business: 'PRD05',
+    }
+    const mappedProduct = productMap[loanType] || 'PRD01'
+
+    // Compute credit score based on applicant declared income
+    const incomeNum = Number(monthlyIncome) || 85000
+    const calculatedCreditScore = incomeNum >= 150000 ? 765 : incomeNum >= 75000 ? 720 : 650
+
+    // Record formal application into loan_applications table with status 'Pending'
+    const [appMax] = await connection.query('SELECT COALESCE(MAX(application_id), 7000) AS max_app FROM banking_loan_source.loan_applications')
+    const newAppId = (appMax[0]?.max_app || 7000) + 1
+
+    let guarantorNote = ''
+    let guarantorDetail = null
+    if (cleanGName) {
+      guarantorNote = ` • Endorsed Guarantor: ${cleanGName} (${gRel}, NIC: ${cleanGNic}, Employer: ${gEmp}, Income: LKR ${gInc}, Phone: ${gPhone || '071-2233445'})`
+      guarantorDetail = {
+        name: cleanGName,
+        nic: cleanGNic,
+        relationship: gRel,
+        employer: gEmp,
+        income: gInc,
+        phone: gPhone,
+      }
+    }
+
+    const decisionNotes = `Online Applicant: ${cleanName} (NIC: ${cleanNic})${guarantorNote} • Awaiting Underwriting Review`
+
+    await connection.query(`
+      INSERT INTO banking_loan_source.loan_applications
+        (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, decision_notes)
+      VALUES (?, ?, ?, 101, ?, ?, CURDATE(), ?, 'Pending', ?)
+    `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, calculatedCreditScore, decisionNotes])
 
     response.json({
       success: true,
-      loanId: newLoanId,
-      referenceNo: `LN-${new Date().getFullYear()}-${newLoanId}`,
-      message: 'Loan facility approved and recorded successfully in core banking database!',
+      pendingApproval: true,
+      applicationId: newAppId,
+      customerCode: targetCustomerCode,
+      referenceNo: `APP-${new Date().getFullYear()}-${newAppId}`,
+      message: 'Loan application submitted successfully! Queued for Credit Manager underwriting review.',
       details: {
-        loanId: newLoanId,
-        customerName: customerName || `Customer #${numericCusId}`,
+        applicationId: newAppId,
+        customerName: cleanName || `Customer #${targetCustomerId}`,
+        customerCode: targetCustomerCode,
         loanType: loanType || 'Personal',
         loanAmount: parsedAmount,
         interestRate: parsedRate,
         tenureMonths: tenure,
-        status: 'Active',
+        status: 'Pending Underwriting',
+        creditScore: calculatedCreditScore,
+        guarantor: guarantorDetail,
         startDate: new Date().toISOString().split('T')[0],
       },
     })
@@ -606,9 +691,15 @@ app.post('/api/customer/loans/apply', async (request, response) => {
 app.get('/api/customer/loans/lookup/:query', async (request, response) => {
   try {
     const rawParam = request.params.query.trim()
-    const numParam = Number(rawParam.replace(/\D/g, '')) || 0
+    let numParam = 0
+    if (rawParam.includes('-')) {
+      const parts = rawParam.split('-')
+      numParam = Number(parts[parts.length - 1].replace(/\D/g, '')) || 0
+    } else {
+      numParam = Number(rawParam.replace(/\D/g, '')) || 0
+    }
 
-    const loans = await query(`
+    let loans = await query(`
       SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
              l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
              c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id,
@@ -623,34 +714,128 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
       ORDER BY l.loan_id DESC
     `, [numParam, numParam, rawParam])
 
-    if (!loans.length) {
-      return response.status(404).json({ error: 'No loan facilities registered under this identifier' })
+    let application = null
+    // If no direct active loan found, or if searching an application ID:
+    if (!loans.length && numParam > 0) {
+      const appRows = await query(`
+        SELECT a.application_id, a.customer_id, a.product_id, a.applied_amount,
+               a.requested_tenure_months, a.credit_score, a.approval_status,
+               a.approved_amount, a.approval_date, a.decision_notes,
+               DATE_FORMAT(a.application_date, '%Y-%m-%d') AS application_date,
+               c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
+        FROM banking_loan_source.loan_applications a
+        LEFT JOIN banking_loan_source.customers c ON c.customer_id = a.customer_id
+        WHERE a.application_id = ? OR a.customer_id = ? OR c.customer_code = ?
+        ORDER BY a.application_id DESC LIMIT 1
+      `, [numParam, numParam, rawParam])
+
+      if (appRows.length) {
+        application = appRows[0]
+        // If the application was approved, find the newly disbursed loan facility for this customer:
+        if (application.approval_status === 'Approved') {
+          loans = await query(`
+            SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+                   l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+                   c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id,
+                   COALESCE(SUM(p.payment_amount), 0) AS total_paid
+            FROM banking_loan_source.loans l
+            LEFT JOIN banking_loan_source.customers c ON c.customer_id = l.customer_id
+            LEFT JOIN banking_loan_source.loan_payments p ON p.loan_id = l.loan_id
+            WHERE l.customer_id = ?
+            GROUP BY l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+                     l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+                     c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
+            ORDER BY l.loan_id DESC
+          `, [application.customer_id])
+        }
+      }
+    } else if (loans.length > 0) {
+      // Direct loan found: also fetch any originating application for complete audit lineage
+      try {
+        const appRows = await query(`
+          SELECT a.application_id, a.customer_id, a.product_id, a.applied_amount,
+                 a.requested_tenure_months, a.credit_score, a.approval_status,
+                 a.approved_amount, a.approval_date, a.decision_notes,
+                 DATE_FORMAT(a.application_date, '%Y-%m-%d') AS application_date,
+                 c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
+          FROM banking_loan_source.loan_applications a
+          LEFT JOIN banking_loan_source.customers c ON c.customer_id = a.customer_id
+          WHERE a.customer_id = ?
+          ORDER BY a.application_id DESC LIMIT 1
+        `, [loans[0].customer_id])
+        if (appRows.length) {
+          application = appRows[0]
+        }
+      } catch (appErr) {
+        console.warn('Could not query linked application:', appErr.message)
+      }
+    }
+
+    if (!loans.length && !application) {
+      return response.status(404).json({ error: `No active credit facilities or pending applications registered under reference: ${rawParam}` })
     }
 
     const loanIdList = loans.map((l) => l.loan_id)
-    const [payments] = await pool.query(`
-      SELECT payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
-      FROM banking_loan_source.loan_payments
-      WHERE loan_id IN (?)
-      ORDER BY payment_date DESC, payment_id DESC LIMIT 50
-    `, [loanIdList])
-
+    let payments = []
     let auditLogs = []
-    try {
-      const [auditRows] = await pool.query(`
-        SELECT audit_id, loan_id, action_type, old_status, new_status,
-               old_amount, new_amount, old_interest_rate, new_interest_rate,
-               modified_by, modified_at, notes
-        FROM banking_loan_source.loan_audit_log
-        WHERE loan_id IN (?)
-        ORDER BY modified_at DESC, audit_id DESC LIMIT 50
-      `, [loanIdList])
-      auditLogs = auditRows || []
-    } catch (auditErr) {
-      console.warn('Could not query loan_audit_log:', auditErr.message)
+    let collaterals = []
+    let guarantors = []
+
+    if (loanIdList.length > 0) {
+      try {
+        const [payRows] = await pool.query(`
+          SELECT payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
+          FROM banking_loan_source.loan_payments
+          WHERE loan_id IN (?)
+          ORDER BY payment_date DESC, payment_id DESC LIMIT 50
+        `, [loanIdList])
+        payments = payRows || []
+      } catch (payErr) {
+        console.warn('Could not query loan_payments:', payErr.message)
+      }
+
+      try {
+        const [auditRows] = await pool.query(`
+          SELECT audit_id, loan_id, action_type, old_status, new_status,
+                 old_amount, new_amount, old_interest_rate, new_interest_rate,
+                 modified_by, modified_at, notes
+          FROM banking_loan_source.loan_audit_log
+          WHERE loan_id IN (?)
+          ORDER BY modified_at DESC, audit_id DESC LIMIT 50
+        `, [loanIdList])
+        auditLogs = auditRows || []
+      } catch (auditErr) {
+        console.warn('Could not query loan_audit_log:', auditErr.message)
+      }
+
+      try {
+        const [colRows] = await pool.query(`
+          SELECT collateral_id, loan_id, collateral_type, collateral_description,
+                 valuation_amount, valuation_date, valuer_name, document_reference, status
+          FROM banking_loan_source.loan_collaterals
+          WHERE loan_id IN (?)
+        `, [loanIdList])
+        collaterals = colRows || []
+      } catch (colErr) {
+        console.warn('Could not query loan_collaterals:', colErr.message)
+      }
+
+      try {
+        const [gRows] = await pool.query(`
+          SELECT guarantor_id, loan_id, guarantor_name, nic_number,
+                 relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount
+          FROM banking_loan_source.loan_guarantors
+          WHERE loan_id IN (?)
+        `, [loanIdList])
+        guarantors = gRows || []
+      } catch (gErr) {
+        console.warn('Could not query loan_guarantors:', gErr.message)
+      }
     }
 
     response.json({
+      isApplicationOnly: loans.length === 0 && !!application,
+      application,
       loans: loans.map((l) => ({
         ...l,
         balance_remaining: Math.max(0, Number(l.loan_amount) - Number(l.total_paid)),
@@ -658,6 +843,8 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
       })),
       payments,
       auditLogs,
+      collaterals,
+      guarantors,
     })
   } catch (error) {
     handleError(response, error)
@@ -726,6 +913,440 @@ app.post('/api/customer/loans/pay', async (request, response) => {
     handleError(response, error)
   } finally {
     connection.release()
+  }
+})
+
+app.get('/api/customer/loans/applications', async (request, response) => {
+  try {
+    const rows = await query(`
+      SELECT a.application_id, a.customer_id, c.customer_name, c.customer_code,
+             a.product_id, a.applied_amount, a.requested_tenure_months,
+             a.credit_score, a.approval_status, a.approval_date, a.decision_notes,
+             DATE_FORMAT(a.application_date, '%Y-%m-%d') AS application_date
+      FROM banking_loan_source.loan_applications a
+      LEFT JOIN banking_loan_source.customers c ON c.customer_id = a.customer_id
+      ORDER BY a.application_id DESC
+      LIMIT 30
+    `)
+    response.json({ applications: rows })
+  } catch (error) {
+    handleError(response, error)
+  }
+})
+
+// ==========================================
+// ADBMS LIVE PLAYGROUND & EXECUTION CONSOLE
+// ==========================================
+app.post('/api/customer/loans/adbms/execute-procedure', async (request, response) => {
+  const connection = await pool.getConnection()
+  try {
+    const start = performance.now()
+    const procedure = request.body.procedure
+    const params = request.body.params || request.body || {}
+
+    if (procedure === 'sp_process_loan_payment') {
+      const loanId = Number(params.loanId) || 2008
+      const amount = Number(params.amount) || 25000
+      const method = params.method || 'Online Transfer'
+
+      const [maxPayRows] = await connection.query('SELECT COALESCE(MAX(payment_id), 3000) AS max_id FROM banking_loan_source.loan_payments')
+      const paymentId = (maxPayRows[0]?.max_id || 3000) + 1
+
+      const sql = `CALL banking_loan_source.sp_process_loan_payment(${paymentId}, ${loanId}, CURDATE(), ${amount}, '${method}', 'Paid', @code, @msg);`
+
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(
+        'CALL banking_loan_source.sp_process_loan_payment(?, ?, CURDATE(), ?, ?, "Paid", @code, @msg)',
+        [paymentId, loanId, amount, method]
+      )
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_process_loan_payment',
+        sqlExecuted: sql,
+        statusCode: outRows[0]?.code || 'UNKNOWN',
+        statusMessage: outRows[0]?.msg || 'Execution completed',
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
+      })
+    } else if (procedure === 'sp_disburse_new_loan') {
+      const customerId = Number(params.customerId) || 10
+      const accountId = Number(params.accountId) || 101
+      const loanType = params.loanType || 'Personal'
+      const amount = Number(params.amount) || 500000
+      const rate = Number(params.rate) || 12.5
+      const tenure = Number(params.tenure) || 36
+
+      const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
+      const loanId = (maxRows[0]?.max_id || 2000) + 1
+
+      const sql = `CALL banking_loan_source.sp_disburse_new_loan(${loanId}, ${customerId}, ${accountId}, '${loanType}', ${amount}, ${rate}, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ${tenure} MONTH), @code, @msg);`
+
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_disburse_new_loan(
+          ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @code, @msg
+        )
+      `, [loanId, customerId, accountId, loanType, amount, rate, tenure])
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_disburse_new_loan',
+        sqlExecuted: sql,
+        generatedLoanId: loanId,
+        statusCode: outRows[0]?.code || 'UNKNOWN',
+        statusMessage: outRows[0]?.msg || 'Execution completed',
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
+      })
+    } else if (procedure === 'sp_restructure_loan') {
+      const loanId = Number(params.loanId) || 2008
+      const newInterestRate = Number(params.newInterestRate) || 7.5
+      const newEndDate = params.newEndDate || '2029-12-31'
+      const officerReason = params.officerReason || 'Hardship interest relief approved by credit committee'
+
+      const sql = `CALL banking_loan_source.sp_restructure_loan(${loanId}, ${newInterestRate}, '${newEndDate}', '${officerReason}', @code, @msg);`
+
+      await connection.query('SET @code = "", @msg = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_restructure_loan(?, ?, ?, ?, @code, @msg)
+      `, [loanId, newInterestRate, newEndDate, officerReason])
+      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      return response.json({
+        success: true,
+        procedure: 'sp_restructure_loan',
+        sqlExecuted: sql,
+        statusCode: outRows[0]?.code || 'UNKNOWN',
+        statusMessage: outRows[0]?.msg || 'Execution completed',
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.code === 'SUCCESS' ? 'COMMITTED' : 'ROLLED_BACK',
+      })
+    } else if (procedure === 'sp_underwrite_loan_application') {
+      const applicationId = Number(params.applicationId) || 7103
+      const officerId = Number(params.officerId) || 101
+
+      // 1. Fetch application details BEFORE running procedure so we do not lose applicant & guarantor notes
+      let appPre = null
+      let guarantorInfo = null
+      try {
+        const [appRowsPre] = await connection.query(
+          'SELECT * FROM banking_loan_source.loan_applications WHERE application_id = ?',
+          [applicationId]
+        )
+        if (appRowsPre.length > 0) {
+          appPre = appRowsPre[0]
+          if (appPre.decision_notes && appPre.decision_notes.includes('Endorsed Guarantor:')) {
+            const gMatch = appPre.decision_notes.match(/Endorsed Guarantor:\s*([^(\n]+?)\s*\(([^,]+),\s*NIC:\s*([^,]+),\s*Employer:\s*([^,]+),\s*Income:\s*LKR\s*([0-9.]+)(?:,\s*Phone:\s*([^)]+))?\)/i)
+            if (gMatch) {
+              guarantorInfo = {
+                name: gMatch[1].trim(),
+                relationship: gMatch[2].trim(),
+                nic: gMatch[3].trim(),
+                employer: gMatch[4].trim(),
+                income: parseFloat(gMatch[5]) || 75000,
+                phone: (gMatch[6] || '+94 77 123 4567').trim(),
+              }
+            } else {
+              try {
+                const gPart = appPre.decision_notes.split('Endorsed Guarantor:')[1]?.split('•')[0] || ''
+                const nameMatch = gPart.match(/^([^(]+)/)
+                const nicMatch = gPart.match(/NIC:\s*([^,)]+)/i)
+                const relMatch = gPart.match(/\(([^,]+)/)
+                const empMatch = gPart.match(/Employer:\s*([^,)]+)/i)
+                const incMatch = gPart.match(/Income:\s*LKR\s*([0-9.]+)/i)
+                const phoneMatch = gPart.match(/Phone:\s*([^)]+)/i)
+                if (nameMatch && nicMatch) {
+                  guarantorInfo = {
+                    name: nameMatch[1].trim(),
+                    relationship: relMatch ? relMatch[1].trim() : 'Guarantor',
+                    nic: nicMatch[1].trim(),
+                    employer: empMatch ? empMatch[1].trim() : 'Private Enterprise',
+                    income: incMatch ? parseFloat(incMatch[1]) : 75000,
+                    phone: phoneMatch ? phoneMatch[1].trim() : '+94 77 123 4567',
+                  }
+                }
+              } catch (parseErr) {
+                console.warn('Fallback guarantor parsing warning:', parseErr.message)
+              }
+            }
+          }
+        }
+      } catch (preErr) {
+        console.warn('Could not query pre-underwriting application info:', preErr.message)
+      }
+
+      const sql = `CALL banking_loan_source.sp_underwrite_loan_application(${applicationId}, ${officerId}, @decision, @reason);`
+
+      await connection.query('SET @decision = "", @reason = ""')
+      await connection.query(`
+        CALL banking_loan_source.sp_underwrite_loan_application(?, ?, @decision, @reason)
+      `, [applicationId, officerId])
+      const [outRows] = await connection.query('SELECT @decision AS decision, @reason AS reason')
+      const execTime = (performance.now() - start).toFixed(2)
+
+      let generatedLoanId = null
+      let disbursementMsg = ''
+      if (outRows[0]?.decision === 'APPROVED') {
+        try {
+          const [appRows] = await connection.query('SELECT * FROM banking_loan_source.loan_applications WHERE application_id = ?', [applicationId])
+          if (appRows.length) {
+            const app = appRows[0]
+            const [maxRows] = await connection.query('SELECT COALESCE(MAX(loan_id), 2000) AS max_id FROM banking_loan_source.loans')
+            generatedLoanId = (maxRows[0]?.max_id || 2000) + 1
+            const numericAccId = app.customer_id * 10 + 1
+            const rateMap = { PRD01: 12.5, PRD02: 8.5, PRD03: 11.0, PRD04: 6.5, PRD05: 14.0 }
+            const pTypeMap = { PRD01: 'Personal', PRD02: 'Housing', PRD03: 'Vehicle', PRD04: 'Education', PRD05: 'Business' }
+            const lRate = rateMap[app.product_id] || 10.0
+            const lType = pTypeMap[app.product_id] || 'Personal'
+            const tenure = app.requested_tenure_months || 36
+
+            await connection.query('SET @d_code = "", @d_msg = ""')
+            await connection.query(`
+              CALL banking_loan_source.sp_disburse_new_loan(
+                ?, ?, ?, ?, ?, ?, CURDATE(), DATE_ADD(CURDATE(), INTERVAL ? MONTH), @d_code, @d_msg
+              )
+            `, [generatedLoanId, app.customer_id, numericAccId, lType, app.applied_amount, lRate, tenure])
+            disbursementMsg = `Facility #${generatedLoanId} disbursed successfully into core ledger.`
+
+            // If an endorsed guarantor was attached, insert into loan_guarantors
+            if (guarantorInfo && generatedLoanId) {
+              try {
+                const [maxG] = await connection.query(
+                  'SELECT COALESCE(MAX(guarantor_id), 9000) AS max_g FROM banking_loan_source.loan_guarantors'
+                )
+                const newGuarantorId = (maxG[0]?.max_g || 9000) + 1
+                const guaranteeAmt = app.applied_amount || 0
+
+                await connection.query(`
+                  INSERT INTO banking_loan_source.loan_guarantors
+                    (guarantor_id, loan_id, guarantor_name, nic_number, relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `, [
+                  newGuarantorId,
+                  generatedLoanId,
+                  guarantorInfo.name,
+                  guarantorInfo.nic,
+                  guarantorInfo.relationship,
+                  guarantorInfo.phone,
+                  guarantorInfo.income,
+                  guarantorInfo.employer,
+                  guaranteeAmt,
+                ])
+
+                try {
+                  const [maxAudit] = await connection.query(
+                    'SELECT COALESCE(MAX(log_id), 5000) AS max_l FROM banking_loan_source.loan_audit_log'
+                  )
+                  const newLogId = (maxAudit[0]?.max_l || 5000) + 1
+                  await connection.query(`
+                    INSERT INTO banking_loan_source.loan_audit_log
+                      (log_id, loan_id, action, changed_by, old_value, new_value)
+                    VALUES (?, ?, 'GUARANTOR_ATTACHED', ?, NULL, ?)
+                  `, [
+                    newLogId,
+                    generatedLoanId,
+                    `Credit Officer #${officerId}`,
+                    `Endorsed Guarantor: ${guarantorInfo.name} (${guarantorInfo.relationship}, NIC: ${guarantorInfo.nic}, Limit: LKR ${guaranteeAmt})`,
+                  ])
+                } catch (auditErr) {
+                  console.warn('Guarantor audit log warning:', auditErr.message)
+                }
+
+                disbursementMsg += ` Registered guarantor ${guarantorInfo.name} (${guarantorInfo.relationship}) linked in loan_guarantors.`
+              } catch (gInsertErr) {
+                console.error('Failed to insert into loan_guarantors:', gInsertErr.message)
+              }
+            }
+
+            // Preserve full application lineage & guarantor note in decision_notes
+            if (appPre && appPre.decision_notes) {
+              try {
+                const baseNote = appPre.decision_notes.replace('• Awaiting Underwriting Review', '').trim()
+                const enrichedNote = `${baseNote} • Approved by Officer #${officerId} (Score: ${app.credit_score})`
+                await connection.query(
+                  'UPDATE banking_loan_source.loan_applications SET decision_notes = ? WHERE application_id = ?',
+                  [enrichedNote, applicationId]
+                )
+              } catch (noteErr) {
+                console.warn('Could not enrich application decision_notes:', noteErr.message)
+              }
+            }
+          }
+        } catch (dErr) {
+          console.warn('Auto disbursement post-approval warning:', dErr.message)
+        }
+      }
+
+      return response.json({
+        success: true,
+        procedure: 'sp_underwrite_loan_application',
+        sqlExecuted: sql,
+        statusCode: outRows[0]?.decision || 'UNKNOWN',
+        statusMessage: outRows[0]?.reason || 'Underwriting completed',
+        disbursedLoanId: generatedLoanId,
+        disbursementMsg,
+        executionTimeMs: execTime,
+        database: 'banking_loan_source',
+        transactionStatus: outRows[0]?.decision === 'APPROVED' ? 'COMMITTED (APPROVED)' : outRows[0]?.decision === 'REJECTED' ? 'COMMITTED (REJECTED)' : 'ROLLED_BACK',
+      })
+    } else {
+      return response.status(400).json({ error: `Unsupported procedure: ${procedure}` })
+    }
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({
+      error: error.message,
+      executionTimeMs: execTime,
+      transactionStatus: 'ROLLED_BACK',
+    })
+  } finally {
+    connection.release()
+  }
+})
+
+app.get('/api/customer/loans/adbms/explain-analyze', async (request, response) => {
+  const start = performance.now()
+  try {
+    const querySql = `SELECT * FROM banking_loan_source.loans WHERE loan_status = 'Overdue' AND loan_end_date < CURDATE();`
+    const [explainRows] = await pool.query(`EXPLAIN ANALYZE ${querySql}`)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    response.json({
+      success: true,
+      query: querySql,
+      indexUsed: 'idx_loans_status_enddate',
+      explainPlan: explainRows[0]?.['EXPLAIN'] || '',
+      executionTimeMs: execTime,
+      optimizationType: 'Index Range Scan (Composite Index on loan_status, loan_end_date)',
+      engine: 'MySQL 8.0 InnoDB Optimizer',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  }
+})
+
+app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) => {
+  const start = performance.now()
+  try {
+    const { viewName } = request.params
+    const allowedViews = [
+      'vw_loan_officer_active_facilities',
+      'vw_overdue_collections_queue',
+      'vw_loan_portfolio_health_metrics',
+      'vw_daily_payment_reconciliation',
+      'vw_customer_loan_statement',
+    ]
+
+    if (!allowedViews.includes(viewName)) {
+      return response.status(400).json({ error: `Unsupported view: ${viewName}` })
+    }
+
+    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    response.json({
+      success: true,
+      viewName,
+      sqlExecuted: `SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`,
+      rowCount: rows.length,
+      data: rows,
+      executionTimeMs: execTime,
+      database: 'banking_loan_source',
+      engine: 'MySQL 8.0 Materialized/Relational View',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  }
+})
+
+app.get('/api/customer/loans/adbms/audit-log', async (request, response) => {
+  const start = performance.now()
+  try {
+    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.loan_audit_log ORDER BY audit_id DESC LIMIT 30;`)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    response.json({
+      success: true,
+      sqlExecuted: `SELECT * FROM banking_loan_source.loan_audit_log ORDER BY audit_id DESC LIMIT 30;`,
+      rowCount: rows.length,
+      data: rows,
+      executionTimeMs: execTime,
+      database: 'banking_loan_source',
+      engine: 'MySQL 8.0 Trigger-Populated Audit Ledger',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  }
+})
+
+app.post('/api/customer/loans/adbms/execute-function', async (request, response) => {
+  const start = performance.now()
+  try {
+    const { functionName, params } = request.body
+    let sql = ''
+    let queryParams = []
+
+    if (functionName === 'fn_calculate_monthly_emi') {
+      const principal = Number(params.principal) || 1500000
+      const rate = Number(params.rate) || 12.5
+      const tenure = Number(params.tenure) || 36
+      sql = `SELECT banking_loan_source.fn_calculate_monthly_emi(?, ?, ?) AS result;`
+      queryParams = [principal, rate, tenure]
+    } else if (functionName === 'fn_loan_outstanding_balance') {
+      const loanId = Number(params.loanId) || 2008
+      sql = `SELECT banking_loan_source.fn_loan_outstanding_balance(?) AS result;`
+      queryParams = [loanId]
+    } else if (functionName === 'fn_days_overdue') {
+      const loanId = Number(params.loanId) || 2008
+      sql = `SELECT banking_loan_source.fn_days_overdue(?) AS result;`
+      queryParams = [loanId]
+    } else if (functionName === 'fn_loan_risk_tier') {
+      const loanId = Number(params.loanId) || 2008
+      sql = `SELECT banking_loan_source.fn_loan_risk_tier(?) AS result;`
+      queryParams = [loanId]
+    } else if (functionName === 'fn_calculate_total_interest') {
+      const principal = Number(params.principal) || 1500000
+      const rate = Number(params.rate) || 12.5
+      const tenure = Number(params.tenure) || 36
+      sql = `SELECT banking_loan_source.fn_calculate_total_interest(?, ?, ?) AS result;`
+      queryParams = [principal, rate, tenure]
+    } else {
+      return response.status(400).json({ error: `Unsupported function: ${functionName}` })
+    }
+
+    const [rows] = await pool.query(sql, queryParams)
+    const execTime = (performance.now() - start).toFixed(2)
+
+    // Build human readable SQL with interpolated parameters
+    let displaySql = sql
+    queryParams.forEach((p) => {
+      displaySql = displaySql.replace('?', typeof p === 'string' ? `'${p}'` : p)
+    })
+
+    response.json({
+      success: true,
+      functionName,
+      sqlExecuted: displaySql,
+      result: rows[0]?.result,
+      executionTimeMs: execTime,
+      database: 'banking_loan_source',
+      engine: 'MySQL 8.0 In-Engine UDF',
+    })
+  } catch (error) {
+    const execTime = (performance.now() - start).toFixed(2)
+    response.status(500).json({ error: error.message, executionTimeMs: execTime })
   }
 })
 

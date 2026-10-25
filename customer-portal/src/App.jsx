@@ -6,6 +6,8 @@ import EmiCalculator from './components/EmiCalculator'
 import ApplicationWizard from './components/ApplicationWizard'
 import LoanTracker from './components/LoanTracker'
 import Footer from './components/Footer'
+import AdbmsConsoleModal from './components/AdbmsConsoleModal'
+import RoleWorkstation from './components/RoleWorkstation'
 import { loanApi } from './api/loanApi'
 
 export default function App() {
@@ -13,6 +15,8 @@ export default function App() {
   const [products, setProducts] = useState([])
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [trackedLoanId, setTrackedLoanId] = useState(null)
+  const [isConsoleOpen, setIsConsoleOpen] = useState(false)
+  const [currentRole, setCurrentRole] = useState('customer') // 'customer' | 'officer' | 'manager' | 'auditor'
 
   useEffect(() => {
     loanApi.getProducts().then(setProducts)
@@ -46,67 +50,88 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const handleCompleteAndTrack = (loanId) => {
-    setTrackedLoanId(loanId)
+  const handleCompleteAndTrack = (facilityOrAppId) => {
+    setTrackedLoanId(String(facilityOrAppId))
+    setCurrentRole('customer')
     setActiveTab('track')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   return (
     <div className="portal-app">
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        onOpenConsole={() => setIsConsoleOpen(true)}
+        currentRole={currentRole}
+        setCurrentRole={setCurrentRole}
+      />
 
-      <main>
-        {activeTab === 'home' && (
-          <>
-            <Hero 
-              onExplore={() => {
-                const el = document.getElementById('products')
-                el?.scrollIntoView({ behavior: 'smooth' })
-              }}
-              onCalculate={() => setActiveTab('calculator')}
-              onApply={() => setActiveTab('apply')}
-            />
-            <LoanProducts 
-              products={products}
-              onSelectProduct={handleSelectProduct}
-              onCalculateProduct={handleCalculateProduct}
-            />
-            <EmiCalculator 
-              initialProduct={selectedPlan}
-              onApplyWithPlan={handleApplyWithPlan}
-            />
-          </>
-        )}
+      {currentRole !== 'customer' ? (
+        <RoleWorkstation 
+          currentRole={currentRole} 
+          onSwitchRole={setCurrentRole} 
+          onTrackFacility={handleCompleteAndTrack}
+        />
+      ) : (
+        <main>
+          {activeTab === 'home' && (
+            <>
+              <Hero 
+                onExplore={() => {
+                  const el = document.getElementById('products')
+                  el?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                onCalculate={() => setActiveTab('calculator')}
+                onApply={() => setActiveTab('apply')}
+              />
+              <LoanProducts 
+                products={products}
+                onSelectProduct={handleSelectProduct}
+                onCalculateProduct={handleCalculateProduct}
+              />
+              <EmiCalculator 
+                initialProduct={selectedPlan}
+                onApplyWithPlan={handleApplyWithPlan}
+              />
+            </>
+          )}
 
-        {activeTab === 'calculator' && (
-          <div style={{ paddingTop: '20px' }}>
-            <EmiCalculator 
-              initialProduct={selectedPlan}
-              onApplyWithPlan={handleApplyWithPlan}
-            />
-          </div>
-        )}
+          {activeTab === 'calculator' && (
+            <div style={{ paddingTop: '20px' }}>
+              <EmiCalculator 
+                initialProduct={selectedPlan}
+                onApplyWithPlan={handleApplyWithPlan}
+              />
+            </div>
+          )}
 
-        {activeTab === 'apply' && (
-          <div style={{ paddingTop: '20px' }}>
-            <ApplicationWizard 
-              initialPlan={selectedPlan}
-              onCompleteAndTrack={handleCompleteAndTrack}
-            />
-          </div>
-        )}
+          {activeTab === 'apply' && (
+            <div style={{ paddingTop: '20px' }}>
+              <ApplicationWizard 
+                initialPlan={selectedPlan}
+                onCompleteAndTrack={handleCompleteAndTrack}
+                onSwitchToManager={() => setCurrentRole('manager')}
+              />
+            </div>
+          )}
 
-        {activeTab === 'track' && (
-          <div style={{ paddingTop: '20px' }}>
-            <LoanTracker 
-              initialLoanId={trackedLoanId}
-            />
-          </div>
-        )}
-      </main>
+          {activeTab === 'track' && (
+            <div style={{ paddingTop: '20px' }}>
+              <LoanTracker 
+                initialLoanId={trackedLoanId}
+                onSwitchToManager={() => setCurrentRole('manager')}
+              />
+            </div>
+          )}
+        </main>
+      )}
 
       <Footer />
+      <AdbmsConsoleModal 
+        isOpen={isConsoleOpen} 
+        onClose={() => setIsConsoleOpen(false)} 
+      />
     </div>
   )
 }
