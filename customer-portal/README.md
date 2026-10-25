@@ -17,7 +17,7 @@ In modern enterprise financial systems, operational transactions and analytical 
                                      | REST API Calls (/api/customer/loans/*)
                                      v
 +------------------------------------+------------------------------------+
-|                   CORE API BACKEND (Port 4000)                          |
+|             CUSTOMER PORTAL API BACKEND (Port 4001)                     |
 |             Express.js • Connection Pooling • MySQL2 Driver             |
 +------------------------------------+------------------------------------+
                                      |
@@ -100,10 +100,10 @@ The Customer Loan Portal communicates with the backend Express server over the f
 
 ### Step 1: Start Backend API
 ```bash
-cd backend
+cd customer-portal-backend
 npm install
-node src/server.js
-# API runs on http://127.0.0.1:4000
+npm run dev
+# API runs on http://127.0.0.1:4001
 ```
 
 ### Step 2: Start Customer Loan Portal
