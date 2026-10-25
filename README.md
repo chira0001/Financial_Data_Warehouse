@@ -26,7 +26,7 @@ Financial_Data_Warehouse/
 
 1. Core banking CSV extracts: customers, accounts, and branches.
 2. Banking transaction CSV extract covering January to September 2026.
-3. Loan and loan-payment source database in [Bank_Loans.sql](sources/MySQL-DB/Bank_Loans.sql).
+3. Loan source schema in [Bank_Loans.sql](sources/MySQL-DB/Bank_Loans.sql), with seed records in [bank_loans_data.sql](sources/MySQL-DB/bank_loans_data.sql).
 4. Foreign-exchange rates retrieved from the Frankfurter REST API by [fetch_rates.py](sources/API/fetch_rates.py).
 
 ## Warehouse Layers
@@ -71,7 +71,10 @@ Load the loan source database:
 
 ```powershell
 mysql -u root -p < sources/MySQL-DB/Bank_Loans.sql
+mysql -u root -p < sources/MySQL-DB/bank_loans_data.sql
 ```
+
+Run the schema file first, then the seed-data file to populate `banking_loan_source`.
 
 Create warehouse tables and database objects in this order:
 
