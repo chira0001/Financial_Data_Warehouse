@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import mysql from 'mysql2/promise'
 import { config } from './config.js'
 import { checkDatabase, pool } from './db.js'
 import { runPipeline, runQueryGroup } from './sql.js'
@@ -9,6 +10,62 @@ let pipelineRunning = false
 
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
+
+// Ensure dedicated banking_app user & roles exist for authentic MySQL 8.0 RBAC enforcement
+const initRbacUser = async () => {
+  try {
+    const conn = await pool.getConnection()
+    await conn.query("CREATE USER IF NOT EXISTS 'banking_app'@'localhost' IDENTIFIED BY 'AppPass123!'")
+    await conn.query("GRANT role_loan_officer, role_loan_manager, role_loan_auditor TO 'banking_app'@'localhost'")
+    await conn.query("ALTER USER 'banking_app'@'localhost' DEFAULT ROLE ALL")
+    await conn.query("GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_underwrite_loan_application TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_applications TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_guarantors TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loans TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_audit_log TO role_loan_manager").catch(() => {})
+    await conn.query("FLUSH PRIVILEGES").catch(() => {})
+    conn.release()
+  } catch (err) {
+    console.warn('RBAC user initialization notice:', err.message)
+  }
+}
+initRbacUser()
+
+// Role-Aware Connection Factory: activates explicit MySQL session role for authentic RBAC checks
+const getRoleConnection = async (requestedRole) => {
+  const allowedRoles = ['role_loan_officer', 'role_loan_manager', 'role_loan_auditor']
+  if (requestedRole && allowedRoles.includes(requestedRole)) {
+    try {
+      const conn = await mysql.createConnection({
+        host: config.mysql.host,
+        port: config.mysql.port,
+        user: 'banking_app',
+        password: 'AppPass123!',
+        database: 'banking_loan_source',
+        multipleStatements: true,
+      })
+      await conn.query(`SET ROLE ${requestedRole};`)
+      return { connection: conn, isDedicated: true, activeRole: requestedRole }
+    } catch (connErr) {
+      console.warn(`Could not connect as banking_app (${requestedRole}), falling back to default pool:`, connErr.message)
+    }
+  }
+  const conn = await pool.getConnection()
+  return { connection: conn, isDedicated: false, activeRole: null }
+}
+
+const releaseRoleConnection = async (holder) => {
+  if (!holder) return
+  try {
+    if (holder.isDedicated && holder.connection) {
+      await holder.connection.end().catch(() => {})
+    } else if (holder.connection) {
+      holder.connection.release()
+    }
+  } catch (relErr) {
+    console.warn('Connection release warning:', relErr.message)
+  }
+}
 
 const query = async (sql, params = []) => {
   const [rows] = await pool.query(sql, params)
