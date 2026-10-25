@@ -1,44 +1,62 @@
-import React, { useState, useMemo } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { ArrowRightIcon, TableIcon, PrinterIcon } from './Icons'
+import { loanApi } from '../api/loanApi'
 
 export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
   const [amount, setAmount] = useState(initialProduct?.minAmount ? Math.max(initialProduct.minAmount, 1000000) : 1500000)
   const [tenureYears, setTenureYears] = useState(initialProduct?.maxTenure ? Math.min(Math.round(initialProduct.maxTenure / 12), 5) : 5)
   const [rate, setRate] = useState(initialProduct?.rate || 8.1)
   const [showSchedule, setShowSchedule] = useState(false)
+  const [monthlyEmi, setMonthlyEmi] = useState(0)
+  const [emiError, setEmiError] = useState('')
+  const [isCalculating, setIsCalculating] = useState(false)
 
-  // Standard Banking EMI Formula: E = [P * r * (1+r)^n] / [(1+r)^n - 1]
-  const { monthlyEmi, totalPayment, totalInterest, principalPct, interestPct } = useMemo(() => {
+  // Ask the database to calculate EMI using fn_calculate_monthly_emi.
+  useEffect(() => {
     const P = Number(amount)
-    const annualRate = Number(rate)
     const n = Number(tenureYears) * 12
 
     if (P <= 0 || n <= 0) {
-      return { monthlyEmi: 0, totalPayment: 0, totalInterest: 0, principalPct: 50, interestPct: 50 }
+      setMonthlyEmi(0)
+      setEmiError('')
+      setIsCalculating(false)
+      return undefined
     }
 
-    const r = (annualRate / 12) / 100
+    let cancelled = false
+    setIsCalculating(true)
+    setEmiError('')
+    loanApi.executeFunction({
+      functionName: 'fn_calculate_monthly_emi',
+      params: { principal: P, rate: Number(rate), tenure: n },
+    })
+      .then(({ result }) => {
+        if (!cancelled) setMonthlyEmi(Number(result) || 0)
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          setMonthlyEmi(0)
+          setEmiError(error.message || 'Unable to calculate EMI from the banking database.')
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setIsCalculating(false)
+      })
 
-    let emi = 0
-    if (r === 0) {
-      emi = P / n
-    } else {
-      emi = (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1)
-    }
+    return () => { cancelled = true }
+  }, [amount, tenureYears, rate])
 
-    const total = emi * n
-    const interest = total - P
-    const pPct = total > 0 ? Math.round((P / total) * 100) : 100
-    const iPct = 100 - pPct
-
+  const { totalPayment, totalInterest, principalPct, interestPct } = useMemo(() => {
+    const total = monthlyEmi * Number(tenureYears) * 12
+    const interest = Math.max(0, total - Number(amount))
+    const pPct = total > 0 ? Math.min(100, Math.round((Number(amount) / total) * 100)) : 100
     return {
-      monthlyEmi: Math.round(emi),
       totalPayment: Math.round(total),
       totalInterest: Math.round(interest),
       principalPct: pPct,
-      interestPct: iPct,
+      interestPct: 100 - pPct,
     }
-  }, [amount, tenureYears, rate])
+  }, [amount, tenureYears, monthlyEmi])
 
   // Month-by-Month Amortization Ledger
   const amortizationSchedule = useMemo(() => {
@@ -192,7 +210,8 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
         <div className="calc-result-card">
           <div className="emi-main">
             <span>Estimated Equated Monthly Installment</span>
-            <div className="emi-amount">LKR {monthlyEmi.toLocaleString()}</div>
+            <div className="emi-amount">{isCalculating ? 'Calculating…' : `LKR ${monthlyEmi.toLocaleString()}`}</div>
+            {emiError && <small role="alert" style={{ color: 'var(--red-500, #ef4444)' }}>{emiError}</small>}
             <small style={{ color: 'var(--text-muted)' }}>Fixed over {tenureYears * 12} consecutive calendar months</small>
           </div>
 
