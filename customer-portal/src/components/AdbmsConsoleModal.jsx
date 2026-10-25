@@ -211,7 +211,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('views'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap' }}
           >
-            📊 Operational Views (5)
+            📊 Operational Views
           </button>
           <button
             type="button"
@@ -466,7 +466,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                     </div>
                   </div>
                   <div style={{ marginTop: '10px', fontSize: '0.75rem', color: '#64748b' }}>
-                    ℹ️ Evaluates credit score threshold (≥620), pledged collateral coverage (≥100% on high-value facilities), and generates decision notes autonomously.
+                    ℹ️ Evaluates credit score threshold (≥620), pledged collateral coverage (≥100%), and applies credit committee policy.
                   </div>
                 </div>
               )}
@@ -482,7 +482,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                       <span>Member 04: Batch Delinquency Classification (MySQL Cursor Engine)</span>
                     </div>
                     <p style={{ margin: 0, lineHeight: 1.5, color: '#cbd5e1' }}>
-                      Uses an InnoDB cursor to iterate active loans with outstanding balance past maturity date (<code>loan_end_date &lt; CURDATE()</code>), transitions status to <strong>Overdue</strong>, and appends immutable audit trail entries into <code>loan_audit_log</code> autonomously.
+                      Uses an InnoDB cursor to iterate active loans with outstanding balance past maturity date (<code>loan_end_date &lt; CURDATE()</code>), transitions status to <strong>Overdue</strong>, and appends scheduled audit trail entries into <code>loan_audit_log</code>.
                     </p>
                   </div>
                 </div>
@@ -704,7 +704,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
 
             <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', padding: '8px 12px', fontSize: '0.75rem', color: '#6ee7b7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span>⏱️</span>
-              <span><strong>Event Scheduler Active:</strong> evt_daily_loan_status_check runs EVERY 1 DAY at 00:00:00, calling sp_mark_overdue_facilities() autonomously.</span>
+              <span><strong>Event Scheduler Active:</strong> evt_daily_loan_status_check runs daily at midnight, calling sp_mark_overdue_facilities() per scheduled event policy.</span>
             </div>
 
             {/* ADBMS Query Optimization & Index Benchmark */}
@@ -874,7 +874,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                   <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 04</span>
                   <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Risk & Recovery Domain</span>
                 </div>
-                <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Credit Delinquency & Autonomous Scheduling</div>
+                <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Credit Delinquency & Batch Job Scheduling</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
                   <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> AdbmsConsoleModal.jsx (Overdue Queue & Evaluation)</div>
                   <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#fbbf24' }}>sp_mark_overdue_facilities</span> (InnoDB cursor batch scan)</div>
@@ -906,12 +906,12 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* Live Execution Terminal (for Procedures & Functions) */}
+        {/* Live Execution Results (for Procedures & Functions) */}
         {consoleOutput && (activeTab === 'procedures' || activeTab === 'functions') && (
           <div style={{ marginTop: '18px', background: '#020617', border: '1px solid #1e293b', borderRadius: '8px', padding: '14px', fontFamily: 'monospace', fontSize: '0.8rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b', paddingBottom: '8px', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--emerald-400)' }}>
-                <span>✓ MySQL Runtime Execution Trace</span>
+                <span>✓ MySQL Execution Output</span>
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>({consoleOutput.executionTimeMs} ms)</span>
               </div>
               <div>
