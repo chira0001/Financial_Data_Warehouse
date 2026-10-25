@@ -118,58 +118,12 @@ export const loanApi = {
   },
 
   async lookup(query) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/customer/loans/lookup/${encodeURIComponent(query)}`)
-      if (!res.ok) throw new Error('Not found')
-      return await res.json()
-    } catch {
-      // Fallback mock loan data if offline
-      const num = Number(String(query).replace(/\D/g, '')) || 1001
-      return {
-        loans: [
-          {
-            loan_id: num,
-            customer_id: 1,
-            account_id: 101,
-            loan_type: 'Personal',
-            loan_amount: 3233200.0,
-            interest_rate: 6.79,
-            loan_start_date: '2023-01-31',
-            loan_end_date: '2026-01-30',
-            loan_status: 'Active',
-            total_paid: 1250000.0,
-            balance_remaining: 1983200.0,
-            progress_pct: 39,
-          },
-        ],
-        payments: [
-          {
-            payment_id: 501,
-            loan_id: num,
-            payment_date: '2026-09-15',
-            payment_amount: 45000.0,
-            payment_method: 'Online Transfer',
-            payment_status: 'Paid',
-          },
-          {
-            payment_id: 489,
-            loan_id: num,
-            payment_date: '2026-08-15',
-            payment_amount: 45000.0,
-            payment_method: 'Standing Order',
-            payment_status: 'Paid',
-          },
-          {
-            payment_id: 472,
-            loan_id: num,
-            payment_date: '2026-07-15',
-            payment_amount: 45000.0,
-            payment_method: 'Debit Card',
-            payment_status: 'Paid',
-          },
-        ],
-      }
+    const res = await fetch(`${BASE_URL}/api/customer/loans/lookup/${encodeURIComponent(query)}`)
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || `No credit facility or application registered under reference: ${query}`)
     }
+    return await res.json()
   },
 
   async pay(paymentData) {

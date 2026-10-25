@@ -18,6 +18,7 @@ export default function LoanTracker({ initialLoanId }) {
   const [copiedVoucher, setCopiedVoucher] = useState(false)
 
   const quickDemoFacilities = [
+    { label: 'Application #7106 (Pending Underwriting)', id: '7106' },
     { label: 'Loan #2001 (New Online Application)', id: '2001' },
     { label: 'Loan #1001 (Active Core Facility)', id: '1001' },
     { label: 'Loan #1005 (Commercial Overdue Facility)', id: '1005' },
@@ -31,10 +32,10 @@ export default function LoanTracker({ initialLoanId }) {
     setError('')
     try {
       const res = await loanApi.lookup(q)
-      if (res && res.loans && res.loans.length > 0) {
+      if (res && ((res.loans && res.loans.length > 0) || res.application)) {
         setData(res)
       } else {
-        setError(`No credit facilities registered under reference: ${q}`)
+        setError(`No active credit facilities or applications registered under reference: ${q}`)
         setData(null)
       }
     } catch (err) {
@@ -139,6 +140,70 @@ export default function LoanTracker({ initialLoanId }) {
         {error && (
           <div style={{ background: 'rgba(244, 63, 94, 0.12)', border: '1px solid var(--rose-500)', color: '#fca5a5', padding: '14px 18px', borderRadius: '10px', marginBottom: '24px', fontSize: '0.9rem' }}>
             {error}
+          </div>
+        )}
+
+        {/* Application Status Card (When facility is Pending Underwriting) */}
+        {data && data.isApplicationOnly && data.application && (
+          <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#fde68a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    Application Reference: #{data.application.application_id} • Borrower CIF: {data.application.customer_code}
+                  </span>
+                  <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
+                    🟡 {data.application.approval_status} Underwriting Review
+                  </span>
+                </div>
+                <h3 style={{ fontSize: '1.4rem', margin: '2px 0 6px', color: '#f8fafc' }}>
+                  {data.application.product_id} Loan Application
+                </h3>
+                <p style={{ color: '#94a3b8', fontSize: '0.86rem', margin: 0 }}>
+                  Applicant: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> • Branch: {data.application.branch_id || 'B001 (Colombo)'} • Sector: {data.application.occupation || 'Salaried'}
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'block' }}>Date Received</span>
+                <span style={{ fontSize: '0.9rem', color: '#f8fafc', fontWeight: '600' }}>{data.application.application_date || 'Today'}</span>
+              </div>
+            </div>
+
+            {/* Metrics Grid */}
+            <div className="loan-metrics-grid" style={{ marginBottom: '18px' }}>
+              <div className="metric-cell">
+                <span>Requested Principal</span>
+                <strong style={{ color: '#f8fafc' }}>LKR {Number(data.application.applied_amount).toLocaleString()}</strong>
+              </div>
+              <div className="metric-cell">
+                <span>Requested Tenure</span>
+                <strong>{data.application.requested_tenure_months || 36} Months</strong>
+              </div>
+              <div className="metric-cell">
+                <span>Credit Score Assessed</span>
+                <strong style={{ color: data.application.credit_score >= 620 ? '#4ade80' : '#f87171' }}>
+                  {data.application.credit_score} / 850
+                </strong>
+              </div>
+              <div className="metric-cell">
+                <span>Eligibility Status</span>
+                <strong style={{ color: data.application.credit_score >= 620 ? '#4ade80' : '#fbbf24' }}>
+                  {data.application.credit_score >= 620 ? 'Pre-Qualified (Score ≥ 620)' : 'Requires Special Review'}
+                </strong>
+              </div>
+            </div>
+
+            {/* Governance Info Box */}
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '8px', padding: '14px 18px', fontSize: '0.84rem', color: '#fef08a' }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>⚖️ Underwriting Pipeline Stage:</div>
+              <p style={{ margin: 0, color: '#e2e8f0', lineHeight: '1.4' }}>
+                {data.application.decision_notes || 'Application queued in MySQL database waiting for Credit Committee authorization.'}
+                <br />
+                <span style={{ color: '#fbbf24', fontSize: '0.8rem', display: 'inline-block', marginTop: '6px' }}>
+                  To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"⚡ Underwrite & Approve"</strong> in the Live Underwriting Worklist.
+                </span>
+              </p>
+            </div>
           </div>
         )}
 

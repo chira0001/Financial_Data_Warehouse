@@ -624,9 +624,15 @@ app.post('/api/customer/loans/apply', async (request, response) => {
 app.get('/api/customer/loans/lookup/:query', async (request, response) => {
   try {
     const rawParam = request.params.query.trim()
-    const numParam = Number(rawParam.replace(/\D/g, '')) || 0
+    let numParam = 0
+    if (rawParam.includes('-')) {
+      const parts = rawParam.split('-')
+      numParam = Number(parts[parts.length - 1].replace(/\D/g, '')) || 0
+    } else {
+      numParam = Number(rawParam.replace(/\D/g, '')) || 0
+    }
 
-    const loans = await query(`
+    let loans = await query(`
       SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
              l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
              c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id,
@@ -641,60 +647,106 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
       ORDER BY l.loan_id DESC
     `, [numParam, numParam, rawParam])
 
-    if (!loans.length) {
-      return response.status(404).json({ error: 'No loan facilities registered under this identifier' })
+    let application = null
+    // If no direct active loan found, or if searching an application ID:
+    if (!loans.length && numParam > 0) {
+      const appRows = await query(`
+        SELECT a.application_id, a.customer_id, a.product_id, a.applied_amount,
+               a.requested_tenure_months, a.credit_score, a.approval_status,
+               a.approved_amount, a.approval_date, a.decision_notes,
+               DATE_FORMAT(a.application_date, '%Y-%m-%d') AS application_date,
+               c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
+        FROM banking_loan_source.loan_applications a
+        LEFT JOIN banking_loan_source.customers c ON c.customer_id = a.customer_id
+        WHERE a.application_id = ? OR a.customer_id = ? OR c.customer_code = ?
+        ORDER BY a.application_id DESC LIMIT 1
+      `, [numParam, numParam, rawParam])
+
+      if (appRows.length) {
+        application = appRows[0]
+        // Check if there is already a loan created for this applicant customer:
+        loans = await query(`
+          SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+                 l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+                 c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id,
+                 COALESCE(SUM(p.payment_amount), 0) AS total_paid
+          FROM banking_loan_source.loans l
+          LEFT JOIN banking_loan_source.customers c ON c.customer_id = l.customer_id
+          LEFT JOIN banking_loan_source.loan_payments p ON p.loan_id = l.loan_id
+          WHERE l.customer_id = ?
+          GROUP BY l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
+                   l.interest_rate, l.loan_start_date, l.loan_end_date, l.loan_status,
+                   c.customer_name, c.customer_code, c.city, c.occupation, c.branch_id
+          ORDER BY l.loan_id DESC
+        `, [application.customer_id])
+      }
+    }
+
+    if (!loans.length && !application) {
+      return response.status(404).json({ error: `No active credit facilities or pending applications registered under reference: ${rawParam}` })
     }
 
     const loanIdList = loans.map((l) => l.loan_id)
-    const [payments] = await pool.query(`
-      SELECT payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
-      FROM banking_loan_source.loan_payments
-      WHERE loan_id IN (?)
-      ORDER BY payment_date DESC, payment_id DESC LIMIT 50
-    `, [loanIdList])
-
+    let payments = []
     let auditLogs = []
-    try {
-      const [auditRows] = await pool.query(`
-        SELECT audit_id, loan_id, action_type, old_status, new_status,
-               old_amount, new_amount, old_interest_rate, new_interest_rate,
-               modified_by, modified_at, notes
-        FROM banking_loan_source.loan_audit_log
-        WHERE loan_id IN (?)
-        ORDER BY modified_at DESC, audit_id DESC LIMIT 50
-      `, [loanIdList])
-      auditLogs = auditRows || []
-    } catch (auditErr) {
-      console.warn('Could not query loan_audit_log:', auditErr.message)
-    }
-
     let collaterals = []
-    try {
-      const [colRows] = await pool.query(`
-        SELECT collateral_id, loan_id, collateral_type, collateral_description,
-               valuation_amount, valuation_date, valuer_name, document_reference, status
-        FROM banking_loan_source.loan_collaterals
-        WHERE loan_id IN (?)
-      `, [loanIdList])
-      collaterals = colRows || []
-    } catch (colErr) {
-      console.warn('Could not query loan_collaterals:', colErr.message)
-    }
-
     let guarantors = []
-    try {
-      const [gRows] = await pool.query(`
-        SELECT guarantor_id, loan_id, guarantor_name, nic_number,
-               relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount
-        FROM banking_loan_source.loan_guarantors
-        WHERE loan_id IN (?)
-      `, [loanIdList])
-      guarantors = gRows || []
-    } catch (gErr) {
-      console.warn('Could not query loan_guarantors:', gErr.message)
+
+    if (loanIdList.length > 0) {
+      try {
+        const [payRows] = await pool.query(`
+          SELECT payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status
+          FROM banking_loan_source.loan_payments
+          WHERE loan_id IN (?)
+          ORDER BY payment_date DESC, payment_id DESC LIMIT 50
+        `, [loanIdList])
+        payments = payRows || []
+      } catch (payErr) {
+        console.warn('Could not query loan_payments:', payErr.message)
+      }
+
+      try {
+        const [auditRows] = await pool.query(`
+          SELECT audit_id, loan_id, action_type, old_status, new_status,
+                 old_amount, new_amount, old_interest_rate, new_interest_rate,
+                 modified_by, modified_at, notes
+          FROM banking_loan_source.loan_audit_log
+          WHERE loan_id IN (?)
+          ORDER BY modified_at DESC, audit_id DESC LIMIT 50
+        `, [loanIdList])
+        auditLogs = auditRows || []
+      } catch (auditErr) {
+        console.warn('Could not query loan_audit_log:', auditErr.message)
+      }
+
+      try {
+        const [colRows] = await pool.query(`
+          SELECT collateral_id, loan_id, collateral_type, collateral_description,
+                 valuation_amount, valuation_date, valuer_name, document_reference, status
+          FROM banking_loan_source.loan_collaterals
+          WHERE loan_id IN (?)
+        `, [loanIdList])
+        collaterals = colRows || []
+      } catch (colErr) {
+        console.warn('Could not query loan_collaterals:', colErr.message)
+      }
+
+      try {
+        const [gRows] = await pool.query(`
+          SELECT guarantor_id, loan_id, guarantor_name, nic_number,
+                 relationship_to_borrower, phone_number, monthly_income, employer_name, guarantee_amount
+          FROM banking_loan_source.loan_guarantors
+          WHERE loan_id IN (?)
+        `, [loanIdList])
+        guarantors = gRows || []
+      } catch (gErr) {
+        console.warn('Could not query loan_guarantors:', gErr.message)
+      }
     }
 
     response.json({
+      isApplicationOnly: loans.length === 0 && !!application,
+      application,
       loans: loans.map((l) => ({
         ...l,
         balance_remaining: Math.max(0, Number(l.loan_amount) - Number(l.total_paid)),
