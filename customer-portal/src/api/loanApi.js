@@ -32,10 +32,12 @@ export const loanApi = {
     return await res.json()
   },
 
-  async pay(paymentData) {
+  async pay(paymentData, role = null) {
+    const headers = { 'Content-Type': 'application/json' }
+    if (role) headers['X-Database-Role'] = role
     const res = await fetch(`${BASE_URL}/api/customer/loans/pay`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(paymentData),
     })
     if (!res.ok) {
@@ -45,48 +47,60 @@ export const loanApi = {
     return await res.json()
   },
 
-  async executeProcedure(payload) {
+  async executeProcedure(payload, role = null) {
+    const headers = { 'Content-Type': 'application/json' }
+    if (role) headers['X-Database-Role'] = role
     const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/execute-procedure`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     })
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}))
-      throw new Error(errData.error || 'Procedure execution failed')
+      throw new Error(data.error || 'Procedure execution failed')
     }
-    return await res.json()
+    return data
   },
 
-  async executeFunction(payload) {
+  async executeFunction(payload, role = null) {
+    const headers = { 'Content-Type': 'application/json' }
+    if (role) headers['X-Database-Role'] = role
     const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/execute-function`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(payload),
     })
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}))
-      throw new Error(errData.error || 'Function execution failed')
+      throw new Error(data.error || 'Function execution failed')
     }
-    return await res.json()
+    return data
   },
 
-  async getView(viewName) {
-    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/views/${viewName}`)
+  async getView(viewName, role = null) {
+    const headers = {}
+    if (role) headers['X-Database-Role'] = role
+    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/views/${viewName}`, {
+      headers,
+    })
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}))
-      throw new Error(errData.error || 'Failed to fetch view data')
+      throw new Error(data.error || 'Failed to fetch view data')
     }
-    return await res.json()
+    return data
   },
 
-  async getAuditLog() {
-    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/audit-log`)
+  async getAuditLog(role = null) {
+    const headers = {}
+    if (role) headers['X-Database-Role'] = role
+    const res = await fetch(`${BASE_URL}/api/customer/loans/adbms/audit-log`, {
+      headers,
+    })
+    const data = await res.json().catch(() => ({}))
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}))
-      throw new Error(errData.error || 'Failed to fetch audit logs')
+      throw new Error(data.error || 'Failed to fetch audit logs')
     }
-    return await res.json()
+    return data
   },
 
   async getExplainAnalyze() {
