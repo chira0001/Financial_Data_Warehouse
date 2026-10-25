@@ -57,47 +57,111 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     }
   }
 
+  // Granular Step Validation Helpers
+  const validateStep1 = () => {
+    const name = (formData.customerName || '').trim()
+    if (!name || name.length < 3) {
+      return 'Please enter your full legal name as per NIC (minimum 3 characters).'
+    }
+
+    const nicTrimmed = (formData.nic || '').trim()
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/
+    if (!nicTrimmed || !nicRegex.test(nicTrimmed)) {
+      return 'Invalid National Identity Card (NIC) format. Expected 9 digits with V (e.g., 951234567V) or 12 digits (e.g., 199512345678).'
+    }
+
+    const phoneClean = (formData.phone || '').replace(/[\s-+]/g, '')
+    const phoneRegex = /^(?:0|94)?(7[0-9]{8})$/
+    if (!phoneClean || !phoneRegex.test(phoneClean)) {
+      return 'Invalid contact telephone. Please provide a valid 10-digit Sri Lankan mobile number (e.g., 077 123 4567).'
+    }
+
+    return null
+  }
+
+  const validateStep2 = () => {
+    const amt = Number(formData.loanAmount)
+    if (!amt || isNaN(amt) || amt < 50000) {
+      return 'Minimum loan facility amount is LKR 50,000.'
+    }
+    if (amt > 25000000) {
+      return 'Maximum retail credit facility limit is LKR 25,000,000.'
+    }
+    const tenure = Number(formData.tenureMonths)
+    if (!tenure || tenure < 6 || tenure > 240) {
+      return 'Please select a valid amortization tenure (between 6 and 240 months).'
+    }
+    return null
+  }
+
+  const validateStep3 = () => {
+    const income = Number(formData.monthlyIncome)
+    if (!income || isNaN(income) || income < 25000) {
+      return 'Declared gross monthly remuneration must be at least LKR 25,000.'
+    }
+    return null
+  }
+
+  // Guard direct stepper clicks
+  const handleStepClick = (targetStep) => {
+    setError('')
+    if (targetStep === 1) {
+      setStep(1)
+      scrollToWizard()
+      return
+    }
+
+    if (targetStep === 2) {
+      const err1 = validateStep1()
+      if (err1) {
+        setError(err1)
+        setStep(1)
+        scrollToWizard()
+        return
+      }
+      setStep(2)
+      scrollToWizard()
+      return
+    }
+
+    if (targetStep === 3) {
+      const err1 = validateStep1()
+      if (err1) {
+        setError(err1)
+        setStep(1)
+        scrollToWizard()
+        return
+      }
+      const err2 = validateStep2()
+      if (err2) {
+        setError(err2)
+        setStep(2)
+        scrollToWizard()
+        return
+      }
+      setStep(3)
+      scrollToWizard()
+      return
+    }
+  }
+
   const handleNext = () => {
     setError('')
 
-    // Step 1: Personal Identification & Contact Validation
+    // Step 1 Validation
     if (step === 1) {
-      if (!formData.customerName.trim() || formData.customerName.trim().length < 3) {
-        setError('Please enter your full legal name as per NIC (minimum 3 characters).')
-        return
-      }
-
-      // Sri Lankan NIC validation: 9 digits + V/X or 12 digits
-      const nicTrimmed = formData.nic.trim()
-      const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/
-      if (!nicTrimmed || !nicRegex.test(nicTrimmed)) {
-        setError('Invalid National Identity Card (NIC) format. Expected 9 digits with V (e.g., 951234567V) or 12 digits (e.g., 199512345678).')
-        return
-      }
-
-      // Sri Lankan Mobile validation: 10 digits starting with 07
-      const phoneClean = formData.phone.replace(/[\s-+]/g, '')
-      const phoneRegex = /^(?:0|94)?(7[0-9]{8})$/
-      if (!phoneClean || !phoneRegex.test(phoneClean)) {
-        setError('Invalid contact telephone. Please provide a valid 10-digit Sri Lankan mobile number (e.g., 077 123 4567).')
+      const err = validateStep1()
+      if (err) {
+        setError(err)
         return
       }
     }
 
-    // Step 2: Facility Parameters Validation
+    // Step 2 Validation
     if (step === 2) {
-      const amt = Number(formData.loanAmount)
-      if (!amt || isNaN(amt) || amt < 50000) {
-        setError('Minimum loan facility amount is LKR 50,000.')
-        return
-      }
-      if (amt > 25000000) {
-        setError('Maximum retail credit facility limit is LKR 25,000,000.')
-        return
-      }
-      const tenure = Number(formData.tenureMonths)
-      if (!tenure || tenure < 6) {
-        setError('Please select a valid amortization tenure (minimum 6 months).')
+      const err = validateStep2()
+      if (err) {
+        setError(err)
         return
       }
     }
@@ -117,16 +181,44 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
     e.preventDefault()
     setError('')
 
-    const income = Number(formData.monthlyIncome)
-    if (!income || isNaN(income) || income < 25000) {
-      setError('Declared gross monthly remuneration must be at least LKR 25,000.')
+    // 1. Mandatory Step 1 Pre-Submit Verification
+    const err1 = validateStep1()
+    if (err1) {
+      setError(err1)
+      setStep(1)
+      scrollToWizard()
+      return
+    }
+
+    // 2. Mandatory Step 2 Pre-Submit Verification
+    const err2 = validateStep2()
+    if (err2) {
+      setError(err2)
+      setStep(2)
+      scrollToWizard()
+      return
+    }
+
+    // 3. Mandatory Step 3 Verification
+    const err3 = validateStep3()
+    if (err3) {
+      setError(err3)
+      scrollToWizard()
       return
     }
 
     setLoading(true)
 
     try {
-      const res = await loanApi.apply(formData)
+      const res = await loanApi.apply({
+        ...formData,
+        customerName: formData.customerName.trim(),
+        nic: formData.nic.trim().toUpperCase(),
+        phone: formData.phone.trim(),
+        loanAmount: Number(formData.loanAmount),
+        tenureMonths: Number(formData.tenureMonths),
+        monthlyIncome: Number(formData.monthlyIncome),
+      })
       if (res.success) {
         setSubmittedResult(res)
         scrollToWizard()
@@ -265,6 +357,23 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
               className="btn-secondary"
               onClick={() => {
                 setSubmittedResult(null)
+                setFormData({
+                  customerName: '',
+                  nic: '',
+                  phone: '',
+                  city: 'Colombo',
+                  occupation: 'IT Professional',
+                  customerId: '',
+                  loanType: 'Personal',
+                  loanAmount: 1500000,
+                  tenureMonths: 36,
+                  interestRate: 12.5,
+                  purpose: 'Residential acquisition and property improvements',
+                  accountId: '',
+                  employmentType: 'Permanent Salaried',
+                  monthlyIncome: 285000,
+                  branchId: 'B001',
+                })
                 setStep(1)
               }}
             >
@@ -287,15 +396,29 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
       <div className="app-card">
         {/* Step Indicator */}
         <div className="wizard-steps">
-          <div className={`step-node ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`} onClick={() => setStep(1)}>
+          <div 
+            className={`step-node ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`} 
+            onClick={() => handleStepClick(1)}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="step-circle">{step > 1 ? <CheckIcon size={14} /> : '1'}</div>
             <span>Personal & Identification</span>
           </div>
-          <div className={`step-node ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`} onClick={() => setStep(2)}>
+          <div 
+            className={`step-node ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`} 
+            onClick={() => handleStepClick(2)}
+            style={{ cursor: validateStep1() ? 'not-allowed' : 'pointer', opacity: validateStep1() && step < 2 ? 0.6 : 1 }}
+            title={validateStep1() ? 'Complete Step 1 to unlock' : 'Facility Parameters'}
+          >
             <div className="step-circle">{step > 2 ? <CheckIcon size={14} /> : '2'}</div>
             <span>Facility Parameters</span>
           </div>
-          <div className={`step-node ${step === 3 ? 'active' : ''}`} onClick={() => setStep(3)}>
+          <div 
+            className={`step-node ${step === 3 ? 'active' : ''}`} 
+            onClick={() => handleStepClick(3)}
+            style={{ cursor: (validateStep1() || validateStep2()) ? 'not-allowed' : 'pointer', opacity: (validateStep1() || validateStep2()) && step < 3 ? 0.6 : 1 }}
+            title={(validateStep1() || validateStep2()) ? 'Complete Steps 1 & 2 to unlock' : 'Income & Account Setup'}
+          >
             <div className="step-circle">3</div>
             <span>Income & Account Setup</span>
           </div>

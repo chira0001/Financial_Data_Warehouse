@@ -531,43 +531,58 @@ app.post('/api/customer/loans/apply', async (request, response) => {
       phone,
     } = request.body
 
-    const parsedAmount = Number(loanAmount) || 500000
-    const parsedRate = Number(interestRate) || 12.5
-    const tenure = Number(tenureMonths) || 36
     const cleanName = (customerName || '').trim()
+    const cleanNic = (nic || '').trim().toUpperCase()
+    const cleanPhone = (phone || '').trim()
 
-    // 1. Manage Customer record so the applicant's entered name and profile are saved!
+    // Strict Backend Validation
+    if (!cleanName || cleanName.length < 3) {
+      return response.status(400).json({ error: 'Applicant full legal name is required (minimum 3 characters).' })
+    }
+
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/
+    if (!cleanNic || !nicRegex.test(cleanNic)) {
+      return response.status(400).json({ error: 'Valid National Identity Card (NIC) number is required (9 digits with V or 12 digits).' })
+    }
+
+    const parsedAmount = Number(loanAmount)
+    if (!parsedAmount || isNaN(parsedAmount) || parsedAmount < 50000 || parsedAmount > 25000000) {
+      return response.status(400).json({ error: 'Loan facility amount must be between LKR 50,000 and LKR 25,000,000.' })
+    }
+
+    const tenure = Number(tenureMonths) || 36
+    if (tenure < 6 || tenure > 240) {
+      return response.status(400).json({ error: 'Amortization tenure must be between 6 and 240 months.' })
+    }
+
+    const parsedRate = Number(interestRate) || 12.5
+
+    // 1. Manage Customer record: Ensure unique applicant profile without fallback hijacking
     let targetCustomerId = null
     let targetCustomerCode = null
 
-    if (cleanName) {
-      // Check if a customer already exists with this name (case-insensitive)
-      const [existing] = await connection.query(
-        'SELECT customer_id, customer_code FROM banking_loan_source.customers WHERE LOWER(customer_name) = LOWER(?) LIMIT 1',
-        [cleanName]
+    // Check if a customer already exists with this name (case-insensitive)
+    const [existing] = await connection.query(
+      'SELECT customer_id, customer_code FROM banking_loan_source.customers WHERE LOWER(customer_name) = LOWER(?) LIMIT 1',
+      [cleanName]
+    )
+    if (existing.length > 0) {
+      targetCustomerId = existing[0].customer_id
+      targetCustomerCode = existing[0].customer_code
+      await connection.query(
+        'UPDATE banking_loan_source.customers SET city = ?, occupation = ?, branch_id = ? WHERE customer_id = ?',
+        [city || 'Colombo', occupation || 'IT Professional', branchId || 'B001', targetCustomerId]
       )
-      if (existing.length > 0) {
-        targetCustomerId = existing[0].customer_id
-        targetCustomerCode = existing[0].customer_code
-        // Update customer with latest contact/branch info
-        await connection.query(
-          'UPDATE banking_loan_source.customers SET city = ?, occupation = ?, branch_id = ? WHERE customer_id = ?',
-          [city || 'Colombo', occupation || 'IT Professional', branchId || 'B001', targetCustomerId]
-        )
-      } else {
-        // Find next customer_id
-        const [maxCus] = await connection.query('SELECT COALESCE(MAX(customer_id), 500) AS max_c FROM banking_loan_source.customers')
-        targetCustomerId = Math.max((maxCus[0]?.max_c || 500) + 1, 501)
-        targetCustomerCode = 'C' + String(targetCustomerId).padStart(4, '0')
-        await connection.query(`
-          INSERT INTO banking_loan_source.customers
-            (customer_id, customer_code, customer_name, gender, date_of_birth, city, occupation, branch_id)
-          VALUES (?, ?, ?, 'Not Specified', '1995-01-01', ?, ?, ?)
-        `, [targetCustomerId, targetCustomerCode, cleanName, city || 'Colombo', occupation || 'IT Professional', branchId || 'B001'])
-      }
     } else {
-      targetCustomerId = Number(String(customerId || '').replace(/\D/g, '')) || 10
+      // Find next customer_id
+      const [maxCus] = await connection.query('SELECT COALESCE(MAX(customer_id), 500) AS max_c FROM banking_loan_source.customers')
+      targetCustomerId = Math.max((maxCus[0]?.max_c || 500) + 1, 501)
       targetCustomerCode = 'C' + String(targetCustomerId).padStart(4, '0')
+      await connection.query(`
+        INSERT INTO banking_loan_source.customers
+          (customer_id, customer_code, customer_name, gender, date_of_birth, city, occupation, branch_id)
+        VALUES (?, ?, ?, 'Not Specified', '1995-01-01', ?, ?, ?)
+      `, [targetCustomerId, targetCustomerCode, cleanName, city || 'Colombo', occupation || 'IT Professional', branchId || 'B001'])
     }
 
     const numericAccId = Number(String(accountId || '').replace(/\D/g, '')) || (targetCustomerId * 10 + 1)
@@ -591,8 +606,8 @@ app.post('/api/customer/loans/apply', async (request, response) => {
     await connection.query(`
       INSERT INTO banking_loan_source.loan_applications
         (application_id, customer_id, product_id, assigned_officer_id, applied_amount, requested_tenure_months, application_date, credit_score, approval_status, decision_notes)
-      VALUES (?, ?, ?, 101, ?, ?, CURDATE(), ?, 'Pending', 'Submitted online - Queued for Manager Underwriting Review')
-    `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, calculatedCreditScore])
+      VALUES (?, ?, ?, 101, ?, ?, CURDATE(), ?, 'Pending', ?)
+    `, [newAppId, targetCustomerId, mappedProduct, parsedAmount, tenure, calculatedCreditScore, `Online Applicant: ${cleanName} (NIC: ${cleanNic}) • Awaiting Underwriting Review`])
 
     response.json({
       success: true,
