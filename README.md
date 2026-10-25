@@ -9,6 +9,8 @@ All included datasets are synthetic and intended for academic use. They do not c
 ```text
 Financial_Data_Warehouse/
 ├── backend/                 Node.js + Express + MySQL API
+├── customer-portal-backend/  Node.js + Express API for the loan portal
+├── customer-portal/          Vite + React customer loan portal
 ├── scripts/
 │   ├── ddl/                 Bronze, Silver, Gold, routines, and views
 │   ├── data_load/           Layer load scripts
@@ -129,6 +131,18 @@ The API runs at `http://127.0.0.1:4000` and provides:
 - `POST /api/pipeline/run`
 
 The pipeline endpoint executes Bronze, Silver, and Gold loading in order and returns an error if MySQL or any ETL statement fails.
+
+The warehouse API on port `4000` is dedicated to the visualization dashboard. The customer portal uses its own backend on port `4001`:
+
+```powershell
+cd customer-portal-backend
+Copy-Item .env.example .env
+# Set MYSQL_PASSWORD and any other local connection values in .env
+npm install
+npm run dev
+```
+
+The customer API defaults to the `banking_loan_source` database; the warehouse API remains configured for `warehouse`. The customer portal's Vite proxy forwards `/api` requests to port `4001`.
 
 ## React Visualization
 

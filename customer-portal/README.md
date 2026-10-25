@@ -17,7 +17,7 @@ In modern enterprise financial systems, operational transactions and analytical 
                                      | REST API Calls (/api/customer/loans/*)
                                      v
 +------------------------------------+------------------------------------+
-|                   CORE API BACKEND (Port 4000)                          |
+|             CUSTOMER PORTAL API BACKEND (Port 4001)                     |
 |             Express.js • Connection Pooling • MySQL2 Driver             |
 +------------------------------------+------------------------------------+
                                      |
@@ -98,15 +98,23 @@ The Customer Loan Portal communicates with the backend Express server over the f
 - Node.js (v18+)
 - MySQL Server 8.0 running on `localhost:3306` (with `banking_loan_source` and `warehouse` schemas loaded)
 
-### Step 1: Start Backend API
+### Step 1: Start Warehouse API (for visualization)
 ```bash
 cd backend
 npm install
-node src/server.js
-# API runs on http://127.0.0.1:4000
+npm run dev
+# Warehouse API runs on http://127.0.0.1:4000
 ```
 
-### Step 2: Start Customer Loan Portal
+### Step 2: Start Customer Portal API
+```bash
+cd customer-portal-backend
+npm install
+npm run dev
+# API runs on http://127.0.0.1:4001
+```
+
+### Step 3: Start Customer Loan Portal
 ```bash
 cd customer-portal
 npm install
@@ -114,7 +122,7 @@ npm run dev
 # Portal runs on http://localhost:5174
 ```
 
-### Step 3: Start Internal BI Warehouse Dashboard (Optional)
+### Step 4: Start Internal BI Warehouse Dashboard (Optional)
 ```bash
 cd visualization
 npm install
