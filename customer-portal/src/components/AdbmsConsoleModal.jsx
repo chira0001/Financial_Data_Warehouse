@@ -47,6 +47,9 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
   const [explainData, setExplainData] = useState(null)
   const [explainLoading, setExplainLoading] = useState(false)
 
+  // 5. Active Role for Console Execution (Tests MySQL RBAC)
+  const [execRole, setExecRole] = useState('role_loan_manager')
+
   // Fetch view when switching to views tab
   useEffect(() => {
     if (activeTab === 'views') {
@@ -73,7 +76,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
     setLoading(true)
     setError('')
     try {
-      const res = await loanApi.getView(vName)
+      const res = await loanApi.getView(vName, execRole)
       setViewData(res)
     } catch (err) {
       setError(err.message || 'Failed to load database view')
@@ -86,7 +89,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
     setLoading(true)
     setError('')
     try {
-      const res = await loanApi.getAuditLog()
+      const res = await loanApi.getAuditLog('role_loan_auditor')
       setAuditData(res)
     } catch (err) {
       setError(err.message || 'Failed to load audit logs')
@@ -104,7 +107,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
       const res = await loanApi.executeProcedure({
         procedure: selectedProc,
         params: procParams,
-      })
+      }, execRole)
       setConsoleOutput({
         type: 'PROCEDURE',
         ...res,
@@ -240,6 +243,26 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
         {/* TAB 1: STORED PROCEDURES */}
         {activeTab === 'procedures' && (
           <div>
+            {/* Live Database Role Switcher for RBAC Demonstration */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px', background: 'rgba(30, 41, 59, 0.45)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(148, 163, 184, 0.2)', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>Active MySQL Session Role:</span>
+                <select
+                  className="form-input"
+                  style={{ width: 'auto', padding: '4px 10px', fontSize: '0.78rem', background: '#0f172a', color: '#38bdf8', borderColor: '#3b82f6', borderRadius: '6px' }}
+                  value={execRole}
+                  onChange={(e) => { setExecRole(e.target.value); setError('') }}
+                >
+                  <option value="role_loan_manager">role_loan_manager (Full Managerial Access)</option>
+                  <option value="role_loan_officer">role_loan_officer (Operational - Disburse/Restructure Restricted)</option>
+                  <option value="role_loan_auditor">role_loan_auditor (Compliance - Read-Only)</option>
+                </select>
+              </div>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+                Executes <code style={{ color: '#38bdf8' }}>SET ROLE {execRole}</code> before query to trigger live MySQL RBAC engine checks.
+              </span>
+            </div>
+
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <button
                 type="button"

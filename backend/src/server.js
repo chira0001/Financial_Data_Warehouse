@@ -1,5 +1,6 @@
 import express from 'express'
 import cors from 'cors'
+import mysql from 'mysql2/promise'
 import { config } from './config.js'
 import { checkDatabase, pool } from './db.js'
 import { runPipeline, runQueryGroup } from './sql.js'
@@ -9,6 +10,62 @@ let pipelineRunning = false
 
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
+
+// Ensure dedicated banking_app user & roles exist for authentic MySQL 8.0 RBAC enforcement
+const initRbacUser = async () => {
+  try {
+    const conn = await pool.getConnection()
+    await conn.query("CREATE USER IF NOT EXISTS 'banking_app'@'localhost' IDENTIFIED BY 'AppPass123!'")
+    await conn.query("GRANT role_loan_officer, role_loan_manager, role_loan_auditor TO 'banking_app'@'localhost'")
+    await conn.query("ALTER USER 'banking_app'@'localhost' DEFAULT ROLE ALL")
+    await conn.query("GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_underwrite_loan_application TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_applications TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_guarantors TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loans TO role_loan_manager").catch(() => {})
+    await conn.query("GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_audit_log TO role_loan_manager").catch(() => {})
+    await conn.query("FLUSH PRIVILEGES").catch(() => {})
+    conn.release()
+  } catch (err) {
+    console.warn('RBAC user initialization notice:', err.message)
+  }
+}
+initRbacUser()
+
+// Role-Aware Connection Factory: activates explicit MySQL session role for authentic RBAC checks
+const getRoleConnection = async (requestedRole) => {
+  const allowedRoles = ['role_loan_officer', 'role_loan_manager', 'role_loan_auditor']
+  if (requestedRole && allowedRoles.includes(requestedRole)) {
+    try {
+      const conn = await mysql.createConnection({
+        host: config.mysql.host,
+        port: config.mysql.port,
+        user: 'banking_app',
+        password: 'AppPass123!',
+        database: 'banking_loan_source',
+        multipleStatements: true,
+      })
+      await conn.query(`SET ROLE ${requestedRole};`)
+      return { connection: conn, isDedicated: true, activeRole: requestedRole }
+    } catch (connErr) {
+      console.warn(`Could not connect as banking_app (${requestedRole}), falling back to default pool:`, connErr.message)
+    }
+  }
+  const conn = await pool.getConnection()
+  return { connection: conn, isDedicated: false, activeRole: null }
+}
+
+const releaseRoleConnection = async (holder) => {
+  if (!holder) return
+  try {
+    if (holder.isDedicated && holder.connection) {
+      await holder.connection.end().catch(() => {})
+    } else if (holder.connection) {
+      holder.connection.release()
+    }
+  } catch (relErr) {
+    console.warn('Connection release warning:', relErr.message)
+  }
+}
 
 const query = async (sql, params = []) => {
   const [rows] = await pool.query(sql, params)
@@ -852,7 +909,9 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
 })
 
 app.post('/api/customer/loans/pay', async (request, response) => {
-  const connection = await pool.getConnection()
+  const requestedRole = request.headers['x-database-role'] || 'role_loan_officer'
+  const holder = await getRoleConnection(requestedRole)
+  const connection = holder.connection
   try {
     const { loanId, paymentAmount, paymentMethod } = request.body
     const parsedAmount = Number(paymentAmount)
@@ -861,35 +920,22 @@ app.post('/api/customer/loans/pay', async (request, response) => {
     const [maxPayRows] = await connection.query('SELECT COALESCE(MAX(payment_id), 3000) AS max_id FROM banking_loan_source.loan_payments')
     const newPaymentId = (maxPayRows[0]?.max_id || 3000) + 1
 
-    let procedureSucceeded = false
-    try {
-      await connection.query('SET @code = "", @msg = ""')
-      await connection.query(`
-        CALL banking_loan_source.sp_process_loan_payment(
-          ?, ?, CURDATE(), ?, ?, 'Paid', @code, @msg
-        )
-      `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
-      const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
-      if (outRows && outRows[0]?.code) {
-        if (outRows[0].code === 'SUCCESS') {
-          procedureSucceeded = true
-        } else {
-          return response.status(400).json({
-            error: outRows[0].msg || 'Repayment rejected by core banking stored procedure',
-            code: outRows[0].code,
-          })
-        }
+    await connection.query('SET @code = "", @msg = ""')
+    await connection.query(`
+      CALL banking_loan_source.sp_process_loan_payment(
+        ?, ?, CURDATE(), ?, ?, 'Paid', @code, @msg
+      )
+    `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
+    const [outRows] = await connection.query('SELECT @code AS code, @msg AS msg')
+    
+    if (outRows && outRows[0]?.code) {
+      if (outRows[0].code !== 'SUCCESS') {
+        return response.status(400).json({
+          error: outRows[0].msg || 'Repayment rejected by core banking stored procedure',
+          code: outRows[0].code,
+          activeRole: holder.activeRole || 'default_admin',
+        })
       }
-    } catch (spErr) {
-      console.warn('sp_process_loan_payment invocation exception, falling back to direct insert:', spErr.message)
-    }
-
-    if (!procedureSucceeded) {
-      await connection.query(`
-        INSERT INTO banking_loan_source.loan_payments
-          (payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status)
-        VALUES (?, ?, CURDATE(), ?, ?, 'Paid')
-      `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
     }
 
     // Record audit trail entry for ADBMS compliance logging
@@ -897,22 +943,37 @@ app.post('/api/customer/loans/pay', async (request, response) => {
       await connection.query(`
         INSERT INTO banking_loan_source.loan_audit_log
           (loan_id, action_type, old_status, new_status, old_amount, new_amount, notes, modified_by)
-        VALUES (?, 'REPAYMENT', 'Active', 'Active', NULL, ?, ?, 'web_customer_portal')
-      `, [targetLoanId, parsedAmount, `Installment #${newPaymentId} of LKR ${parsedAmount.toLocaleString()} paid via ${paymentMethod || 'Online Transfer'}`])
+        VALUES (?, 'REPAYMENT', 'Active', 'Active', NULL, ?, ?, ?)
+      `, [
+        targetLoanId,
+        parsedAmount,
+        `Installment #${newPaymentId} of LKR ${parsedAmount.toLocaleString()} paid via ${paymentMethod || 'Online Transfer'}`,
+        holder.activeRole || 'role_loan_officer'
+      ])
     } catch (auditErr) {
-      console.warn('Audit log write error:', auditErr.message)
+      // In strict RBAC, loan_audit_log insert is permitted to managers/triggers; failure here won't abort successful payment
+      console.warn('Optional audit log write notice:', auditErr.message)
     }
 
     response.json({
       success: true,
       paymentId: newPaymentId,
       receiptNo: `RCP-${new Date().getFullYear()}-${newPaymentId}`,
-      message: 'Installment payment recorded and posted successfully!',
+      message: 'Installment payment recorded and posted successfully with InnoDB FOR UPDATE row lock!',
+      activeRole: holder.activeRole || 'default_admin',
     })
   } catch (error) {
+    if (error.code === 'ER_TABLEACCESS_DENIED_ERROR' || error.code === 'ER_PROCACCESS_DENIED_ERROR') {
+      return response.status(403).json({
+        success: false,
+        error: `MySQL Database Access Denied for role '${holder.activeRole}': ${error.message}`,
+        code: error.code,
+        enforcedBy: 'MySQL 8.0 RBAC Engine',
+      })
+    }
     handleError(response, error)
   } finally {
-    connection.release()
+    await releaseRoleConnection(holder)
   }
 })
 
@@ -938,9 +999,11 @@ app.get('/api/customer/loans/applications', async (request, response) => {
 // ADBMS LIVE PLAYGROUND & EXECUTION CONSOLE
 // ==========================================
 app.post('/api/customer/loans/adbms/execute-procedure', async (request, response) => {
-  const connection = await pool.getConnection()
+  const requestedRole = request.headers['x-database-role'] || request.body.role
+  const holder = await getRoleConnection(requestedRole)
+  const connection = holder.connection
+  const start = performance.now()
   try {
-    const start = performance.now()
     const procedure = request.body.procedure
     const params = request.body.params || request.body || {}
 
@@ -965,6 +1028,7 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       return response.json({
         success: true,
         procedure: 'sp_process_loan_payment',
+        activeRole: holder.activeRole || 'default_admin',
         sqlExecuted: sql,
         statusCode: outRows[0]?.code || 'UNKNOWN',
         statusMessage: outRows[0]?.msg || 'Execution completed',
@@ -997,6 +1061,7 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       return response.json({
         success: true,
         procedure: 'sp_disburse_new_loan',
+        activeRole: holder.activeRole || 'default_admin',
         sqlExecuted: sql,
         generatedLoanId: loanId,
         statusCode: outRows[0]?.code || 'UNKNOWN',
@@ -1023,6 +1088,7 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       return response.json({
         success: true,
         procedure: 'sp_restructure_loan',
+        activeRole: holder.activeRole || 'default_admin',
         sqlExecuted: sql,
         statusCode: outRows[0]?.code || 'UNKNOWN',
         statusMessage: outRows[0]?.msg || 'Execution completed',
@@ -1189,6 +1255,7 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       return response.json({
         success: true,
         procedure: 'sp_underwrite_loan_application',
+        activeRole: holder.activeRole || 'default_admin',
         sqlExecuted: sql,
         statusCode: outRows[0]?.decision || 'UNKNOWN',
         statusMessage: outRows[0]?.reason || 'Underwriting completed',
@@ -1203,13 +1270,25 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
     }
   } catch (error) {
     const execTime = (performance.now() - start).toFixed(2)
+    if (error.code === 'ER_TABLEACCESS_DENIED_ERROR' || error.code === 'ER_PROCACCESS_DENIED_ERROR') {
+      return response.status(403).json({
+        success: false,
+        statusCode: 'RBAC_ACCESS_DENIED',
+        error: `MySQL Database Access Denied for role '${holder.activeRole}': Separation of duties policy enforced. ${error.message}`,
+        code: error.code,
+        activeRole: holder.activeRole,
+        enforcedBy: 'MySQL 8.0 Database Security Engine (RBAC)',
+        executionTimeMs: execTime,
+        transactionStatus: 'DENIED_BY_MYSQL_RBAC',
+      })
+    }
     response.status(500).json({
       error: error.message,
       executionTimeMs: execTime,
       transactionStatus: 'ROLLED_BACK',
     })
   } finally {
-    connection.release()
+    await releaseRoleConnection(holder)
   }
 })
 
@@ -1237,6 +1316,8 @@ app.get('/api/customer/loans/adbms/explain-analyze', async (request, response) =
 
 app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) => {
   const start = performance.now()
+  const requestedRole = request.headers['x-database-role']
+  const holder = await getRoleConnection(requestedRole)
   try {
     const { viewName } = request.params
     const allowedViews = [
@@ -1251,12 +1332,13 @@ app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) =
       return response.status(400).json({ error: `Unsupported view: ${viewName}` })
     }
 
-    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
+    const [rows] = await holder.connection.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
     const execTime = (performance.now() - start).toFixed(2)
 
     response.json({
       success: true,
       viewName,
+      activeRole: holder.activeRole || 'default_admin',
       sqlExecuted: `SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`,
       rowCount: rows.length,
       data: rows,
@@ -1266,18 +1348,34 @@ app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) =
     })
   } catch (error) {
     const execTime = (performance.now() - start).toFixed(2)
+    if (error.code === 'ER_TABLEACCESS_DENIED_ERROR' || error.code === 'ER_PROCACCESS_DENIED_ERROR') {
+      return response.status(403).json({
+        success: false,
+        statusCode: 'RBAC_ACCESS_DENIED',
+        error: `MySQL Database Access Denied for role '${holder.activeRole}': ${error.message}`,
+        code: error.code,
+        activeRole: holder.activeRole,
+        enforcedBy: 'MySQL 8.0 RBAC Engine',
+        executionTimeMs: execTime,
+      })
+    }
     response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  } finally {
+    await releaseRoleConnection(holder)
   }
 })
 
 app.get('/api/customer/loans/adbms/audit-log', async (request, response) => {
   const start = performance.now()
+  const requestedRole = request.headers['x-database-role']
+  const holder = await getRoleConnection(requestedRole)
   try {
-    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.loan_audit_log ORDER BY audit_id DESC LIMIT 30;`)
+    const [rows] = await holder.connection.query(`SELECT * FROM banking_loan_source.loan_audit_log ORDER BY audit_id DESC LIMIT 30;`)
     const execTime = (performance.now() - start).toFixed(2)
 
     response.json({
       success: true,
+      activeRole: holder.activeRole || 'default_admin',
       sqlExecuted: `SELECT * FROM banking_loan_source.loan_audit_log ORDER BY audit_id DESC LIMIT 30;`,
       rowCount: rows.length,
       data: rows,
@@ -1287,7 +1385,20 @@ app.get('/api/customer/loans/adbms/audit-log', async (request, response) => {
     })
   } catch (error) {
     const execTime = (performance.now() - start).toFixed(2)
+    if (error.code === 'ER_TABLEACCESS_DENIED_ERROR' || error.code === 'ER_PROCACCESS_DENIED_ERROR') {
+      return response.status(403).json({
+        success: false,
+        statusCode: 'RBAC_ACCESS_DENIED',
+        error: `MySQL Database Access Denied for role '${holder.activeRole}': ${error.message}`,
+        code: error.code,
+        activeRole: holder.activeRole,
+        enforcedBy: 'MySQL 8.0 RBAC Engine',
+        executionTimeMs: execTime,
+      })
+    }
     response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  } finally {
+    await releaseRoleConnection(holder)
   }
 })
 
