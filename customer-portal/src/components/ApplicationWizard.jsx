@@ -421,14 +421,24 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
               </div>
 
               <div className="form-group">
-                <label>Nominal Annual Interest Benchmark (%)</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ margin: 0 }}>Nominal Annual Interest Benchmark (%)</label>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.35)', padding: '2px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    🔒 Bank Policy Locked
+                  </span>
+                </div>
                 <input 
                   type="number" 
                   name="interestRate"
                   step="0.01"
                   value={formData.interestRate}
-                  onChange={handleChange}
+                  readOnly
+                  style={{ background: 'rgba(15, 23, 42, 0.65)', cursor: 'not-allowed', color: '#93c5fd', fontWeight: 'bold', border: '1px solid rgba(148, 163, 184, 0.2)' }}
+                  title="Institutional lending rate governed by Asset-Liability Committee (ALCO) & Product Catalog. Cannot be altered by applicants."
                 />
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+                  Contractual rate fixed by Credit Committee for {formData.loanType} facilities.
+                </span>
               </div>
 
               <div className="form-group full">
