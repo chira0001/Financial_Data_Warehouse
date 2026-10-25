@@ -195,7 +195,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('procedures'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap' }}
           >
-            ⚡ Procedures (ACID)
+            ⚙️ Procedures (ACID)
           </button>
           <button
             type="button"
@@ -471,7 +471,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                   disabled={loading}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 18px' }}
                 >
-                  {loading ? 'Executing in MySQL Engine...' : '⚡ Execute Procedure via MySQL Engine'}
+                  {loading ? 'Executing in MySQL Engine...' : 'Execute Procedure via MySQL Engine'}
                 </button>
               </div>
             </form>
@@ -576,7 +576,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                   disabled={loading}
                   style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 18px' }}
                 >
-                  {loading ? 'Executing UDF...' : '⚡ Execute UDF via MySQL Engine'}
+                  {loading ? 'Executing UDF...' : 'Execute UDF via MySQL Engine'}
                 </button>
               </div>
             </form>
@@ -687,7 +687,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>⚡</span>
+                  <span>⚙️</span>
                   <span>Query Optimization & Composite Index Benchmark (EXPLAIN ANALYZE)</span>
                 </span>
                 <button
@@ -705,7 +705,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                     fontWeight: '600'
                   }}
                 >
-                  {explainLoading ? 'Evaluating Plan...' : '⚡ Run EXPLAIN ANALYZE on MySQL Optimizer'}
+                  {explainLoading ? 'Evaluating Plan...' : 'Run EXPLAIN ANALYZE on MySQL Optimizer'}
                 </button>
               </div>
               <div style={{ fontSize: '0.74rem', color: '#94a3b8', marginBottom: '8px' }}>

@@ -291,7 +291,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   disabled={loading}
                   style={{ width: '100%', padding: '10px' }}
                 >
-                  {loading ? 'Posting to MySQL...' : '⚡ Post Installment via Stored Procedure'}
+                  {loading ? 'Posting to MySQL...' : 'Post Installment via Stored Procedure'}
                 </button>
               </form>
             </div>
@@ -473,7 +473,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                               }}
                               style={{ fontSize: '0.72rem', padding: '4px 10px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)', boxShadow: '0 2px 8px rgba(147, 51, 234, 0.3)' }}
                             >
-                              ⚡ Underwrite & Approve
+                              Underwrite & Approve
                             </button>
                           ) : (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -576,7 +576,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   disabled={loading}
                   style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)' }}
                 >
-                  {loading ? 'Evaluating in MySQL...' : '⚡ Underwrite & Disburse Facility (sp_underwrite)'}
+                  {loading ? 'Evaluating in MySQL...' : 'Underwrite & Disburse Facility (sp_underwrite)'}
                 </button>
               </form>
             </div>
@@ -676,7 +676,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   disabled={loading}
                   style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)' }}
                 >
-                  {loading ? 'Executing Restructure in MySQL...' : '⚡ Execute Restructure & Commit Transaction (sp_restructure)'}
+                  {loading ? 'Executing Restructure in MySQL...' : 'Execute Restructure & Commit Transaction (sp_restructure)'}
                 </button>
               </form>
             </div>

@@ -200,7 +200,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                 {data.application.decision_notes || 'Application queued in MySQL database waiting for Credit Committee authorization.'}
                 <br />
                 <span style={{ color: '#fbbf24', fontSize: '0.8rem', display: 'inline-block', marginTop: '6px' }}>
-                  To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"⚡ Underwrite & Approve"</strong> in the Live Underwriting Worklist.
+                  To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"Underwrite & Approve"</strong> in the Live Underwriting Worklist.
                 </span>
               </p>
 
