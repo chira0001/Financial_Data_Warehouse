@@ -227,7 +227,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('team'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap', borderColor: '#3b82f6', color: '#93c5fd' }}
           >
-            👥 5-Member Team Roles
+            👥 Subsystem Architecture
           </button>
         </div>
 
@@ -809,10 +809,10 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           <div>
             <div style={{ marginBottom: '14px' }}>
               <h4 style={{ margin: '0 0 4px', color: '#f8fafc', fontSize: '1rem' }}>
-                5-Member Balanced Full-Stack & ADBMS Core Deliverables
+                Retail Banking Loan Subsystem Architecture
               </h4>
               <p style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
-                Equal technical distribution across the Retail Banking Loan & Credit Management Subsystem (1 Procedure + 1 UDF + 1 Trigger + 1 View + 1 Index + 1 UI Screen per member)
+                Modular engineering architecture, transaction pipelines, and database routines across functional banking domains
               </p>
             </div>
 
