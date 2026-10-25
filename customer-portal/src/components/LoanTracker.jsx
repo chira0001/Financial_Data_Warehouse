@@ -107,7 +107,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
         <div className="search-box">
           <input 
             type="text" 
-            placeholder="Enter Facility Account ID (e.g. 2001, 1001, 1005) or Customer CIF (e.g. C0001)..."
+            placeholder="Enter Facility Account ID (e.g. 2001, 1001, 1005) or Customer ID (e.g. C0001)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -118,9 +118,9 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
           </button>
         </div>
 
-        {/* Quick Demo Facilities Selector */}
+        {/* Sample Active Account Lookup */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '24px' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Quick Facilities:</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Sample Facility Accounts:</span>
           {quickDemoFacilities.map((f) => (
             <button
               key={f.id}
@@ -150,7 +150,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               <div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.8rem', color: '#fde68a', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Application Reference: #{data.application.application_id} • Borrower CIF: {data.application.customer_code}
+                    Application Reference: #{data.application.application_id} • Customer ID: {data.application.customer_code}
                   </span>
                   <span style={{ fontSize: '0.72rem', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
                     🟡 {data.application.approval_status} Underwriting Review
@@ -200,7 +200,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                 {data.application.decision_notes || 'Application queued in MySQL database waiting for Credit Committee authorization.'}
                 <br />
                 <span style={{ color: '#fbbf24', fontSize: '0.8rem', display: 'inline-block', marginTop: '6px' }}>
-                  To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"⚡ Underwrite & Approve"</strong> in the Live Underwriting Worklist.
+                  To disburse this loan into the core ledger, switch to <strong>"🟣 Staff: Loan Manager"</strong> in the top navbar and click <strong>"Underwrite & Approve"</strong> in the Live Underwriting Worklist.
                 </span>
               </p>
 
@@ -261,7 +261,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                   </span>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1' }}>
-                  Borrower: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> ({data.application.customer_code}) • Decision: <strong>{data.application.decision_notes || 'Approved by Credit Committee'}</strong> • Executed via ADBMS <code>sp_underwrite_loan_application</code> & <code>sp_disburse_new_loan</code>
+                  Borrower: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> ({data.application.customer_code}) • Decision: <strong>{data.application.decision_notes || 'Approved by Credit Committee'}</strong> • Sanctioned by Credit Committee and disbursed into Core Banking Ledger.
                 </p>
               </div>
               <div style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(15, 23, 42, 0.7)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
@@ -278,7 +278,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               <div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Facility Account: #{loan.loan_id} • Borrower CIF: C{String(loan.customer_id).padStart(4, '0')}
+                    Facility Account: #{loan.loan_id} • Customer ID: C{String(loan.customer_id).padStart(4, '0')}
                   </span>
                   {data.application && (
                     <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.2)', color: '#d8b4fe', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>

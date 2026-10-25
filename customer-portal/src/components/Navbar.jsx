@@ -1,5 +1,5 @@
 import React from 'react'
-import { BankIcon, ArrowRightIcon, ExternalLinkIcon } from './Icons'
+import { BankIcon, ArrowRightIcon, ExternalLinkIcon, DatabaseIcon } from './Icons'
 
 export default function Navbar({ activeTab, setActiveTab, onOpenConsole, currentRole, setCurrentRole }) {
   return (
@@ -111,10 +111,10 @@ export default function Navbar({ activeTab, setActiveTab, onOpenConsole, current
             type="button"
             className="btn-secondary"
             onClick={onOpenConsole}
-            style={{ borderColor: 'rgba(59, 130, 246, 0.5)', background: 'rgba(59, 130, 246, 0.12)', color: '#93c5fd', fontWeight: '600' }}
+            style={{ borderColor: 'rgba(59, 130, 246, 0.5)', background: 'rgba(59, 130, 246, 0.12)', color: '#93c5fd', fontWeight: '600', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             title="Open Interactive ADBMS Stored Procedure & Function Console"
           >
-            <span style={{ color: '#60a5fa' }}>⚡</span>
+            <DatabaseIcon size={14} style={{ color: '#60a5fa' }} />
             <span>ADBMS Console</span>
           </button>
           {currentRole === 'customer' && (

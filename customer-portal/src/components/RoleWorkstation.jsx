@@ -349,7 +349,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   disabled={loading}
                   style={{ width: '100%', padding: '10px' }}
                 >
-                  {loading ? 'Posting to MySQL...' : '⚡ Post Installment via Stored Procedure'}
+                  {loading ? 'Posting to MySQL...' : 'Post Installment via Stored Procedure'}
                 </button>
               </form>
             </div>
@@ -545,7 +545,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                               }}
                               style={{ fontSize: '0.72rem', padding: '4px 10px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)', boxShadow: '0 2px 8px rgba(147, 51, 234, 0.3)' }}
                             >
-                              ⚡ Underwrite & Approve
+                              Underwrite & Approve
                             </button>
                           ) : (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
@@ -575,9 +575,9 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-            {/* Underwriting Card */}
+            {/* 1. Underwriting Card */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#d8b4fe' }}>
                   ⚖️ Credit Underwriting & Application Decisioning
                 </h3>
@@ -585,9 +585,51 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   sp_underwrite
                 </span>
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 14px' }}>
-                Evaluates applicant credit score (threshold 620) and pledged collateral coverage to render automated approval or rejection notes.
-              </p>
+
+              {/* Step-by-Step Educational Guide */}
+              <div style={{ background: 'rgba(88, 28, 135, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#e9d5ff', marginBottom: '14px', lineHeight: '1.5' }}>
+                <strong>💡 What happens here:</strong> When an online loan application is submitted, the Credit Manager assesses it. If the Credit Score is <strong>≥ 620</strong>, the procedure marks it <strong>APPROVED</strong> and automatically triggers <code>sp_disburse_new_loan</code> to generate an active Loan Account in the <code>loans</code> table and disburse the funds. If score &lt; 620, it is <strong>REJECTED</strong>.
+              </div>
+
+              {/* Quick Select Pending Applications */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
+                  Quick Select Pending Application from Queue:
+                </label>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {applications.filter(a => a.approval_status === 'Pending').slice(0, 4).map(app => (
+                    <button
+                      key={app.application_id}
+                      type="button"
+                      className={`preset-pill ${underwriteAppId === String(app.application_id) ? 'active' : ''}`}
+                      style={{ fontSize: '0.74rem', padding: '3px 8px' }}
+                      onClick={() => setUnderwriteAppId(String(app.application_id))}
+                    >
+                      #{app.application_id} ({app.customer_name?.split(' ')[0] || 'App'} - Score: {app.credit_score})
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Selected Application Preview */}
+              {(() => {
+                const sel = applications.find(a => String(a.application_id) === String(underwriteAppId))
+                if (!sel) return null
+                const willApprove = sel.credit_score >= 620
+                return (
+                  <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: willApprove ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid rgba(239, 68, 68, 0.4)', borderRadius: '8px', padding: '10px 14px', marginBottom: '14px', fontSize: '0.78rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <span style={{ color: '#cbd5e1' }}>Applicant: <strong>{sel.customer_name}</strong> ({sel.customer_code})</span>
+                      <span style={{ fontWeight: 'bold', color: willApprove ? '#4ade80' : '#f87171' }}>
+                        {willApprove ? '✓ Will be APPROVED' : '⚠️ Will be REJECTED (< 620)'}
+                      </span>
+                    </div>
+                    <div style={{ color: '#94a3b8', fontSize: '0.74rem' }}>
+                      Facility: LKR {Number(sel.applied_amount).toLocaleString()} ({sel.product_id}) • Credit Score: <strong style={{ color: willApprove ? '#4ade80' : '#f87171' }}>{sel.credit_score}/850</strong> • Status: <strong style={{ color: '#fbbf24' }}>{sel.approval_status}</strong>
+                    </div>
+                  </div>
+                )
+              })()}
 
               <form onSubmit={handleUnderwriteApp}>
                 <div style={{ marginBottom: '12px' }}>
@@ -606,14 +648,14 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   disabled={loading}
                   style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)' }}
                 >
-                  {loading ? 'Evaluating in MySQL...' : '⚡ Underwrite & Render Credit Committee Decision'}
+                  {loading ? 'Evaluating in MySQL...' : 'Underwrite & Disburse Facility (sp_underwrite)'}
                 </button>
               </form>
             </div>
 
-            {/* Restructuring Card */}
+            {/* 2. Restructuring Card */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#d8b4fe' }}>
                   🔄 Facility Restructuring (Distressed Relief)
                 </h3>
@@ -621,14 +663,45 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   sp_restructure
                 </span>
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0 0 14px' }}>
-                Reschedules struggling facilities past maturity by granting interest concessions and extending contract maturity dates.
-              </p>
+
+              {/* Step-by-Step Educational Guide */}
+              <div style={{ background: 'rgba(88, 28, 135, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#e9d5ff', marginBottom: '14px', lineHeight: '1.5' }}>
+                <strong>💡 What happens here:</strong> When a borrower has trouble paying due to hardship, the bank prevents default by <strong>lowering the interest rate</strong> and <strong>extending the loan maturity</strong>. Executes <code>sp_restructure_loan</code>, updates <code>loans</code> table, and records the justification in <code>loan_audit_log</code>.
+              </div>
+
+              {/* Sample Struggling / Distressed Loans Presets */}
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
+                  Select Sample Distressed Facility to Restructure:
+                </label>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  {[
+                    { id: '1005', label: 'Loan #1005 (Commercial Overdue - 11% p.a.)', rate: '6.5', date: '2030-12-31', reason: 'Hardship relief for struggling SME business' },
+                    { id: '2008', label: 'Loan #2008 (Personal Facility - 12.5% p.a.)', rate: '7.25', date: '2029-12-31', reason: 'Interest relief approved by Credit Committee' },
+                    { id: '2001', label: 'Loan #2001 (Prime Housing - 8.1% p.a.)', rate: '5.5', date: '2035-12-31', reason: 'Residential loan tenor extension relief' },
+                  ].map(item => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={`preset-pill ${restructureLoanId === item.id ? 'active' : ''}`}
+                      style={{ fontSize: '0.74rem', padding: '3px 8px' }}
+                      onClick={() => {
+                        setRestructureLoanId(item.id)
+                        setRestructureRate(item.rate)
+                        setRestructureDate(item.date)
+                        setRestructureReason(item.reason)
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <form onSubmit={handleRestructureLoan}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                   <div>
-                    <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Loan ID</label>
+                    <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Target Loan ID to Restructure</label>
                     <input
                       type="number"
                       className="form-input"
@@ -638,7 +711,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                     />
                   </div>
                   <div>
-                    <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Concession Rate (%)</label>
+                    <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Concession Interest Rate (% p.a.)</label>
                     <input
                       type="number"
                       step="0.1"
@@ -650,7 +723,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   </div>
                 </div>
                 <div style={{ marginBottom: '10px' }}>
-                  <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Extended Maturity Date</label>
+                  <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Extended Maturity End Date</label>
                   <input
                     type="date"
                     className="form-input"
@@ -660,7 +733,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   />
                 </div>
                 <div style={{ marginBottom: '14px' }}>
-                  <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Committee Justification Reason</label>
+                  <label style={{ fontSize: '0.72rem', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>Credit Committee Justification (Logged to loan_audit_log)</label>
                   <input
                     type="text"
                     className="form-input"
@@ -675,7 +748,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   disabled={loading}
                   style={{ width: '100%', padding: '10px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)' }}
                 >
-                  {loading ? 'Executing Restructure...' : '⚡ Execute Restructure & Log Audit Trail'}
+                  {loading ? 'Executing Restructure in MySQL...' : 'Execute Restructure & Commit Transaction (sp_restructure)'}
                 </button>
               </form>
             </div>
