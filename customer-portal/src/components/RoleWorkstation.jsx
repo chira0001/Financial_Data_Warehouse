@@ -27,6 +27,13 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
   const [auditLogs, setAuditLogs] = useState([])
   const [overdueQueue, setOverdueQueue] = useState([])
 
+  const getDbRole = (role) => {
+    if (role === 'officer') return 'role_loan_officer'
+    if (role === 'manager') return 'role_loan_manager'
+    if (role === 'auditor') return 'role_loan_auditor'
+    return 'role_loan_officer'
+  }
+
   // Load relevant data on mount and role change
   useEffect(() => {
     loadRoleData()
@@ -36,21 +43,26 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     setLoading(true)
     setError('')
     setFeedback(null)
+    const dbRole = getDbRole(currentRole)
     try {
       if (currentRole === 'officer') {
-        const res = await loanApi.getView('vw_loan_officer_active_facilities')
-        setActiveFacilities(res.data || [])
+        const res = await loanApi.getView('vw_loan_officer_active_facilities', dbRole)
+        const facilities = res.data || []
+        setActiveFacilities(facilities)
+        if (facilities.length > 0) {
+          setOfficerLoanId(String(facilities[0].loan_id))
+        }
       } else if (currentRole === 'manager') {
         const [res, appRes] = await Promise.all([
-          loanApi.getView('vw_loan_portfolio_health_metrics'),
+          loanApi.getView('vw_loan_portfolio_health_metrics', dbRole),
           loanApi.getApplications(),
         ])
         setPortfolioMetrics(res.data || [])
         setApplications(appRes.applications || [])
       } else if (currentRole === 'auditor') {
         const [aRes, qRes] = await Promise.all([
-          loanApi.getAuditLog(),
-          loanApi.getView('vw_overdue_collections_queue'),
+          loanApi.getAuditLog(dbRole),
+          loanApi.getView('vw_overdue_collections_queue', dbRole),
         ])
         setAuditLogs(aRes.data || [])
         setOverdueQueue(qRes.data || [])
@@ -68,20 +80,51 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     setLoading(true)
     setError('')
     setFeedback(null)
+    const dbRole = getDbRole(currentRole)
     try {
       const res = await loanApi.pay({
         loanId: Number(officerLoanId),
         paymentAmount: Number(officerAmount),
         paymentMethod: officerMethod,
-      })
+      }, dbRole)
       setFeedback({
         type: 'SUCCESS',
         title: 'Payment Successfully Processed via sp_process_loan_payment',
-        message: `Installment of LKR ${Number(officerAmount).toLocaleString()} recorded with InnoDB FOR UPDATE row lock. Voucher: ${res.receiptNumber || 'RCP-' + res.paymentId}`,
+        message: `Installment of LKR ${Number(officerAmount).toLocaleString()} recorded with InnoDB FOR UPDATE row lock under MySQL role ${dbRole}. Voucher: ${res.receiptNumber || 'RCP-' + res.paymentId}`,
       })
       loadRoleData()
     } catch (err) {
       setError(err.message || 'Payment processing failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Officer Action: Test Unauthorized Action to prove MySQL Engine RBAC Denial
+  const handleTestRestrictedAction = async (actionType) => {
+    setLoading(true)
+    setError('')
+    setFeedback(null)
+    try {
+      if (actionType === 'disburse') {
+        await loanApi.executeProcedure({
+          procedure: 'sp_disburse_new_loan',
+          params: { customerId: 10, amount: 500000 },
+        }, 'role_loan_officer')
+        setError('Unexpected: MySQL allowed disbursement under role_loan_officer!')
+      } else if (actionType === 'restructure') {
+        await loanApi.executeProcedure({
+          procedure: 'sp_restructure_loan',
+          params: { loanId: 2008, newInterestRate: 5.0 },
+        }, 'role_loan_officer')
+        setError('Unexpected: MySQL allowed loan restructuring under role_loan_officer!')
+      }
+    } catch (err) {
+      setFeedback({
+        type: 'RBAC_DENIED',
+        title: 'MySQL 8.0 Engine RBAC Access Denied (Separation of Duties Verified)',
+        message: err.message,
+      })
     } finally {
       setLoading(false)
     }
@@ -94,6 +137,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     setLoading(true)
     setError('')
     setFeedback(null)
+    const dbRole = getDbRole(currentRole)
     try {
       const res = await loanApi.executeProcedure({
         procedure: 'sp_underwrite_loan_application',
@@ -101,7 +145,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           applicationId: Number(targetAppId),
           officerId: 101,
         },
-      })
+      }, dbRole)
       const isApproved = res.statusCode === 'APPROVED'
       setFeedback({
         type: isApproved ? 'SUCCESS' : 'WARNING',
@@ -124,6 +168,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     setLoading(true)
     setError('')
     setFeedback(null)
+    const dbRole = getDbRole(currentRole)
     try {
       const res = await loanApi.executeProcedure({
         procedure: 'sp_restructure_loan',
@@ -133,7 +178,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           newEndDate: restructureDate,
           officerReason: restructureReason,
         },
-      })
+      }, dbRole)
       setFeedback({
         type: 'SUCCESS',
         title: `Loan #${restructureLoanId} Successfully Restructured`,
@@ -211,9 +256,22 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
 
       {/* Global Alerts */}
       {feedback && (
-        <div style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid var(--emerald-500)', color: '#6ee7b7', padding: '14px 18px', borderRadius: '8px', marginBottom: '18px', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <div style={{
+          background: feedback.type === 'RBAC_DENIED' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(16, 185, 129, 0.15)',
+          border: `1px solid ${feedback.type === 'RBAC_DENIED' ? '#ef4444' : 'var(--emerald-500)'}`,
+          color: feedback.type === 'RBAC_DENIED' ? '#fca5a5' : '#6ee7b7',
+          padding: '14px 18px',
+          borderRadius: '8px',
+          marginBottom: '18px',
+          fontSize: '0.85rem',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px'
+        }}>
           <div>
-            <strong>✓ {feedback.title}:</strong> {feedback.message}
+            <strong>{feedback.type === 'RBAC_DENIED' ? '🛡️ ' : '✓ '}{feedback.title}:</strong> {feedback.message}
           </div>
           {feedback.disbursedLoanId && onTrackFacility && (
             <button
@@ -307,11 +365,25 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   Under Central Bank separation-of-duties guidelines, loan officers cannot disburse facilities or modify interest rates.
                 </p>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button type="button" className="btn-secondary" disabled style={{ opacity: 0.5, cursor: 'not-allowed', fontSize: '0.75rem' }}>
-                    🔒 sp_disburse_new_loan (Locked)
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => handleTestRestrictedAction('disburse')}
+                    disabled={loading}
+                    style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontSize: '0.74rem', cursor: 'pointer' }}
+                    title="Execute sp_disburse_new_loan as role_loan_officer to trigger and demonstrate real MySQL Database RBAC rejection"
+                  >
+                    ⚡ Test sp_disburse_new_loan (Trigger RBAC Deny)
                   </button>
-                  <button type="button" className="btn-secondary" disabled style={{ opacity: 0.5, cursor: 'not-allowed', fontSize: '0.75rem' }}>
-                    🔒 sp_restructure_loan (Locked)
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => handleTestRestrictedAction('restructure')}
+                    disabled={loading}
+                    style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontSize: '0.74rem', cursor: 'pointer' }}
+                    title="Execute sp_restructure_loan as role_loan_officer to trigger and demonstrate real MySQL Database RBAC rejection"
+                  >
+                    ⚡ Test sp_restructure_loan (Trigger RBAC Deny)
                   </button>
                 </div>
               </div>
