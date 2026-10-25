@@ -87,34 +87,16 @@ export const loanApi = {
   },
 
   async apply(applicationData) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/customer/loans/apply`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(applicationData),
-      })
-      if (!res.ok) throw new Error('Application failed')
-      return await res.json()
-    } catch {
-      // Local fallback simulator
-      const mockId = Math.floor(Math.random() * 900) + 2100
-      return {
-        success: true,
-        loanId: mockId,
-        referenceNo: `LN-${new Date().getFullYear()}-${mockId}`,
-        message: 'Loan facility pre-approved and submitted successfully (Simulated mode)',
-        details: {
-          loanId: mockId,
-          customerName: applicationData.customerName || 'Valued Customer',
-          loanType: applicationData.loanType,
-          loanAmount: Number(applicationData.loanAmount),
-          interestRate: Number(applicationData.interestRate),
-          tenureMonths: Number(applicationData.tenureMonths),
-          status: 'Active',
-          startDate: new Date().toISOString().split('T')[0],
-        },
-      }
+    const res = await fetch(`${BASE_URL}/api/customer/loans/apply`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(applicationData),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Loan application submission rejected by core banking server.')
     }
+    return await res.json()
   },
 
   async lookup(query) {
@@ -127,23 +109,16 @@ export const loanApi = {
   },
 
   async pay(paymentData) {
-    try {
-      const res = await fetch(`${BASE_URL}/api/customer/loans/pay`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paymentData),
-      })
-      if (!res.ok) throw new Error('Payment failed')
-      return await res.json()
-    } catch {
-      const mockPayId = Math.floor(Math.random() * 900) + 3100
-      return {
-        success: true,
-        paymentId: mockPayId,
-        receiptNo: `RCP-${new Date().getFullYear()}-${mockPayId}`,
-        message: 'Installment payment recorded successfully (Simulated mode)',
-      }
+    const res = await fetch(`${BASE_URL}/api/customer/loans/pay`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData),
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.error || 'Payment transaction rejected by core ledger.')
     }
+    return await res.json()
   },
 
   async executeProcedure(payload) {

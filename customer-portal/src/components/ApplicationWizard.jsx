@@ -350,10 +350,10 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
             </button>
           </div>
 
-          {/* RBAC Governance Notice */}
+          {/* Banking Governance Notice */}
           {isPending && (
             <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '12px 16px', maxWidth: '540px', margin: '14px auto', textAlign: 'left', fontSize: '0.82rem', color: '#fde68a' }}>
-              <strong>⚖️ Institutional RBAC Compliance:</strong> In accordance with ADBMS retail credit separation of duties, customers cannot self-disburse credit facilities. This application is now queued in the database for the <strong>Loan Manager</strong> to execute Stored Procedure <code>sp_underwrite_loan_application</code>.
+              <strong>⚖️ Credit Committee Review Notice:</strong> In accordance with statutory banking regulations and Central Bank (CBSL) guidelines, all facility applications undergo formal managerial assessment. Your application is securely recorded and queued for <strong>Credit Committee</strong> authorization.
             </div>
           )}
 

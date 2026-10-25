@@ -118,9 +118,9 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
           </button>
         </div>
 
-        {/* Quick Demo Facilities Selector */}
+        {/* Sample Active Account Lookup */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '24px' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Quick Facilities:</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Sample Facility Accounts:</span>
           {quickDemoFacilities.map((f) => (
             <button
               key={f.id}
@@ -261,7 +261,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                   </span>
                 </div>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: '#cbd5e1' }}>
-                  Borrower: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> ({data.application.customer_code}) • Decision: <strong>{data.application.decision_notes || 'Approved by Credit Committee'}</strong> • Executed via ADBMS <code>sp_underwrite_loan_application</code> & <code>sp_disburse_new_loan</code>
+                  Borrower: <strong style={{ color: '#f8fafc' }}>{data.application.customer_name}</strong> ({data.application.customer_code}) • Decision: <strong>{data.application.decision_notes || 'Approved by Credit Committee'}</strong> • Sanctioned by Credit Committee and disbursed into Core Banking Ledger.
                 </p>
               </div>
               <div style={{ fontSize: '0.75rem', color: '#94a3b8', background: 'rgba(15, 23, 42, 0.7)', padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(148, 163, 184, 0.2)' }}>
