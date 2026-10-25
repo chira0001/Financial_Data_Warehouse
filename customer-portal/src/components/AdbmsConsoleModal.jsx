@@ -795,53 +795,54 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
               <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 01</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Credit Schema & Relational Modeler</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Relational Schema & Relational Views</div>
                 <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>3NF/BCNF Normalization (Loans, Customers, Branches, Payments)</li>
-                  <li>Foreign Key constraints & Referential Integrity</li>
-                  <li>5 Production Relational Views for Officers & Managers</li>
+                  <li>8 Normalized Core Tables (3NF/BCNF Schema Architecture)</li>
+                  <li>Foreign Key Constraints & Referential Integrity</li>
+                  <li>5 Production Relational Views (Portfolio Health, Active Facilities, etc.)</li>
                 </ul>
               </div>
 
               <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(16, 185, 129, 0.4)', borderRadius: '8px', padding: '14px' }}>
-                <div style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 02 (Lead DBA - Isuru)</div>
+                <div style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 02</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Transaction Management & Stored Procedures</div>
                 <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>ACID Properties (Atomicity, Consistency, Rollbacks)</li>
-                  <li>sp_process_loan_payment & automated payoff detection</li>
-                  <li>sp_disburse_new_loan & sp_restructure_loan</li>
-                  <li>SQLEXCEPTION handlers with transactional safety</li>
+                  <li>Pessimistic Concurrency Control (InnoDB FOR UPDATE Row-Locking)</li>
+                  <li>4 Core Procedures: sp_process_loan_payment, sp_disburse_new_loan</li>
+                  <li>sp_restructure_loan & sp_underwrite_loan_application</li>
+                  <li>ACID Properties, SQLEXCEPTION Handlers & Rollback Safety</li>
                 </ul>
               </div>
 
               <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 03</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>In-Engine Financial Math & Risk Algorithms</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>In-Engine Financial Math & Cursors</div>
                 <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>fn_calculate_monthly_emi financial amortization formula</li>
-                  <li>fn_loan_outstanding_balance & fn_days_overdue</li>
-                  <li>fn_loan_risk_tier multi-criteria credit scoring</li>
-                  <li>MySQL Cursors in sp_mark_overdue_facilities</li>
+                  <li>5 User Defined Functions (fn_calculate_monthly_emi amortization formula)</li>
+                  <li>fn_loan_outstanding_balance, fn_days_overdue & fn_calculate_total_interest</li>
+                  <li>fn_loan_risk_tier multi-factor credit risk scoring algorithm</li>
+                  <li>MySQL Cursors in sp_mark_overdue_facilities for batch records processing</li>
                 </ul>
               </div>
 
               <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 04</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Loan Automation, Triggers & Event Scheduler</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Active Database Automation & Triggers</div>
                 <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>trg_payments_after_insert_update_loan active trigger</li>
-                  <li>evt_daily_loan_status_check autonomous midnight cron</li>
-                  <li>Immutable loan_audit_log for regulatory compliance</li>
+                  <li>Active Database Trigger: trg_payments_after_insert_update_loan</li>
+                  <li>Autonomous Midnight Scheduled Event: evt_daily_loan_status_check</li>
+                  <li>Immutable Audit Logging (Change Data Capture into loan_audit_log)</li>
                 </ul>
               </div>
 
               <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(236, 72, 153, 0.3)', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ fontSize: '0.72rem', color: '#f472b6', fontWeight: 'bold', textTransform: 'uppercase' }}>Member 05</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Loan Security (RBAC) & Web Application Portal</div>
+                <div style={{ fontSize: '0.9rem', fontWeight: '600', color: '#f8fafc', margin: '2px 0 6px' }}>Database Security (RBAC) & Optimization</div>
                 <ul style={{ margin: 0, paddingLeft: '16px', fontSize: '0.75rem', color: '#94a3b8', lineHeight: 1.5 }}>
-                  <li>role_loan_officer, role_loan_manager, role_loan_auditor</li>
-                  <li>Online Loan Application Wizard & Real-time Tracker</li>
-                  <li>Interactive ADBMS Live Execution Terminal & UI</li>
+                  <li>Role-Based Access Control: role_loan_officer, role_loan_manager, role_loan_auditor</li>
+                  <li>Principle of Least Privilege (Separation of duties & granular grants)</li>
+                  <li>Composite Indexing & EXPLAIN ANALYZE Query Optimization Benchmark</li>
+                  <li>Subsystem Client Integration & Interactive Execution Terminal</li>
                 </ul>
               </div>
             </div>
