@@ -8,6 +8,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
   const [feedback, setFeedback] = useState(null)
   const [error, setError] = useState('')
   const [officerPaymentNotice, setOfficerPaymentNotice] = useState(null)
+  const [restructureNotice, setRestructureNotice] = useState(null)
 
   // Officer States
   const [officerLoanId, setOfficerLoanId] = useState('2008')
@@ -179,6 +180,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     e.preventDefault()
     setLoading(true)
     setError('')
+    setRestructureNotice(null)
     setFeedback(null)
     const dbRole = getDbRole(currentRole)
     try {
@@ -191,13 +193,23 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           officerReason: restructureReason,
         },
       }, dbRole)
+      if (!res.success || res.statusCode !== 'SUCCESS') {
+        throw new Error(res.statusMessage || 'The restructure was not committed.')
+      }
+      setRestructureNotice({
+        type: 'success',
+        message: `Loan #${restructureLoanId} updated to ${restructureRate}% p.a. New maturity: ${restructureDate}.`,
+      })
       setFeedback({
         type: 'SUCCESS',
         title: `Loan #${restructureLoanId} Successfully Restructured`,
         message: `${res.statusMessage} • New Rate: ${restructureRate}% • Execution: ${res.executionTimeMs} ms`,
       })
     } catch (err) {
-      setError(err.message || 'Restructuring failed')
+      setRestructureNotice({
+        type: 'error',
+        message: err.message || 'Restructuring failed. No changes were committed.',
+      })
     } finally {
       setLoading(false)
     }
@@ -781,6 +793,25 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 >
                   {loading ? 'Executing Restructure in MySQL...' : 'Execute Restructure & Commit Transaction (sp_restructure)'}
                 </button>
+                {restructureNotice && (
+                  <div
+                    role={restructureNotice.type === 'success' ? 'status' : 'alert'}
+                    aria-live={restructureNotice.type === 'success' ? 'polite' : 'assertive'}
+                    style={{
+                      marginTop: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                      background: restructureNotice.type === 'success' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(239, 68, 68, 0.14)',
+                      border: `1px solid ${restructureNotice.type === 'success' ? 'rgba(16, 185, 129, 0.55)' : 'rgba(239, 68, 68, 0.55)'}`,
+                      color: restructureNotice.type === 'success' ? '#6ee7b7' : '#fca5a5',
+                    }}
+                  >
+                    <strong>{restructureNotice.type === 'success' ? 'Restructure successful' : 'Restructure failed'}</strong>
+                    <div>{restructureNotice.message}</div>
+                  </div>
+                )}
               </form>
             </div>
           </div>
