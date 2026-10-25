@@ -793,7 +793,7 @@ input:focus, select:focus, textarea:focus {
 
 /* TRACK LOAN VIEW */
 .track-wrapper {
-  max-width: 900px;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
@@ -812,7 +812,7 @@ input:focus, select:focus, textarea:focus {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
-  padding: 32px;
+  padding: 28px;
   margin-bottom: 24px;
   box-shadow: var(--shadow-card);
 }
@@ -861,9 +861,62 @@ input:focus, select:focus, textarea:focus {
 
 .loan-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 16px;
   margin-bottom: 24px;
+}
+
+.personal-loan-metrics .metric-cell {
+  min-width: 0;
+  padding: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.personal-loan-metrics .metric-cell span {
+  display: block;
+  min-height: 2.2em;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.personal-loan-metrics .metric-cell strong {
+  display: block;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+
+.loan-security-details,
+.loan-audit-details {
+  margin: 0 0 22px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.loan-security-details > summary,
+.loan-audit-details > summary {
+  padding: 14px 16px;
+  color: var(--text-main);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.loan-security-details[open],
+.loan-audit-details[open] {
+  padding: 0 14px 14px;
+}
+
+.loan-security-details[open] > summary,
+.loan-audit-details[open] > summary {
+  margin: 0 -14px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.loan-audit-details > div {
+  margin: 0 !important;
 }
 
 .metric-cell span {

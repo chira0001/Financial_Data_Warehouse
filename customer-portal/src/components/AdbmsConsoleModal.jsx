@@ -57,7 +57,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
     } else if (activeTab === 'audit') {
       fetchAuditLogs()
     }
-  }, [activeTab, selectedView])
+  }, [activeTab, selectedView, execRole])
 
   const handleRunExplain = async () => {
     setExplainLoading(true)
@@ -128,7 +128,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
       const res = await loanApi.executeFunction({
         functionName: selectedFunc,
         params: funcParams,
-      })
+      }, execRole)
       setConsoleOutput({
         type: 'FUNCTION',
         ...res,
@@ -971,7 +971,9 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
               <div>
                 <span style={{ color: '#64748b' }}>Calculated Function Result: </span>
                 <strong style={{ color: 'var(--emerald-400)', fontSize: '1.05rem' }}>
-                  {typeof consoleOutput.result === 'number'
+                  {consoleOutput.functionName === 'fn_days_overdue'
+                    ? `${Math.trunc(Number(consoleOutput.result)).toLocaleString()} days`
+                    : typeof consoleOutput.result === 'number'
                     ? `LKR ${Number(consoleOutput.result).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                     : String(consoleOutput.result)}
                 </strong>
