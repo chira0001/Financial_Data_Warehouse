@@ -129,4 +129,5 @@ function CurrencyMix({ currencies = [] }) {
   )
 }
 
+
 export default CurrencyMix
