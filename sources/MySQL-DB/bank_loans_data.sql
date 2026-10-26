@@ -1,5 +1,3 @@
--- Seed data for the banking_loan_source database.
--- Run Bank_Loans.sql first to create the database schema.
 
 USE banking_loan_source;
 

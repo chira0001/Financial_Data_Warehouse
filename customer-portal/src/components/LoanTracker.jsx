@@ -8,7 +8,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
   const [data, setData] = useState(null)
   const [error, setError] = useState('')
 
-  // Pay Modal state
   const [payModalLoan, setPayModalLoan] = useState(null)
   const [payAmount, setPayAmount] = useState(45000)
   const [payMethod, setPayMethod] = useState('LankaPay Real-Time Transfer')
@@ -103,7 +102,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
       </div>
 
       <div className="track-wrapper">
-        {/* Search Bar */}
         <div className="search-box">
           <input 
             type="text" 
@@ -118,7 +116,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
           </button>
         </div>
 
-        {/* Sample Active Account Lookup */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center', marginBottom: '24px' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '600' }}>Sample Facility Accounts:</span>
           {quickDemoFacilities.map((f) => (
@@ -143,7 +140,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
           </div>
         )}
 
-        {/* Application Status Card (When facility is Pending Underwriting) */}
         {data && data.isApplicationOnly && data.application && (
           <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '12px', padding: '24px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
@@ -169,7 +165,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               </div>
             </div>
 
-            {/* Metrics Grid */}
             <div className="loan-metrics-grid" style={{ marginBottom: '18px' }}>
               <div className="metric-cell">
                 <span>Requested Principal</span>
@@ -193,7 +188,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               </div>
             </div>
 
-            {/* Governance Info Box */}
             <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '8px', padding: '14px 18px', fontSize: '0.84rem', color: '#fef08a' }}>
               <div style={{ fontWeight: 'bold', marginBottom: '4px' }}> Underwriting Pipeline Stage:</div>
               <p style={{ margin: 0, color: '#e2e8f0', lineHeight: '1.4' }}>
@@ -236,7 +230,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
           </div>
         )}
 
-        {/* Approved & Disbursed Application Banner (Connecting Application ID to Disbursed Loan Facility) */}
         {data && data.application && data.loans && data.loans.length > 0 && (
           <div style={{
             background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(6, 78, 59, 0.25))',
@@ -270,7 +263,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
           </div>
         )}
 
-        {/* Loan Details List */}
         {data && data.loans && data.loans.map((loan) => (
           <div key={loan.loan_id} className={`loan-detail-card ${loan.loan_type?.toLowerCase() === 'personal' ? 'loan-detail-card-personal' : ''}`}>
             <div className="loan-detail-top">
@@ -310,7 +302,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               </div>
             </div>
 
-            {/* Metrics Grid */}
             <div className={`loan-metrics-grid ${loan.loan_type?.toLowerCase() === 'personal' ? 'personal-loan-metrics' : ''}`}>
               <div className="metric-cell">
                 <span>Original loan amount</span>
@@ -338,7 +329,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
               </div>
             </div>
 
-            {/* Progress Box */}
             <div className="loan-progress-box">
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', marginBottom: '8px' }}>
                 <span style={{ color: 'var(--text-muted)' }}>Repayment progress</span>
@@ -351,9 +341,7 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
 
             <details className="loan-security-details">
               <summary>Loan security and guarantor details</summary>
-            {/* Pledged Collateral & Guarantor Security (Member 2 Domain) */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '24px' }}>
-              {/* Collateral Card */}
               <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#93c5fd' }}> Pledged Collateral Security</span>
@@ -377,7 +365,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                 )}
               </div>
 
-              {/* Guarantor Card */}
               <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '8px', padding: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#34d399' }}> Registered Guarantor</span>
@@ -406,7 +393,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
             </div>
             </details>
 
-            {/* Payments Table */}
             <div style={{ marginBottom: '28px' }}>
               <h4 style={{ fontSize: '1.02rem', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <ClockIcon size={16} />
@@ -456,7 +442,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
 
             <details className="loan-audit-details">
               <summary>View account activity and audit details</summary>
-            {/* ADBMS Compliance Audit Trail Box */}
             <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '8px', padding: '18px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                 <h4 style={{ fontSize: '0.98rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#93c5fd' }}>
@@ -516,7 +501,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
         ))}
       </div>
 
-      {/* Pay Installment Modal */}
       {payModalLoan && (
         <div className="modal-overlay">
           <div className="modal-content print-target">
@@ -532,7 +516,6 @@ export default function LoanTracker({ initialLoanId, onSwitchToManager }) {
                   Your monthly loan repayment has been registered, reconciled, and audited in the core banking ledger.
                 </p>
                 
-                {/* Official Banking Voucher */}
                 <div style={{ background: 'var(--bg-surface)', border: '1px dashed var(--emerald-500)', padding: '18px', borderRadius: 'var(--radius-sm)', textAlign: 'left', margin: '14px 0', fontSize: '0.88rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px', marginBottom: '8px' }}>
                     <span>Apex Commercial Bank PLC</span>

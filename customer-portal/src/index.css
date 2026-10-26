@@ -88,7 +88,6 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px var(--emerald-glow);
 }
 
-/* NAVBAR */
 .navbar {
   position: sticky;
   top: 0;
@@ -212,7 +211,6 @@ input:focus, select:focus, textarea:focus {
   transform: translateY(-1px);
 }
 
-/* HERO SECTION */
 .hero-section {
   padding: 70px 24px 60px;
   max-width: 1240px;
@@ -308,7 +306,6 @@ input:focus, select:focus, textarea:focus {
   margin-top: 4px;
 }
 
-/* SECTION CONTAINER */
 .section {
   max-width: 1240px;
   margin: 0 auto;
@@ -341,7 +338,6 @@ input:focus, select:focus, textarea:focus {
   font-size: 0.98rem;
 }
 
-/* PRODUCTS GRID */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -469,7 +465,6 @@ input:focus, select:focus, textarea:focus {
   flex: 1;
 }
 
-/* EMI CALCULATOR */
 .calc-wrapper {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -562,7 +557,6 @@ input:focus, select:focus, textarea:focus {
   color: var(--emerald-400);
 }
 
-/* CALCULATOR RESULT CARD */
 .calc-result-card {
   background: linear-gradient(145deg, #162039, #0d1424);
   border: 1px solid rgba(16, 185, 129, 0.3);
@@ -638,7 +632,6 @@ input:focus, select:focus, textarea:focus {
   height: 100%;
 }
 
-/* APPLICATION WIZARD */
 .app-card {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
@@ -757,7 +750,6 @@ input:focus, select:focus, textarea:focus {
   border-top: 1px solid var(--border-subtle);
 }
 
-/* SUCCESS MODAL / RECEIPT */
 .success-card {
   text-align: center;
   padding: 30px 10px;
@@ -791,7 +783,6 @@ input:focus, select:focus, textarea:focus {
   color: var(--emerald-400);
 }
 
-/* TRACK LOAN VIEW */
 .track-wrapper {
   max-width: 1080px;
   margin: 0 auto;
@@ -931,7 +922,6 @@ input:focus, select:focus, textarea:focus {
   font-family: var(--font-heading);
 }
 
-/* PAYMENTS TABLE */
 .payment-table {
   width: 100%;
   border-collapse: collapse;
@@ -953,7 +943,6 @@ input:focus, select:focus, textarea:focus {
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-/* FOOTER */
 .portal-footer {
   border-top: 1px solid var(--border-subtle);
   background: #05080f;
@@ -980,7 +969,6 @@ input:focus, select:focus, textarea:focus {
   color: var(--emerald-400);
 }
 
-/* MODAL */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -1014,7 +1002,6 @@ input:focus, select:focus, textarea:focus {
   line-height: 1;
 }
 
-/* PRINT MEDIA STYLES FOR BANKING RECEIPTS & SCHEDULES */
 @media print {
   body {
     background: #ffffff !important;
@@ -1043,7 +1030,6 @@ input:focus, select:focus, textarea:focus {
   }
 }
 
-/* RESPONSIVE DESIGN BREAKPOINTS */
 @media (max-width: 992px) {
   .nav-container {
     flex-wrap: wrap;

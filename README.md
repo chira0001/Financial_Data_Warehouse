@@ -140,7 +140,6 @@ The warehouse API on port `4000` is dedicated to the visualization dashboard. Th
 ```powershell
 cd customer-portal-backend
 Copy-Item .env.example .env
-# Set MYSQL_PASSWORD and any other local connection values in .env
 npm install
 npm run dev
 ```

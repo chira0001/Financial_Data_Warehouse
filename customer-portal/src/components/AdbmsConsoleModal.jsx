@@ -5,13 +5,11 @@ import { loanApi } from '../api/loanApi'
 export default function AdbmsConsoleModal({ isOpen, onClose }) {
   if (!isOpen) return null
 
-  // Tabs: 'procedures' | 'functions' | 'views' | 'audit' | 'team'
   const [activeTab, setActiveTab] = useState('procedures')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [consoleOutput, setConsoleOutput] = useState(null)
 
-  // 1. Stored Procedures State
   const [selectedProc, setSelectedProc] = useState('sp_process_loan_payment')
   const [procParams, setProcParams] = useState({
     loanId: 2008,
@@ -29,7 +27,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
     officerId: 101,
   })
 
-  // 2. Functions State
   const [selectedFunc, setSelectedFunc] = useState('fn_loan_outstanding_balance')
   const [funcParams, setFuncParams] = useState({
     principal: 2000000,
@@ -38,19 +35,15 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
     loanId: 2008,
   })
 
-  // 3. Views State
   const [selectedView, setSelectedView] = useState('vw_loan_portfolio_health_metrics')
   const [viewData, setViewData] = useState(null)
 
-  // 4. Audit & Explain State
   const [auditData, setAuditData] = useState(null)
   const [explainData, setExplainData] = useState(null)
   const [explainLoading, setExplainLoading] = useState(false)
 
-  // 5. Active Role for Console Execution (Tests MySQL RBAC)
   const [execRole, setExecRole] = useState('role_loan_manager')
 
-  // Fetch view when switching to views tab
   useEffect(() => {
     if (activeTab === 'views') {
       fetchCurrentView(selectedView)
@@ -164,7 +157,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           ✕
         </button>
 
-        {/* Console Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'rgba(59, 130, 246, 0.2)', border: '1px solid #3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa' }}>
@@ -190,7 +182,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         </div>
 
-        {/* 5 Distinct ADBMS Tabs */}
         <div style={{ display: 'flex', gap: '6px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px', marginBottom: '18px', overflowX: 'auto' }}>
           <button
             type="button"
@@ -240,10 +231,8 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* TAB 1: STORED PROCEDURES */}
         {activeTab === 'procedures' && (
           <div>
-            {/* Live Database Role Switcher for RBAC Demonstration */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '14px', background: 'rgba(30, 41, 59, 0.45)', padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(148, 163, 184, 0.2)', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>Active MySQL Session Role:</span>
@@ -524,7 +513,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* TAB 2: USER DEFINED FUNCTIONS */}
         {activeTab === 'functions' && (
           <div>
             <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -629,7 +617,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* TAB 3: OPERATIONAL VIEWS */}
         {activeTab === 'views' && (
           <div>
             <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
@@ -694,7 +681,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* TAB 4: AUDIT TRAIL & RBAC */}
         {activeTab === 'audit' && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
@@ -728,7 +714,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
               <span><strong>Event Scheduler Active:</strong> evt_daily_loan_status_check runs daily at midnight, calling sp_mark_overdue_facilities() per scheduled event policy.</span>
             </div>
 
-            {/* ADBMS Query Optimization & Index Benchmark */}
             <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -824,7 +809,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* TAB 5: 5-MEMBER TEAM ROLES */}
         {activeTab === 'team' && (
           <div>
             <div style={{ marginBottom: '14px' }}>
@@ -837,7 +821,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-              {/* Member 1 */}
               <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(59, 130, 246, 0.35)', borderRadius: '10px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#60a5fa', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(59, 130, 246, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 01</span>
@@ -854,7 +837,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Member 2 */}
               <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(16, 185, 129, 0.35)', borderRadius: '10px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#34d399', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 02</span>
@@ -871,7 +853,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Member 3 */}
               <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(168, 85, 247, 0.35)', borderRadius: '10px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#c084fc', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(168, 85, 247, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 03</span>
@@ -888,7 +869,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Member 4 */}
               <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '10px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(245, 158, 11, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 04</span>
@@ -905,7 +885,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Member 5 - Isuru */}
               <div style={{ background: 'rgba(15, 23, 42, 0.75)', border: '1px solid rgba(236, 72, 153, 0.4)', borderRadius: '10px', padding: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '0.72rem', color: '#f472b6', fontWeight: 'bold', textTransform: 'uppercase', background: 'rgba(236, 72, 153, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>Member 05</span>
@@ -926,7 +905,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           </div>
         )}
 
-        {/* Live Execution Results (for Procedures & Functions) */}
         {consoleOutput && (activeTab === 'procedures' || activeTab === 'functions') && (
           <div style={{ marginTop: '18px', background: '#020617', border: '1px solid #1e293b', borderRadius: '8px', padding: '14px', fontFamily: 'monospace', fontSize: '0.8rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b', paddingBottom: '8px', marginBottom: '10px' }}>

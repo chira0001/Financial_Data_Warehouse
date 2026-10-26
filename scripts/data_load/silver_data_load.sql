@@ -35,7 +35,6 @@ INSERT INTO warehouse.silver_banking_transactions (
     description
 )
 WITH parsed_transactions AS (
-    -- Parse dates once
     SELECT
         t.transaction_id,
         t.account_id,
@@ -48,7 +47,6 @@ WITH parsed_transactions AS (
     FROM warehouse.bronze_banking_transactions AS t
 ),
 exchange_rate_intervals AS (
-    -- Create date ranges [valid_from, valid_to) for each exchange rate
     SELECT
         target_currency,
         rate,

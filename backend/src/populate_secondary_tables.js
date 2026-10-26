@@ -44,7 +44,6 @@ async function populate() {
   ]
 
   for (const l of loans) {
-    // 1. Collateral for secured loans
     const [cCheck] = await conn.query('SELECT 1 FROM loan_collaterals WHERE loan_id = ?', [l.loan_id])
     if (cCheck.length === 0 && (l.loan_type === 'Housing' || l.loan_type === 'Vehicle' || l.loan_type === 'Business')) {
       const type = l.loan_type === 'Housing' ? 'Real Estate' : l.loan_type === 'Vehicle' ? 'Vehicle' : 'Commercial Equipment'
@@ -73,7 +72,6 @@ async function populate() {
       insertedCol++
     }
 
-    // 2. Guarantor for personal/education loans
     const [gCheck] = await conn.query('SELECT 1 FROM loan_guarantors WHERE loan_id = ?', [l.loan_id])
     if (gCheck.length === 0 && (l.loan_type === 'Personal' || l.loan_type === 'Education' || l.loan_id >= 2000)) {
       const relationships = ['Brother', 'Uncle', 'Parent', 'Colleague', 'Business Partner']
@@ -110,7 +108,6 @@ async function populate() {
       insertedG++
     }
 
-    // 3. Applications
     const [aCheck] = await conn.query('SELECT 1 FROM loan_applications WHERE customer_id = ?', [l.customer_id])
     if (aCheck.length === 0 && insertedApp < 80) {
       const prodMap = { Personal: 'PRD01', Housing: 'PRD02', Vehicle: 'PRD03', Education: 'PRD04', Business: 'PRD05' }
@@ -126,7 +123,6 @@ async function populate() {
     }
   }
 
-  // Ensure loan 2008 has exact high-profile collateral and guarantor
   await conn.query('DELETE FROM loan_collaterals WHERE loan_id = 2008')
   await conn.query(
     `INSERT INTO loan_collaterals 

@@ -10,7 +10,6 @@ async function upgrade() {
 
   console.log('Upgrading procedures and indexes in banking_loan_source...')
 
-  // 1. Upgrade sp_process_loan_payment with FOR UPDATE (Pessimistic Concurrency Locking)
   await conn.query('DROP PROCEDURE IF EXISTS sp_process_loan_payment')
   await conn.query(`
     CREATE PROCEDURE sp_process_loan_payment(
@@ -36,7 +35,6 @@ async function upgrade() {
 
         START TRANSACTION;
 
-        -- PESSIMISTIC CONCURRENCY CONTROL: Exclusive Row-Level Lock to prevent Lost Updates & Race Conditions
         SELECT loan_status INTO v_current_status
         FROM loans
         WHERE loan_id = p_loan_id
@@ -89,7 +87,6 @@ async function upgrade() {
   `)
   console.log('sp_process_loan_payment upgraded with FOR UPDATE locking.')
 
-  // 2. Create Member 2's Underwriting Procedure: sp_underwrite_loan_application
   await conn.query('DROP PROCEDURE IF EXISTS sp_underwrite_loan_application')
   await conn.query(`
     CREATE PROCEDURE sp_underwrite_loan_application(
@@ -129,16 +126,12 @@ async function upgrade() {
             SET p_decision_reason = 'Application has already been approved previously.';
             ROLLBACK;
         ELSE
-            -- Evaluate collateral coverage if available
             SELECT COALESCE(SUM(valuation_amount), 0.00)
             INTO v_collateral_total
             FROM loan_collaterals c
             JOIN loans l ON l.loan_id = c.loan_id
             WHERE l.customer_id = v_customer_id;
 
-            -- Underwriting Business Rules:
-            -- 1. Credit Score must be >= 650
-            -- 2. If applied amount >= 1,000,000, collateral or clean score >= 700 required
             IF v_credit_score < 620 THEN
                 SET p_decision = 'REJECTED';
                 SET p_decision_reason = CONCAT('Credit score (', v_credit_score, ') below institutional threshold 620.');
@@ -169,7 +162,6 @@ async function upgrade() {
   `)
   console.log('sp_underwrite_loan_application created for Member 2.')
 
-  // 3. Create Composite Indexes for Query Optimization
   const indexes = [
     { name: 'idx_loans_status_enddate', sql: 'CREATE INDEX idx_loans_status_enddate ON loans(loan_status, loan_end_date)' },
     { name: 'idx_payments_loan_date', sql: 'CREATE INDEX idx_payments_loan_date ON loan_payments(loan_id, payment_date)' },

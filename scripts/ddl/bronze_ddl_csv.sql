@@ -1,21 +1,3 @@
-/*
-Creation of Bronze Layer Tables
-
-This procedure creates the required tables in the Bronze Layer of the Financial Data Warehouse to store raw data ingested from source systems,
- CSV files, banking databases, and external APIs.
-
-The procedure uses CREATE TABLE IF NOT EXISTS to ensure that tables are created only when they do not already exist, 
-preventing errors caused by attempting to recreate existing tables.
-
-The Bronze Layer includes tables for accounts, banking transactions, branches, customers, loans, loan payments, and exchange rates. 
-These tables serve as the initial data storage layer, preserving source data for subsequent data cleaning, validation, transformation, and loading into the Silver
-and Gold Layers.
-
-Execution:
-Call the warehouse.bronze_layer_tables() stored procedure to create all required Bronze Layer tables.
-
-Note: Existing tables are not modified if they already exist. Any changes to their schemas must be handled separately.
-*/
 
 DELIMITER &&
 DROP PROCEDURE IF EXISTS warehouse.bronze_layer_tables&&

@@ -29,10 +29,6 @@ begin
 		channel varchar(50),
 		description varchar(50)
 	);
-	/* ALTER TABLE warehouse.silver_banking_transactions
-		ADD COLUMN amount decimal(18, 2),
-		ADD COLUMN currency char(3);
-        */
 	create table if not exists warehouse.silver_branches(
 		branch_id varchar(50) primary key,
 		branch_name varchar(50),
@@ -71,13 +67,10 @@ begin
 		payment_status varchar(30)
 	);
 	
-    #drop index idx_target_currency_rate_date on warehouse.silver_exchange_rates;
 	create index idx_target_currency_rate_date on warehouse.silver_exchange_rates(target_currency,rate_date);
     
-	#drop INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates;
 	CREATE INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates (target_currency, rate_date);
     
-	#drop INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions;
     CREATE INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions (currency);
     
 end&&

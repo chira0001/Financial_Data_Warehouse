@@ -1,11 +1,8 @@
--- Banking Loan Source Database
--- Core loan management schema feeding the warehouse
 
 CREATE DATABASE IF NOT EXISTS banking_loan_source;
 
 USE banking_loan_source;
 
--- BRANCHES MASTER TABLE (Ingested from sources/CSV/branches.csv)
 CREATE TABLE IF NOT EXISTS branches (
     branch_id VARCHAR(10) PRIMARY KEY,
     branch_name VARCHAR(50) NOT NULL,
@@ -13,7 +10,6 @@ CREATE TABLE IF NOT EXISTS branches (
     province VARCHAR(50) NOT NULL
 );
 
--- CUSTOMERS MASTER TABLE (Ingested from sources/CSV/customers.csv)
 CREATE TABLE IF NOT EXISTS customers (
     customer_id INT PRIMARY KEY,
     customer_code VARCHAR(20) NOT NULL UNIQUE,
@@ -52,23 +48,9 @@ CREATE TABLE IF NOT EXISTS loan_payments (
 SELECT * FROM loans;
 SELECT * FROM loan_payments;
 
--- PRODUCTION EXTENSION SCHEMA: ENTERPRISE LOAN MANAGEMENT SYSTEM
 
--- It equips branch loan officers, credit managers, and compliance auditors with:
---   1. Performance B-Tree Secondary Indexes
---   2. Operational Audit & Compliance Tables (loan_audit_log, loan_payment_audit_log)
---   3. Data Integrity & Business Logic Triggers
---   4. User Defined Functions (UDFs) for Financial Calculations (EMI, Interest, Balance, Risk Tier, Days Overdue)
---   5. Stored Procedures with ACID Transactions & Rollback Protection
---   6. Automated MySQL Scheduled Events (Daily status & overdue evaluation)
---   7. Role-Based Operational Views for End-Users
---   8. Role-Based Access Control (RBAC) Security Setup
 
--- ============================================================================
--- SECTION 1: EXTENDED PRODUCTION OPERATIONAL TABLES & CATALOG
--- ============================================================================
 
--- 1.1 Loan Products Master Catalog
 CREATE TABLE IF NOT EXISTS loan_products (
     product_id VARCHAR(10) PRIMARY KEY,
     product_code VARCHAR(20) NOT NULL UNIQUE,
@@ -82,7 +64,6 @@ CREATE TABLE IF NOT EXISTS loan_products (
     processing_fee_percentage DECIMAL(4,2) DEFAULT 1.00
 );
 
--- 1.2 Loan Officers & Credit Staff
 CREATE TABLE IF NOT EXISTS loan_officers (
     officer_id INT PRIMARY KEY,
     employee_code VARCHAR(20) NOT NULL UNIQUE,
@@ -96,7 +77,6 @@ CREATE TABLE IF NOT EXISTS loan_officers (
     FOREIGN KEY (branch_id) REFERENCES branches(branch_id)
 );
 
--- 1.3 Loan Applications / Underwriting Pipeline
 CREATE TABLE IF NOT EXISTS loan_applications (
     application_id INT PRIMARY KEY,
     customer_id INT NOT NULL,
@@ -115,7 +95,6 @@ CREATE TABLE IF NOT EXISTS loan_applications (
     FOREIGN KEY (assigned_officer_id) REFERENCES loan_officers(officer_id)
 );
 
--- 1.4 Loan Collateral & Asset Securities
 CREATE TABLE IF NOT EXISTS loan_collaterals (
     collateral_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -129,7 +108,6 @@ CREATE TABLE IF NOT EXISTS loan_collaterals (
     FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
--- 1.5 Loan Guarantors & Co-Signers
 CREATE TABLE IF NOT EXISTS loan_guarantors (
     guarantor_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -143,7 +121,6 @@ CREATE TABLE IF NOT EXISTS loan_guarantors (
     FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
--- 1.6 Loan Disbursements Execution
 CREATE TABLE IF NOT EXISTS loan_disbursements (
     disbursement_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -156,7 +133,6 @@ CREATE TABLE IF NOT EXISTS loan_disbursements (
     FOREIGN KEY (authorized_by_officer_id) REFERENCES loan_officers(officer_id)
 );
 
--- 1.7 Loan Repayment Schedule & Amortization Installments
 CREATE TABLE IF NOT EXISTS loan_repayment_schedules (
     schedule_id INT PRIMARY KEY AUTO_INCREMENT,
     loan_id INT NOT NULL,
@@ -170,7 +146,6 @@ CREATE TABLE IF NOT EXISTS loan_repayment_schedules (
     FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
--- 1.8 Loan Fees, Charges & Penalties
 CREATE TABLE IF NOT EXISTS loan_fees_and_penalties (
     fee_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -182,7 +157,6 @@ CREATE TABLE IF NOT EXISTS loan_fees_and_penalties (
     FOREIGN KEY (loan_id) REFERENCES loans(loan_id)
 );
 
--- 1.9 Delinquency Recovery & Debt Collections Log
 CREATE TABLE IF NOT EXISTS loan_recovery_actions (
     action_id INT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -196,7 +170,6 @@ CREATE TABLE IF NOT EXISTS loan_recovery_actions (
     FOREIGN KEY (officer_id) REFERENCES loan_officers(officer_id)
 );
 
--- 1.10 Loan Facility Lifecycle Audit Log
 CREATE TABLE IF NOT EXISTS loan_audit_log (
     audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     loan_id INT NOT NULL,
@@ -212,7 +185,6 @@ CREATE TABLE IF NOT EXISTS loan_audit_log (
     notes VARCHAR(500) NULL
 );
 
--- 1.11 Loan Payment Audit Log
 CREATE TABLE IF NOT EXISTS loan_payment_audit_log (
     audit_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     payment_id INT NOT NULL,
@@ -227,30 +199,19 @@ CREATE TABLE IF NOT EXISTS loan_payment_audit_log (
     notes VARCHAR(500) NULL
 );
 
--- ----------------------------------------------------------------------------
 
--- SECTION 2: CONSOLIDATED PERFORMANCE B-TREE INDEXING STRATEGY
--- ============================================================================
--- In production OLTP banking systems, performance indexes are consolidated and
--- applied after base table creation and seed ingestion. This prevents index
--- maintenance overhead during bulk inserts and organizes all indexing rationale
--- in one place for database administrators, query tuning, and viva demonstration.
--- ============================================================================
 
--- 1. Customer & Branch Network Indexes
 CREATE INDEX idx_customers_branch ON customers(branch_id);
 CREATE INDEX idx_customers_city ON customers(city);
 CREATE INDEX idx_officers_branch ON loan_officers(branch_id);
 CREATE INDEX idx_officers_status ON loan_officers(status);
 
--- 2. Loan Facilities Master Performance Indexes
 CREATE INDEX idx_loans_customer ON loans(customer_id);
 CREATE INDEX idx_loans_account ON loans(account_id);
 CREATE INDEX idx_loans_status ON loans(loan_status);
 CREATE INDEX idx_loans_dates ON loans(loan_start_date, loan_end_date);
 CREATE INDEX idx_loans_type_status ON loans(loan_type, loan_status);
 
--- 3. Loan Origination & Underwriting Pipeline Indexes
 CREATE INDEX idx_products_category ON loan_products(loan_category);
 CREATE INDEX idx_products_rate ON loan_products(base_interest_rate);
 CREATE INDEX idx_applications_customer ON loan_applications(customer_id);
@@ -259,7 +220,6 @@ CREATE INDEX idx_applications_officer ON loan_applications(assigned_officer_id);
 CREATE INDEX idx_applications_status ON loan_applications(approval_status);
 CREATE INDEX idx_applications_date ON loan_applications(application_date);
 
--- 4. Repayment Ledger & Cashier Operations Indexes
 CREATE INDEX idx_payments_loan ON loan_payments(loan_id);
 CREATE INDEX idx_payments_date ON loan_payments(payment_date);
 CREATE INDEX idx_payments_status ON loan_payments(payment_status);
@@ -268,14 +228,12 @@ CREATE INDEX idx_schedules_loan ON loan_repayment_schedules(loan_id);
 CREATE INDEX idx_schedules_due_date ON loan_repayment_schedules(due_date);
 CREATE INDEX idx_schedules_status ON loan_repayment_schedules(status);
 
--- 5. Security, Collateral & Guarantor Indexes
 CREATE INDEX idx_collaterals_loan ON loan_collaterals(loan_id);
 CREATE INDEX idx_collaterals_type ON loan_collaterals(collateral_type);
 CREATE INDEX idx_collaterals_status ON loan_collaterals(status);
 CREATE INDEX idx_guarantors_loan ON loan_guarantors(loan_id);
 CREATE INDEX idx_guarantors_nic ON loan_guarantors(nic_number);
 
--- 6. Disbursement & Recovery Execution Indexes
 CREATE INDEX idx_disbursements_loan ON loan_disbursements(loan_id);
 CREATE INDEX idx_disbursements_date ON loan_disbursements(disbursement_date);
 CREATE INDEX idx_disbursements_officer ON loan_disbursements(authorized_by_officer_id);
@@ -287,19 +245,13 @@ CREATE INDEX idx_recovery_officer ON loan_recovery_actions(officer_id);
 CREATE INDEX idx_recovery_date ON loan_recovery_actions(action_date);
 CREATE INDEX idx_recovery_followup ON loan_recovery_actions(next_followup_date);
 
--- 7. Audit & Compliance Trail Indexes
 CREATE INDEX idx_audit_loan ON loan_audit_log(loan_id);
 CREATE INDEX idx_audit_date ON loan_audit_log(modified_at);
 CREATE INDEX idx_payment_audit_loan ON loan_payment_audit_log(loan_id);
 CREATE INDEX idx_payment_audit_payment ON loan_payment_audit_log(payment_id);
 
--- ----------------------------------------------------------------------------
--- SECTION 3: USER DEFINED FUNCTIONS (UDFs) FOR BANKING CALCULATIONS
--- ----------------------------------------------------------------------------
 DELIMITER $$
 
--- 3.1 Function: Calculate Monthly EMI using Equated Monthly Installment Formula
--- Formula: EMI = [P x r x (1+r)^n] / [(1+r)^n - 1]
 DROP FUNCTION IF EXISTS fn_calculate_monthly_emi$$
 CREATE FUNCTION fn_calculate_monthly_emi(
     p_principal DECIMAL(15,2),
@@ -329,7 +281,6 @@ BEGIN
     RETURN v_emi;
 END$$
 
--- 3.2 Function: Calculate Total Interest Payable Over Lifetime
 DROP FUNCTION IF EXISTS fn_calculate_total_interest$$
 CREATE FUNCTION fn_calculate_total_interest(
     p_principal DECIMAL(15,2),
@@ -348,7 +299,6 @@ BEGIN
     RETURN ROUND((v_emi * p_tenure_months) - p_principal, 2);
 END$$
 
--- 3.3 Function: Calculate Outstanding Loan Balance
 DROP FUNCTION IF EXISTS fn_loan_outstanding_balance$$
 CREATE FUNCTION fn_loan_outstanding_balance(p_loan_id INT)
 RETURNS DECIMAL(15,2)
@@ -372,7 +322,6 @@ BEGIN
     RETURN GREATEST(0.00, v_principal - v_paid);
 END$$
 
--- 3.4 Function: Calculate Days Overdue for a Loan Facility
 DROP FUNCTION IF EXISTS fn_days_overdue$$
 CREATE FUNCTION fn_days_overdue(p_loan_id INT)
 RETURNS INT
@@ -402,7 +351,6 @@ BEGIN
     END IF;
 END$$
 
--- 3.5 Function: Evaluate Loan Risk Tier ('LOW', 'MEDIUM', 'HIGH', 'CRITICAL', 'NO_RISK')
 DROP FUNCTION IF EXISTS fn_loan_risk_tier$$
 CREATE FUNCTION fn_loan_risk_tier(p_loan_id INT)
 RETURNS VARCHAR(20)
@@ -442,11 +390,7 @@ BEGIN
     END IF;
 END$$
 
--- ----------------------------------------------------------------------------
--- SECTION 4: DATA INTEGRITY & AUDIT TRIGGERS
--- ----------------------------------------------------------------------------
 
--- 4.1 Trigger: Validate Loan Parameters Before Insertion
 DROP TRIGGER IF EXISTS trg_loans_before_insert$$
 CREATE TRIGGER trg_loans_before_insert
 BEFORE INSERT ON loans
@@ -469,7 +413,6 @@ BEGIN
     END IF;
 END$$
 
--- 4.2 Trigger: Audit Trail on Loan Update
 DROP TRIGGER IF EXISTS trg_loans_after_update$$
 CREATE TRIGGER trg_loans_after_update
 AFTER UPDATE ON loans
@@ -490,7 +433,6 @@ BEGIN
     END IF;
 END$$
 
--- 4.3 Trigger: Validate Loan Payment Before Insertion
 DROP TRIGGER IF EXISTS trg_loan_payments_before_insert$$
 CREATE TRIGGER trg_loan_payments_before_insert
 BEFORE INSERT ON loan_payments
@@ -513,7 +455,6 @@ BEGIN
     END IF;
 END$$
 
--- 4.4 Trigger: Audit Trail on Payment Insertion
 DROP TRIGGER IF EXISTS trg_loan_payments_after_insert$$
 CREATE TRIGGER trg_loan_payments_after_insert
 AFTER INSERT ON loan_payments
@@ -527,11 +468,7 @@ BEGIN
     );
 END$$
 
--- ----------------------------------------------------------------------------
--- SECTION 5: STORED PROCEDURES WITH ACID TRANSACTIONS
--- ----------------------------------------------------------------------------
 
--- 5.1 Procedure: Disburse New Loan Facility with Atomic Transaction
 DROP PROCEDURE IF EXISTS sp_disburse_new_loan$$
 CREATE PROCEDURE sp_disburse_new_loan(
     IN p_loan_id INT,
@@ -591,7 +528,6 @@ BEGIN
     END IF;
 END$$
 
--- 5.2 Procedure: Process Loan Repayment with Automated Payoff Detection
 DROP PROCEDURE IF EXISTS sp_process_loan_payment$$
 CREATE PROCEDURE sp_process_loan_payment(
     IN p_payment_id INT,
@@ -616,7 +552,6 @@ BEGIN
 
     START TRANSACTION;
 
-    -- PESSIMISTIC CONCURRENCY CONTROL: Exclusive Row-Level Lock to prevent Lost Updates & Race Conditions
     SELECT loan_status INTO v_current_status
     FROM loans
     WHERE loan_id = p_loan_id
@@ -645,7 +580,6 @@ BEGIN
             p_payment_id, p_loan_id, p_payment_date, p_payment_amount, p_payment_method, p_payment_status
         );
 
-        -- If payment is fully paid, evaluate if the loan should close
         IF p_payment_status = 'Paid' THEN
             SET v_remaining_balance = fn_loan_outstanding_balance(p_loan_id);
             IF v_remaining_balance <= 0 THEN
@@ -668,7 +602,6 @@ BEGIN
     END IF;
 END$$
 
--- 5.3 Procedure: Restructure Struggling Facility (Loan Officer Rescheduling)
 DROP PROCEDURE IF EXISTS sp_restructure_loan$$
 CREATE PROCEDURE sp_restructure_loan(
     IN p_loan_id INT,
@@ -731,7 +664,6 @@ BEGIN
     END IF;
 END$$
 
--- 5.4 Procedure: Batch Overdue Facility Evaluation
 DROP PROCEDURE IF EXISTS sp_mark_overdue_facilities$$
 CREATE PROCEDURE sp_mark_overdue_facilities()
 BEGIN
@@ -770,7 +702,6 @@ BEGIN
     COMMIT;
 END$$
 
--- 5.5 Procedure: Automated Underwriting & Risk Assessment (Member 2 Workflow)
 DROP PROCEDURE IF EXISTS sp_underwrite_loan_application$$
 CREATE PROCEDURE sp_underwrite_loan_application(
     IN p_application_id INT,
@@ -809,16 +740,12 @@ BEGIN
         SET p_decision_reason = 'Application has already been approved previously.';
         ROLLBACK;
     ELSE
-        -- Evaluate collateral coverage if available
         SELECT COALESCE(SUM(valuation_amount), 0.00)
         INTO v_collateral_total
         FROM loan_collaterals c
         JOIN loans l ON l.loan_id = c.loan_id
         WHERE l.customer_id = v_customer_id;
 
-        -- Underwriting Business Rules:
-        -- 1. Credit Score must be >= 620
-        -- 2. If applied amount >= 2,000,000, collateral or clean score >= 700 required
         IF v_credit_score < 620 THEN
             SET p_decision = 'REJECTED';
             SET p_decision_reason = CONCAT('Credit score (', v_credit_score, ') below institutional threshold 620.');
@@ -849,9 +776,6 @@ END$$
 
 DELIMITER ;
 
--- ----------------------------------------------------------------------------
--- SECTION 6: MYSQL SCHEDULED EVENTS (AUTOMATED BACKGROUND TASKS)
--- ----------------------------------------------------------------------------
 SET GLOBAL event_scheduler = ON;
 
 DROP EVENT IF EXISTS evt_daily_loan_status_check;
@@ -866,11 +790,7 @@ BEGIN
 END$$
 DELIMITER ;
 
--- ----------------------------------------------------------------------------
--- SECTION 7: PRODUCTION OPERATIONAL VIEWS FOR NORMAL USERS
--- ----------------------------------------------------------------------------
 
--- 7.1 View: Loan Officer Active Facilities Console
 CREATE OR REPLACE VIEW vw_loan_officer_active_facilities AS
 SELECT 
     l.loan_id,
@@ -898,7 +818,6 @@ GROUP BY
     l.loan_id, l.customer_id, l.account_id, l.loan_type,
     l.loan_amount, l.interest_rate, l.loan_start_date, l.loan_end_date;
 
--- 7.2 View: Collections & Recovery Queue (Prioritized Overdue Worklist)
 CREATE OR REPLACE VIEW vw_overdue_collections_queue AS
 SELECT 
     l.loan_id,
@@ -919,7 +838,6 @@ GROUP BY
     l.loan_id, l.customer_id, l.loan_type, l.loan_amount,
     l.interest_rate, l.loan_end_date;
 
--- 7.3 View: Customer Loan Summary & Total Net Exposure
 CREATE OR REPLACE VIEW vw_customer_loan_statement AS
 SELECT 
     l.customer_id,
@@ -934,7 +852,6 @@ FROM loans l
 LEFT JOIN loan_payments p ON p.loan_id = l.loan_id
 GROUP BY l.customer_id;
 
--- 7.4 View: Daily Branch Payment Reconciliation (Tellers & Finance)
 CREATE OR REPLACE VIEW vw_daily_payment_reconciliation AS
 SELECT 
     payment_date,
@@ -946,7 +863,6 @@ SELECT
 FROM loan_payments
 GROUP BY payment_date, payment_method, payment_status;
 
--- 7.5 View: Portfolio Health & Risk Metrics (Management Dashboard)
 CREATE OR REPLACE VIEW vw_loan_portfolio_health_metrics AS
 SELECT 
     loan_type,
@@ -960,14 +876,10 @@ SELECT
 FROM loans
 GROUP BY loan_type;
 
--- ----------------------------------------------------------------------------
--- SECTION 8: ROLE-BASED ACCESS CONTROL (RBAC) FOR OPERATIONAL USERS
--- ----------------------------------------------------------------------------
 CREATE ROLE IF NOT EXISTS role_loan_officer;
 CREATE ROLE IF NOT EXISTS role_loan_manager;
 CREATE ROLE IF NOT EXISTS role_loan_auditor;
 
--- Loan Officer: Operational access to view loans, post payments, calculate EMIs
 GRANT SELECT ON banking_loan_source.loans TO role_loan_officer;
 GRANT SELECT ON banking_loan_source.loan_payments TO role_loan_officer;
 GRANT SELECT ON banking_loan_source.vw_loan_officer_active_facilities TO role_loan_officer;
@@ -977,7 +889,6 @@ GRANT EXECUTE ON PROCEDURE banking_loan_source.sp_process_loan_payment TO role_l
 GRANT EXECUTE ON FUNCTION banking_loan_source.fn_calculate_monthly_emi TO role_loan_officer;
 GRANT EXECUTE ON FUNCTION banking_loan_source.fn_loan_outstanding_balance TO role_loan_officer;
 
--- Loan Manager: Comprehensive managerial access, disbursement, restructuring
 GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loans TO role_loan_manager;
 GRANT SELECT, INSERT, UPDATE ON banking_loan_source.loan_payments TO role_loan_manager;
 GRANT SELECT ON banking_loan_source.* TO role_loan_manager;
@@ -992,30 +903,21 @@ GRANT EXECUTE ON FUNCTION banking_loan_source.fn_loan_outstanding_balance TO rol
 GRANT EXECUTE ON FUNCTION banking_loan_source.fn_days_overdue TO role_loan_manager;
 GRANT EXECUTE ON FUNCTION banking_loan_source.fn_loan_risk_tier TO role_loan_manager;
 
--- Loan Auditor: Read-only compliance and audit access
 GRANT SELECT ON banking_loan_source.loan_audit_log TO role_loan_auditor;
 GRANT SELECT ON banking_loan_source.loan_payment_audit_log TO role_loan_auditor;
 GRANT SELECT ON banking_loan_source.vw_loan_portfolio_health_metrics TO role_loan_auditor;
 GRANT SELECT ON banking_loan_source.vw_overdue_collections_queue TO role_loan_auditor;
 GRANT SELECT ON banking_loan_source.vw_daily_payment_reconciliation TO role_loan_auditor;
 
--- Allow the account running this setup script to activate the application's roles.
 GRANT role_loan_officer, role_loan_manager, role_loan_auditor TO CURRENT_USER;
 
 FLUSH PRIVILEGES;
 
--- ----------------------------------------------------------------------------
--- SECTION 9: QUERY OPTIMIZATION & COMPOSITE INDEXES
--- ----------------------------------------------------------------------------
--- Composite indexes strategically aligned to frequent multi-column WHERE/JOIN predicates:
 CREATE INDEX IF NOT EXISTS idx_loans_status_enddate ON loans(loan_status, loan_end_date);
 CREATE INDEX IF NOT EXISTS idx_payments_loan_date ON loan_payments(loan_id, payment_date);
 CREATE INDEX IF NOT EXISTS idx_collaterals_loan_val ON loan_collaterals(loan_id, valuation_amount);
 CREATE INDEX IF NOT EXISTS idx_guarantors_loan_nic ON loan_guarantors(loan_id, nic_number);
 
--- ============================================================================
--- VERIFICATION & DEMONSTRATION QUERIES FOR NORMAL USERS
--- ============================================================================
 SELECT 'Active Facilities Sample' AS report_title;
 SELECT * FROM vw_loan_officer_active_facilities LIMIT 5;
 

@@ -63,7 +63,6 @@ export default function Navbar({ activeTab, setActiveTab, onOpenConsole, current
         )}
 
         <div className="nav-cta">
-          {/* Role Persona Switcher */}
           <div style={{ position: 'relative' }}>
             <select
               value={currentRole}

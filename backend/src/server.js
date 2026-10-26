@@ -11,7 +11,6 @@ let pipelineRunning = false
 app.use(cors({ origin: true, credentials: true }))
 app.use(express.json())
 
-// Ensure dedicated banking_app user & roles exist for authentic MySQL 8.0 RBAC enforcement
 const initRbacUser = async () => {
   try {
     const conn = await pool.getConnection()
@@ -31,7 +30,6 @@ const initRbacUser = async () => {
 }
 initRbacUser()
 
-// Role-Aware Connection Factory: activates explicit MySQL session role for authentic RBAC checks
 const getRoleConnection = async (requestedRole) => {
   const allowedRoles = ['role_loan_officer', 'role_loan_manager', 'role_loan_auditor']
   if (requestedRole && allowedRoles.includes(requestedRole)) {
@@ -402,7 +400,6 @@ app.post('/api/pipeline/run', async (_request, response) => {
   }
 })
 
-// --- Customer Loan Portal Endpoints ---
 app.listen(config.port, () => {
   console.info(`Warehouse API listening on http://127.0.0.1:${config.port}`)
 })

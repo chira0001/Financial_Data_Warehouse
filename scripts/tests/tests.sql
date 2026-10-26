@@ -42,7 +42,6 @@ select
 		else account_type
 	end as account_type,
     branch_id,
-    -- opening_date,
     STR_TO_DATE(opening_date, '%c/%e/%Y') AS formatted_date,
     balance
 from warehouse.bronze_accounts where account_type = 'Fixed Deposit';

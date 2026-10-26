@@ -1,21 +1,4 @@
-/*
-Load the Bronze Layer
 
-This procedure initiates the data loading process for the Bronze Layer of the Financial Data Warehouse. 
-Before execution, ensure that all required CSV files and Python scripts are available at their configured file locations.
-
-The Python scripts must be executed explicitly through the Windows Command Prompt (CMD), 
-as MySQL stored procedures cannot directly execute external Python scripts or use LOAD DATA statements within stored procedures.
-
-Verify the file paths, database connections, and required permissions before starting the process to ensure that data is loaded successfully from the source files, 
-database tables, and external APIs into the corresponding Bronze Layer tables.
-
-Note: This process may truncate existing Bronze Layer data before reloading. 
-Ensure that the source data is accessible and valid before execution.
-*/
-
--- Run in CMD
--- python -u "e:\E Drive\University Project\L3S2\Financial_Data_Warehouse\sources\API\fetch_rates.py"
 
 SET @bronze_started_at = NOW();
 CALL warehouse.sp_log_etl_run('BRONZE', 'RUNNING', @bronze_started_at, NULL, 'Bronze load started');

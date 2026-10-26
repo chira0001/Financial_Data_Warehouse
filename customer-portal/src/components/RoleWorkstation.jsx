@@ -9,13 +9,11 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
   const [officerPaymentNotice, setOfficerPaymentNotice] = useState(null)
   const [restructureNotice, setRestructureNotice] = useState(null)
 
-  // Officer States
   const [officerLoanId, setOfficerLoanId] = useState('2008')
   const [officerAmount, setOfficerAmount] = useState('25000')
   const [officerMethod, setOfficerMethod] = useState('LankaPay Real-Time Transfer')
   const [activeFacilities, setActiveFacilities] = useState([])
 
-  // Manager States
   const [underwriteAppId, setUnderwriteAppId] = useState('7103')
   const [restructureLoanId, setRestructureLoanId] = useState('2008')
   const [restructureRate, setRestructureRate] = useState('7.25')
@@ -24,7 +22,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
   const [portfolioMetrics, setPortfolioMetrics] = useState([])
   const [applications, setApplications] = useState([])
 
-  // Auditor States
   const [auditLogs, setAuditLogs] = useState([])
   const [overdueQueue, setOverdueQueue] = useState([])
 
@@ -35,7 +32,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     return 'role_loan_officer'
   }
 
-  // Load relevant data on mount and role change
   useEffect(() => {
     loadRoleData()
   }, [currentRole])
@@ -75,7 +71,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     }
   }
 
-  // Officer Action: Post Payment
   const handleOfficerPayment = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -112,7 +107,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     }
   }
 
-  // Officer Action: Test Unauthorized Action to prove MySQL Engine RBAC Denial
   const handleTestRestrictedAction = async (actionType) => {
     setLoading(true)
     setError('')
@@ -142,7 +136,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     }
   }
 
-  // Manager Action: Underwrite Application
   const handleUnderwriteApp = async (e, customAppId = null) => {
     if (e && e.preventDefault) e.preventDefault()
     const targetAppId = customAppId || underwriteAppId
@@ -174,7 +167,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     }
   }
 
-  // Manager Action: Restructure Loan
   const handleRestructureLoan = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -216,7 +208,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
-      {/* Role Context Bar */}
       <div 
         style={{ 
           background: currentRole === 'officer' 
@@ -277,7 +268,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         </div>
       </div>
 
-      {/* Global Alerts */}
       {feedback && (
         <div style={{
           background: feedback.type === 'RBAC_DENIED' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(16, 185, 129, 0.15)',
@@ -315,11 +305,9 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         </div>
       )}
 
-      {/* ROLE 1: LOAN OFFICER WORKSTATION */}
       {currentRole === 'officer' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-            {/* Payment Terminal */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#93c5fd' }}>
@@ -396,7 +384,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
               </form>
             </div>
 
-            {/* Access Restriction Notice */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontWeight: '600', marginBottom: '6px', fontSize: '0.9rem' }}>
@@ -442,7 +429,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
             </div>
           </div>
 
-          {/* Active Facilities Table */}
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
             <h3 style={{ fontSize: '1rem', color: '#f8fafc', margin: '0 0 12px' }}>
               Active Facilities Worklist (vw_loan_officer_active_facilities)
@@ -483,10 +469,8 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         </div>
       )}
 
-      {/* ROLE 2: LOAN MANAGER CONSOLE */}
       {currentRole === 'manager' && (
         <div>
-          {/* Live Underwriting Worklist Queue */}
           <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '18px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div>
@@ -616,7 +600,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-            {/* 1. Underwriting Card */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#d8b4fe' }}>
@@ -627,12 +610,10 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 </span>
               </div>
 
-              {/* Step-by-Step Educational Guide */}
               <div style={{ background: 'rgba(88, 28, 135, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#e9d5ff', marginBottom: '14px', lineHeight: '1.5' }}>
                 <strong> What happens here:</strong> When an online loan application is submitted, the Credit Manager assesses it. If the Credit Score is <strong>≥ 620</strong>, the procedure marks it <strong>APPROVED</strong> and automatically triggers <code>sp_disburse_new_loan</code> to generate an active Loan Account in the <code>loans</code> table and disburse the funds. If score &lt; 620, it is <strong>REJECTED</strong>.
               </div>
 
-              {/* Quick Select Pending Applications */}
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
                   Quick Select Pending Application from Queue:
@@ -652,7 +633,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 </div>
               </div>
 
-              {/* Live Selected Application Preview */}
               {(() => {
                 const sel = applications.find(a => String(a.application_id) === String(underwriteAppId))
                 if (!sel) return null
@@ -694,7 +674,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
               </form>
             </div>
 
-            {/* 2. Restructuring Card */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#d8b4fe' }}>
@@ -705,12 +684,10 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 </span>
               </div>
 
-              {/* Step-by-Step Educational Guide */}
               <div style={{ background: 'rgba(88, 28, 135, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#e9d5ff', marginBottom: '14px', lineHeight: '1.5' }}>
                 <strong> What happens here:</strong> When a borrower has trouble paying due to hardship, the bank prevents default by <strong>lowering the interest rate</strong> and <strong>extending the loan maturity</strong>. Executes <code>sp_restructure_loan</code>, updates <code>loans</code> table, and records the justification in <code>loan_audit_log</code>.
               </div>
 
-              {/* Sample Struggling / Distressed Loans Presets */}
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
                   Select Sample Distressed Facility to Restructure:
@@ -814,7 +791,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
             </div>
           </div>
 
-          {/* Portfolio Health Overview */}
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
             <h3 style={{ fontSize: '1rem', color: '#f8fafc', margin: '0 0 12px' }}>
               Portfolio Health & Risk Summary (vw_loan_portfolio_health_metrics)
@@ -853,10 +829,8 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         </div>
       )}
 
-      {/* ROLE 3: COMPLIANCE AUDITOR WORKSTATION */}
       {currentRole === 'auditor' && (
         <div>
-          {/* Read Only Compliance Notice */}
           <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '10px', padding: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fbbf24', fontSize: '0.85rem' }}>
               <span><strong>Regulatory Read-Only Audit Station:</strong> All database transactions and writes are blocked by MySQL privileges. Access restricted strictly to audit logs and compliance queues.</span>
@@ -872,7 +846,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-            {/* Event Scheduler Monitor */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
               <h4 style={{ fontSize: '0.92rem', color: '#f59e0b', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span>Automated Background Event Monitor</span>
@@ -885,7 +858,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
               </div>
             </div>
 
-            {/* Delinquency Queue Preview */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
               <h4 style={{ fontSize: '0.92rem', color: '#f59e0b', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span>Overdue Collections Queue (vw_overdue_collections_queue)</span>
@@ -898,7 +870,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
             </div>
           </div>
 
-          {/* Immutable Audit Ledger Table */}
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
             <h3 style={{ fontSize: '1rem', color: '#f8fafc', margin: '0 0 12px' }}>
               Immutable Database Change Ledger (loan_audit_log populated via Triggers)
