@@ -348,7 +348,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
       <section className="section" id="apply">
         <div className="app-card success-card" style={{ borderColor: isPending ? 'rgba(245, 158, 11, 0.4)' : undefined }}>
           <div className="success-icon" style={{ background: isPending ? 'rgba(245, 158, 11, 0.15)' : undefined, color: isPending ? '#fbbf24' : undefined }}>
-            {isPending ? '⏳' : <CheckIcon size={32} />}
+            {isPending ? '' : <CheckIcon size={32} />}
           </div>
 
           <h2>{isPending ? 'Credit Application Queued for Underwriting' : 'Credit Facility Application Acknowledged'}</h2>
@@ -370,14 +370,14 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                 setTimeout(() => setCopiedRef(false), 2000)
               }}
             >
-              {copiedRef ? 'Copied ✓' : 'Copy Ref'}
+              {copiedRef ? 'Copied' : 'Copy Ref'}
             </button>
           </div>
 
           {/* Banking Governance Notice */}
           {isPending && (
             <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '8px', padding: '12px 16px', maxWidth: '540px', margin: '14px auto', textAlign: 'left', fontSize: '0.82rem', color: '#fde68a' }}>
-              <strong>⚖️ Credit Committee Review Notice:</strong> In accordance with statutory banking regulations and Central Bank (CBSL) guidelines, all facility applications undergo formal managerial assessment. Your application is securely recorded and queued for <strong>Credit Committee</strong> authorization.
+              <strong> Credit Committee Review Notice:</strong> In accordance with statutory banking regulations and Central Bank (CBSL) guidelines, all facility applications undergo formal managerial assessment. Your application is securely recorded and queued for <strong>Credit Committee</strong> authorization.
             </div>
           )}
 
@@ -426,7 +426,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
             <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
               <span style={{ color: 'var(--text-muted)' }}>Current Status:</span>
               <span style={{ color: isPending ? '#fbbf24' : 'var(--emerald-400)', fontWeight: '700' }}>
-                {isPending ? '🟡 Pending Manager Underwriting' : 'Active Facility'}
+                {isPending ? ' Pending Manager Underwriting' : 'Active Facility'}
               </span>
             </div>
           </div>
@@ -440,7 +440,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   onClick={onSwitchToManager}
                   style={{ background: 'linear-gradient(135deg, #9333ea, #7e22ce)', boxShadow: '0 4px 14px rgba(147, 51, 234, 0.4)' }}
                 >
-                  <span>🟣 Switch to Loan Manager & Underwrite Facility</span>
+                  <span> Switch to Loan Manager & Underwrite Facility</span>
                   <ArrowRightIcon size={16} />
                 </button>
                 <button 
@@ -653,7 +653,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <label>Requested Principal Amount (LKR) *</label>
                   <span style={{ fontSize: '0.72rem', color: Number(formData.loanAmount) >= 1500000 ? '#fbbf24' : 'var(--emerald-400)', fontWeight: 600 }}>
-                    {Number(formData.loanAmount) >= 1500000 ? '🛡️ Mandatory Guarantor Tier (≥ 1.5M)' : '✓ Unsecured Retail Tier (< 1.5M - No Guarantor)'}
+                    {Number(formData.loanAmount) >= 1500000 ? 'Mandatory Guarantor Tier (≥ 1.5M)' : 'Unsecured Retail Tier (< 1.5M - No Guarantor)'}
                   </span>
                 </div>
                 <input 
@@ -668,8 +668,8 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                 />
                 <span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
                   {Number(formData.loanAmount) >= 1500000 
-                    ? '⚠️ Facilities of LKR 1.5M or above require a mandatory registered third-party guarantor as per CBSL policy.'
-                    : 'ℹ️ Unsecured Retail Credit: No guarantor required. Evaluated purely on certified income and credit score.'}
+                    ? ' Facilities of LKR 1.5M or above require a mandatory registered third-party guarantor as per CBSL policy.'
+                    : ' Unsecured Retail Credit: No guarantor required. Evaluated purely on certified income and credit score.'}
                 </span>
               </div>
 
@@ -692,7 +692,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <label style={{ margin: 0 }}>Nominal Annual Interest Benchmark (%)</label>
                   <span style={{ fontSize: '0.7rem', background: 'rgba(59, 130, 246, 0.15)', color: '#93c5fd', border: '1px solid rgba(59, 130, 246, 0.35)', padding: '2px 8px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    🔒 Bank Policy Locked
+                     Bank Policy Locked
                   </span>
                 </div>
                 <input 
@@ -795,7 +795,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                     <div>
                       <h4 style={{ fontSize: '0.98rem', color: '#fbbf24', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <ShieldCheckIcon size={16} />
-                        <span>🛡️ Mandatory Guarantor Endorsement (Facilities ≥ LKR 1,500,000)</span>
+                        <span> Mandatory Guarantor Endorsement (Facilities ≥ LKR 1,500,000)</span>
                       </h4>
                       <p style={{ margin: 0, fontSize: '0.8rem', color: '#cbd5e1' }}>
                         Under Central Bank of Sri Lanka (CBSL) credit risk prudential directives, credit facilities of LKR 1,500,000 or above require at least one verified third-party guarantor.
@@ -899,14 +899,14 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                     <div>
                       <h4 style={{ fontSize: '0.98rem', color: '#34d399', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <CheckIcon size={16} />
-                        <span>✓ Unsecured Facility — No Guarantor Required (Loans &lt; LKR 1.5M)</span>
+                        <span>Unsecured Facility — No Guarantor Required (Loans &lt; LKR 1.5M)</span>
                       </h4>
                       <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>
                         Credit facilities under LKR 1,500,000 are sanctioned as unsecured direct facilities based solely on your certified monthly income and credit score. You do NOT need to provide an apakaruwek (guarantor).
                       </p>
                     </div>
                     <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.2)', color: '#6ee7b7', padding: '4px 10px', borderRadius: '4px', fontWeight: 'bold', border: '1px solid rgba(16, 185, 129, 0.4)' }}>
-                      ✓ Direct Unsecured Credit
+                      Direct Unsecured Credit
                     </span>
                   </div>
 
@@ -929,7 +929,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   {/* If user did not opt in, show clean reassurance */}
                   {!formData.hasGuarantor && (
                     <div style={{ marginTop: '10px', fontSize: '0.78rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>✓ Standard unsecured application: No guarantor attached. Facility will be issued directly in your name.</span>
+                      <span>Standard unsecured application: No guarantor attached. Facility will be issued directly in your name.</span>
                     </div>
                   )}
 
@@ -937,7 +937,7 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                   {formData.hasGuarantor && (
                     <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed rgba(148, 163, 184, 0.2)' }}>
                       <div style={{ fontSize: '0.8rem', color: '#93c5fd', marginBottom: '12px' }}>
-                        ℹ️ Voluntary Guarantor Endorsement: Details will be recorded in the MySQL ledger to support credit underwriting:
+                         Voluntary Guarantor Endorsement: Details will be recorded in the MySQL ledger to support credit underwriting:
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
                         <div>
@@ -1032,15 +1032,15 @@ export default function ApplicationWizard({ initialPlan, onCompleteAndTrack, onS
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', fontSize: '0.84rem' }}>
                   <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span>National Identity Card (NIC Scan)</span>
-                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached ✓</span>
+                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached</span>
                   </div>
                   <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span>Certified Salary Payslip (3 Mo)</span>
-                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached ✓</span>
+                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached</span>
                   </div>
                   <div style={{ background: 'var(--bg-surface)', padding: '10px 14px', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span>Proof of Residential Address</span>
-                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached ✓</span>
+                    <span style={{ color: 'var(--emerald-400)', fontWeight: 'bold' }}>Attached</span>
                   </div>
                 </div>
               </div>

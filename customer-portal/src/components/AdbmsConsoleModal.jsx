@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { DatabaseIcon, ClockIcon, CheckIcon, ShieldCheckIcon } from './Icons'
+import { DatabaseIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
 export default function AdbmsConsoleModal({ isOpen, onClose }) {
@@ -198,7 +198,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('procedures'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap' }}
           >
-            ⚙️ Procedures (ACID)
+             Procedures (ACID)
           </button>
           <button
             type="button"
@@ -206,7 +206,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('functions'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap' }}
           >
-            📐 Functions (UDFs)
+             Functions (UDFs)
           </button>
           <button
             type="button"
@@ -214,7 +214,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('views'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap' }}
           >
-            📊 Operational Views
+             Operational Views
           </button>
           <button
             type="button"
@@ -222,7 +222,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('audit'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap' }}
           >
-            🛡️ Audit & RBAC Security
+             Audit & RBAC Security
           </button>
           <button
             type="button"
@@ -230,13 +230,13 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             onClick={() => { setActiveTab('team'); setConsoleOutput(null); setError('') }}
             style={{ fontSize: '0.82rem', padding: '6px 14px', whiteSpace: 'nowrap', borderColor: '#3b82f6', color: '#93c5fd' }}
           >
-            👥 Subsystem Architecture
+             Subsystem Architecture
           </button>
         </div>
 
         {error && (
           <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '10px 14px', borderRadius: '6px', fontSize: '0.82rem', marginBottom: '14px' }}>
-            ⚠️ {error}
+             {error}
           </div>
         )}
 
@@ -489,7 +489,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                     </div>
                   </div>
                   <div style={{ marginTop: '10px', fontSize: '0.75rem', color: '#64748b' }}>
-                    ℹ️ Evaluates credit score threshold (≥620), pledged collateral coverage (≥100%), and applies credit committee policy.
+                     Evaluates credit score threshold (≥620), pledged collateral coverage (≥100%), and applies credit committee policy.
                   </div>
                 </div>
               )}
@@ -501,7 +501,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                   </div>
                   <div style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: '6px', padding: '14px', fontSize: '0.82rem', color: '#93c5fd' }}>
                     <div style={{ fontWeight: '600', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span>⚙️</span>
                       <span>Member 04: Batch Delinquency Classification (MySQL Cursor Engine)</span>
                     </div>
                     <p style={{ margin: 0, lineHeight: 1.5, color: '#cbd5e1' }}>
@@ -726,7 +725,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             </div>
 
             <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: '6px', padding: '8px 12px', fontSize: '0.75rem', color: '#6ee7b7', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>⏱️</span>
               <span><strong>Event Scheduler Active:</strong> evt_daily_loan_status_check runs daily at midnight, calling sp_mark_overdue_facilities() per scheduled event policy.</span>
             </div>
 
@@ -734,7 +732,6 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span>⚙️</span>
                   <span>Query Optimization & Composite Index Benchmark (EXPLAIN ANALYZE)</span>
                 </span>
                 <button
@@ -777,7 +774,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
             <div style={{ fontSize: '0.85rem', fontWeight: '600', color: '#e2e8f0', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Immutable Loan Audit Ledger (Trigger-Generated)</span>
               <button type="button" onClick={fetchAuditLogs} style={{ background: 'transparent', border: 'none', color: '#38bdf8', cursor: 'pointer', fontSize: '0.75rem' }}>
-                🔄 Refresh Logs
+                 Refresh Logs
               </button>
             </div>
 
@@ -848,12 +845,12 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
                 <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Loan Application & Credit Underwriting</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
-                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> ApplicationWizard.jsx & Official Printable Slip</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#60a5fa' }}>sp_underwrite_loan_application</span> (ACID evaluation)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_calculate_monthly_emi</span> (Amortization formula)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loans_before_insert</span> (Boundary & NIC checks)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_customer_loan_statement</span></div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_applications_status</span> on loan_applications</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> UI Module:</strong> ApplicationWizard.jsx & Official Printable Slip</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Stored Procedure:</strong> <span className="mono" style={{ color: '#60a5fa' }}>sp_underwrite_loan_application</span> (ACID evaluation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_calculate_monthly_emi</span> (Amortization formula)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loans_before_insert</span> (Boundary & NIC checks)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_customer_loan_statement</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_applications_status</span> on loan_applications</div>
                 </div>
               </div>
 
@@ -865,12 +862,12 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
                 <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Facility Disbursement & Schedule Generation</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
-                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> RoleWorkstation.jsx (Manager Disbursal Worklist)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#34d399' }}>sp_disburse_new_loan</span> (Atomic ledger insert & schedule)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_calculate_total_interest</span> (Total borrowing cost)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_prevent_excess_disbursement</span> (Limit safeguard)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_loan_officer_active_facilities</span></div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_officers_branch</span> on loan_officers</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> UI Module:</strong> RoleWorkstation.jsx (Manager Disbursal Worklist)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Stored Procedure:</strong> <span className="mono" style={{ color: '#34d399' }}>sp_disburse_new_loan</span> (Atomic ledger insert & schedule)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_calculate_total_interest</span> (Total borrowing cost)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_prevent_excess_disbursement</span> (Limit safeguard)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_loan_officer_active_facilities</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_officers_branch</span> on loan_officers</div>
                 </div>
               </div>
 
@@ -882,12 +879,12 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
                 <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Teller Collections, Payments & Payoff</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
-                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> RoleWorkstation.jsx (Officer Collections) & LoanTracker.jsx</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#c084fc' }}>sp_process_loan_payment</span> (Principal/Interest allocation)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_loan_outstanding_balance</span> (Real-time net balance)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loan_payments_before_insert</span> (Overpayment guard)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_daily_payment_reconciliation</span></div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_payments_loan_date</span> on loan_payments</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> UI Module:</strong> RoleWorkstation.jsx (Officer Collections) & LoanTracker.jsx</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Stored Procedure:</strong> <span className="mono" style={{ color: '#c084fc' }}>sp_process_loan_payment</span> (Principal/Interest allocation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_loan_outstanding_balance</span> (Real-time net balance)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loan_payments_before_insert</span> (Overpayment guard)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_daily_payment_reconciliation</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_payments_loan_date</span> on loan_payments</div>
                 </div>
               </div>
 
@@ -899,12 +896,12 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
                 <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Credit Delinquency & Batch Job Scheduling</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
-                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> AdbmsConsoleModal.jsx (Overdue Queue & Evaluation)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#fbbf24' }}>sp_mark_overdue_facilities</span> (InnoDB cursor batch scan)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_days_overdue</span> (Aging bucket calculation)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Trigger & Event:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loan_payments_after_insert</span> & <span className="mono" style={{ color: '#38bdf8' }}>evt_daily_loan_status_check</span></div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_overdue_collections_queue</span> (30/60/90+ days)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_schedules_due_date</span> on loan_repayment_schedules</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> UI Module:</strong> AdbmsConsoleModal.jsx (Overdue Queue & Evaluation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Stored Procedure:</strong> <span className="mono" style={{ color: '#fbbf24' }}>sp_mark_overdue_facilities</span> (InnoDB cursor batch scan)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_days_overdue</span> (Aging bucket calculation)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Trigger & Event:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loan_payments_after_insert</span> & <span className="mono" style={{ color: '#38bdf8' }}>evt_daily_loan_status_check</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_overdue_collections_queue</span> (30/60/90+ days)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Index Target:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_schedules_due_date</span> on loan_repayment_schedules</div>
                 </div>
               </div>
 
@@ -916,13 +913,13 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
                 <div style={{ fontSize: '0.92rem', fontWeight: '600', color: '#f8fafc', marginBottom: '8px' }}>Restructuring, Security RBAC & Optimization</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem', color: '#94a3b8' }}>
-                  <div><strong style={{ color: '#e2e8f0' }}>🖥️ UI Module:</strong> RoleWorkstation.jsx (Restructure Card) & AdbmsConsoleModal.jsx</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚙️ Stored Procedure:</strong> <span className="mono" style={{ color: '#f472b6' }}>sp_restructure_loan</span> (Concessionary rate & term extension)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📐 Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_loan_risk_tier</span> (Low/Med/High/Default risk model)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>🛡️ Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loans_after_update</span> (Audit logging to loan_audit_log)</div>
-                  <div><strong style={{ color: '#e2e8f0' }}>📊 Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_loan_portfolio_health_metrics</span></div>
-                  <div><strong style={{ color: '#e2e8f0' }}>⚡ Index Optimization:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_loans_status_enddate</span> with <strong style={{ color: '#38bdf8' }}>EXPLAIN ANALYZE</strong></div>
-                  <div><strong style={{ color: '#e2e8f0' }}>🔐 Security (RBAC):</strong> role_loan_officer, role_loan_manager, role_customer_portal</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> UI Module:</strong> RoleWorkstation.jsx (Restructure Card) & AdbmsConsoleModal.jsx</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Stored Procedure:</strong> <span className="mono" style={{ color: '#f472b6' }}>sp_restructure_loan</span> (Concessionary rate & term extension)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Function (UDF):</strong> <span className="mono" style={{ color: '#38bdf8' }}>fn_loan_risk_tier</span> (Low/Med/High/Default risk model)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Active Trigger:</strong> <span className="mono" style={{ color: '#4ade80' }}>trg_loans_after_update</span> (Audit logging to loan_audit_log)</div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Operational View:</strong> <span className="mono" style={{ color: '#c084fc' }}>vw_loan_portfolio_health_metrics</span></div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Index Optimization:</strong> <span className="mono" style={{ color: '#fbbf24' }}>idx_loans_status_enddate</span> with <strong style={{ color: '#38bdf8' }}>EXPLAIN ANALYZE</strong></div>
+                  <div><strong style={{ color: '#e2e8f0' }}> Security (RBAC):</strong> role_loan_officer, role_loan_manager, role_customer_portal</div>
                 </div>
               </div>
             </div>
@@ -934,7 +931,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
           <div style={{ marginTop: '18px', background: '#020617', border: '1px solid #1e293b', borderRadius: '8px', padding: '14px', fontFamily: 'monospace', fontSize: '0.8rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #1e293b', paddingBottom: '8px', marginBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--emerald-400)' }}>
-                <span>✓ MySQL Execution Output</span>
+                <span>MySQL Execution Output</span>
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>({consoleOutput.executionTimeMs} ms)</span>
               </div>
               <div>
@@ -963,7 +960,7 @@ export default function AdbmsConsoleModal({ isOpen, onClose }) {
                 </div>
                 {consoleOutput.generatedLoanId && (
                   <div style={{ gridColumn: '1 / -1', color: 'var(--emerald-400)' }}>
-                    ✓ New Loan Account Created: #{consoleOutput.generatedLoanId}
+                    New Loan Account Created: #{consoleOutput.generatedLoanId}
                   </div>
                 )}
               </div>

@@ -24,7 +24,6 @@ function Topbar({ activeView, isRunning, onRun, connectionStatus }) {
       <div className="topbar-actions">
         <div className={`live-badge ${connectionStatus}`} role="status" aria-live="polite"><span className="pulse-dot" /> {connectionCopy}</div>
         <button className={`run-button ${isRunning ? 'running' : ''}`} onClick={onRun} disabled={isRunning}>
-          <span className="run-icon">{isRunning ? '◌' : '▶'}</span>
           {isRunning ? 'Running pipeline' : 'Run pipeline'}
         </button>
       </div>

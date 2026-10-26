@@ -19,7 +19,7 @@ function KpiStrip({ metrics }) {
     <section className="kpi-grid" aria-label="Warehouse key performance indicators">
       {kpis.map((kpi, index) => (
         <article className={`kpi-card ${kpi.tone}`} key={kpi.label}>
-          <div className="kpi-top"><span>{kpi.label}</span><span className="kpi-spark">↗</span></div>
+          <div className="kpi-top"><span>{kpi.label}</span></div>
           <strong>{values[index] ?? '—'}</strong>
           <p><span>{metrics ? 'Loaded from warehouse' : 'Awaiting warehouse data'}</span></p>
         </article>

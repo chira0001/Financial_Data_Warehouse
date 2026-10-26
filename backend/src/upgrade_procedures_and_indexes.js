@@ -87,7 +87,7 @@ async function upgrade() {
         END IF;
     END;
   `)
-  console.log('✓ sp_process_loan_payment upgraded with FOR UPDATE locking.')
+  console.log('sp_process_loan_payment upgraded with FOR UPDATE locking.')
 
   // 2. Create Member 2's Underwriting Procedure: sp_underwrite_loan_application
   await conn.query('DROP PROCEDURE IF EXISTS sp_underwrite_loan_application')
@@ -167,7 +167,7 @@ async function upgrade() {
         END IF;
     END;
   `)
-  console.log('✓ sp_underwrite_loan_application created for Member 2.')
+  console.log('sp_underwrite_loan_application created for Member 2.')
 
   // 3. Create Composite Indexes for Query Optimization
   const indexes = [
@@ -180,10 +180,10 @@ async function upgrade() {
   for (const idx of indexes) {
     try {
       await conn.query(idx.sql)
-      console.log(`✓ Created index: ${idx.name}`)
+      console.log(`Created index: ${idx.name}`)
     } catch (err) {
       if (err.code === 'ER_DUP_KEYNAME') {
-        console.log(`ℹ Index ${idx.name} already exists.`)
+        console.log(`Index ${idx.name} already exists.`)
       } else {
         console.warn(`Could not create index ${idx.name}:`, err.message)
       }

@@ -57,7 +57,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenConsole, current
               border: '1px solid currentColor',
               fontWeight: '600'
             }}>
-              🔒 Active Staff Workstation Mode: {currentRole === 'officer' ? 'role_loan_officer' : currentRole === 'manager' ? 'role_loan_manager' : 'role_loan_auditor'}
+              Active Staff Workstation Mode: {currentRole === 'officer' ? 'role_loan_officer' : currentRole === 'manager' ? 'role_loan_manager' : 'role_loan_auditor'}
             </span>
           </div>
         )}
@@ -100,10 +100,10 @@ export default function Navbar({ activeTab, setActiveTab, onOpenConsole, current
               }}
               title="Switch RBAC Persona View (Customer / Loan Officer / Manager / Auditor)"
             >
-              <option value="customer">👤 Persona: Customer</option>
-              <option value="officer">🔵 Staff: Loan Officer (Teller)</option>
-              <option value="manager">🟣 Staff: Loan Manager (Approvals)</option>
-              <option value="auditor">🟡 Staff: Loan Auditor (Compliance)</option>
+              <option value="customer">Persona: Customer</option>
+              <option value="officer">Staff: Loan Officer (Teller)</option>
+              <option value="manager">Staff: Loan Manager (Approvals)</option>
+              <option value="auditor">Staff: Loan Auditor (Compliance)</option>
             </select>
           </div>
 
