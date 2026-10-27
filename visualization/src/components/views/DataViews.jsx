@@ -3,6 +3,7 @@ import { warehouseApi } from '../../api/warehouseApi'
 import SectionHeader from '../shared/SectionHeader'
 import StatusPill from '../shared/StatusPill'
 import { sriLankaBoundaryPaths, sriLankaMapBounds, sriLankaMapFrame } from '../../data/sriLankaMap'
+import './LoanOperations.css'
 
 const formatCurrency = (value) => `LKR ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 const transactionCountFormatter = new Intl.NumberFormat()
@@ -203,11 +204,11 @@ export function TransactionsView() {
   </div>
 }
 
-export function LoansView() {
-  const [state, setState] = useState({ summary: null, products: [], statuses: [], loading: true, error: '' })
+export function LoansView({ refreshKey = 0 }) {
+  const [state, setState] = useState({ summary: null, products: [], statuses: [], operations: {}, loading: true, error: '' })
   useEffect(() => {
-    warehouseApi.loanSummary().then((data) => setState({ summary: data.summary, products: data.products || [], statuses: data.statuses || [], loading: false, error: '' })).catch((error) => setState((current) => ({ ...current, loading: false, error: error.message })))
-  }, [])
+    warehouseApi.loanSummary().then((data) => setState({ summary: data.summary, products: data.products || [], statuses: data.statuses || [], operations: data.operations || {}, loading: false, error: '' })).catch((error) => setState((current) => ({ ...current, loading: false, error: error.message })))
+  }, [refreshKey])
 
   const facilityCount = Number(state.summary?.facility_count || 0)
   const principal = Number(state.summary?.principal || 0)
@@ -222,11 +223,87 @@ export function LoansView() {
         <article className="summary-metric"><span>Payments tracked</span><strong>{formatCurrency(paid)}</strong><small>{principal ? `${((paid / principal) * 100).toFixed(1)}% of principal value` : 'No principal recorded'}</small></article>
         <article className="summary-metric"><span>Average interest rate</span><strong>{averageRate.toFixed(2)}%</strong><small>Across loaded facilities</small></article>
       </div>
+      <section className="operations-metric-grid" aria-label="Customer portal loan operation metrics">
+        <article><span>Applications</span><strong>{Number(state.operations.applications || 0).toLocaleString()}</strong><small>{Number(state.operations.pending_applications || 0).toLocaleString()} pending review</small></article>
+        <article><span>Disbursements</span><strong>{Number(state.operations.disbursements || 0).toLocaleString()}</strong><small>{formatCurrency(state.operations.disbursed_amount)} released</small></article>
+        <article><span>Scheduled installments</span><strong>{Number(state.operations.pending_installments || 0).toLocaleString()}</strong><small>Pending payment</small></article>
+        <article><span>Collateral value</span><strong>{formatCurrency(state.operations.collateral_value)}</strong><small>{Number(state.operations.collateral_records || 0).toLocaleString()} valuations</small></article>
+        <article><span>Open fees & penalties</span><strong>{Number(state.operations.open_fees || 0).toLocaleString()}</strong><small>{formatCurrency(state.operations.open_fee_amount)} outstanding</small></article>
+        <article><span>Recovery actions</span><strong>{Number(state.operations.recovery_actions || 0).toLocaleString()}</strong><small>Collections activity recorded</small></article>
+      </section>
       <div className="summary-grid">
-        <section className="panel summary-panel"><SectionHeader eyebrow="Product exposure / fact_loan" title="Principal by loan product" /><RankedBars rows={state.products} valueKey="principal" valueFormatter={formatCurrency} />{state.products[0] && <p className="summary-note">{state.products[0].label} is the largest product, accounting for {principal ? ((Number(state.products[0].principal) / principal) * 100).toFixed(1) : '0.0'}% of principal across all facilities.</p>}</section>
+        <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio exposure / fact_loan" title="Principal by loan category" /><RankedBars rows={state.products} valueKey="principal" valueFormatter={formatCurrency} />{state.products[0] && <p className="summary-note">{state.products[0].label} is the largest loan category, accounting for {principal ? ((Number(state.products[0].principal) / principal) * 100).toFixed(1) : '0.0'}% of principal across all facilities.</p>}</section>
         <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio health / loan status" title="Facilities by status" /><RankedBars rows={state.statuses} valueKey="loan_count" valueFormatter={(value) => `${value.toLocaleString()} loans`} />{state.statuses[0] && <p className="summary-note">{state.statuses[0].label} is the most common status across all facilities.</p>}</section>
       </div>
     </>}
+  </div>
+}
+
+const loanOperationTabs = [
+  ['facilities', 'Facilities'], ['payments', 'Payments'], ['applications', 'Applications'], ['products', 'Products'], ['officers', 'Officers'],
+  ['disbursements', 'Disbursements'], ['schedules', 'Schedules'], ['collateral', 'Collateral'],
+  ['guarantors', 'Guarantors'], ['fees', 'Fees & penalties'], ['recovery', 'Recovery'],
+  ['loan-audit', 'Loan audit'], ['payment-audit', 'Payment audit'],
+]
+
+const displayColumnName = (column) => column.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+const displayCell = (value, column) => {
+  if (value == null || value === '') return '—'
+  if (column.endsWith('_amount') || ['min_amount', 'max_amount', 'base_interest_rate', 'processing_fee_percentage', 'monthly_income', 'guarantee_amount', 'old_interest_rate', 'new_interest_rate'].includes(column)) {
+    const numeric = Number(value)
+    return Number.isFinite(numeric) ? numeric.toLocaleString(undefined, { maximumFractionDigits: 2 }) : value
+  }
+  if (column.startsWith('is_')) return Number(value) ? 'Required' : 'Optional'
+  if (typeof value === 'number') return value.toLocaleString()
+  return String(value)
+}
+
+export function LoanOperationsView({ refreshKey = 0 }) {
+  const [dataset, setDataset] = useState('applications')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [state, setState] = useState({ rows: [], columns: [], total: 0, label: '', loading: true, error: '' })
+  const pageSize = 50
+
+  useEffect(() => {
+    let active = true
+    warehouseApi.loanOperations(dataset, { search, limit: pageSize, offset: page * pageSize })
+      .then((data) => {
+        if (active) setState({ rows: data.rows || [], columns: data.columns || [], total: data.total || 0, label: data.label || '', loading: false, error: '' })
+      })
+      .catch((error) => {
+        if (active) setState((current) => ({ ...current, loading: false, error: error.message }))
+      })
+    return () => { active = false }
+  }, [dataset, search, page, refreshKey])
+
+  const selectDataset = (nextDataset) => {
+    setState((current) => ({ ...current, loading: true, error: '' }))
+    setDataset(nextDataset)
+    setSearch('')
+    setPage(0)
+  }
+  const pageCount = Math.max(1, Math.ceil(state.total / pageSize))
+
+  return <div className="view-stack loan-operations-view">
+    <section className="operations-intro">
+      <div><span className="eyebrow">Gold / customer portal warehouse</span><h2>Loan servicing, end to end.</h2><p>Explore applications, product rules, servicing events, collateral, collections, and audit history from the analytical layer.</p></div>
+      <div className="operations-grain"><span>Current dataset</span><strong>{loanOperationTabs.find(([id]) => id === dataset)?.[1]}</strong><small>One row per source event or reference record</small></div>
+    </section>
+    <nav className="operations-tabs" aria-label="Loan operation datasets">
+      {loanOperationTabs.map(([id, label]) => <button key={id} type="button" className={dataset === id ? 'active' : ''} aria-current={dataset === id ? 'page' : undefined} onClick={() => selectDataset(id)}>{label}</button>)}
+    </nav>
+    <section className="panel operations-panel">
+      <div className="operations-toolbar">
+        <div><span className="eyebrow">Gold records</span><h3>{state.label || loanOperationTabs.find(([id]) => id === dataset)?.[1]}</h3></div>
+        <label className="operations-search"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => { setState((current) => ({ ...current, loading: true, error: '' })); setSearch(event.target.value); setPage(0) }} placeholder="Search this dataset" aria-label="Search this dataset" /></label>
+        <span className="operations-count">{state.total.toLocaleString()} records</span>
+      </div>
+      {state.error ? <EmptyResults loading={state.loading} error={state.error} message="Load the Gold customer portal tables to view these records." /> : state.loading && state.rows.length === 0 ? <EmptyResults loading message="Loading Gold loan operation records." /> : state.rows.length === 0 ? <EmptyResults message={search ? 'No records match this search.' : 'This Gold dataset has no records yet.'} /> : <>
+        <div className="operations-table-wrap"><table className="operations-table"><thead><tr>{state.columns.map((column) => <th key={column}>{displayColumnName(column)}</th>)}</tr></thead><tbody>{state.rows.map((row, index) => <tr key={`${row[state.columns[0]] ?? index}-${index}`}>{state.columns.map((column) => <td key={column} title={row[column] == null ? '' : String(row[column])}>{displayCell(row[column], column)}</td>)}</tr>)}</tbody></table></div>
+        <footer className="operations-pagination"><span>Showing {(page * pageSize + 1).toLocaleString()}–{Math.min((page + 1) * pageSize, state.total).toLocaleString()} of {state.total.toLocaleString()}</span><div><button type="button" onClick={() => { setState((current) => ({ ...current, loading: true })); setPage((current) => Math.max(0, current - 1)) }} disabled={page === 0}>Previous</button><b>Page {page + 1} of {pageCount}</b><button type="button" onClick={() => { setState((current) => ({ ...current, loading: true })); setPage((current) => Math.min(pageCount - 1, current + 1)) }} disabled={page + 1 >= pageCount}>Next</button></div></footer>
+      </>}
+    </section>
   </div>
 }
 

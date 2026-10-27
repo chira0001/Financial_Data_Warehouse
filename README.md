@@ -26,27 +26,27 @@ Financial_Data_Warehouse/
 
 1. Core banking CSV extracts: customers, accounts, and branches.
 2. Banking transaction CSV extract covering January to September 2026.
-3. Loan source schema in [Bank_Loans.sql](sources/MySQL-DB/Bank_Loans.sql), with seed records in [bank_loans_data.sql](sources/MySQL-DB/bank_loans_data.sql).
+3. The `banking_loan_source` MySQL database defined in [Bank_Loans.sql](sources/MySQL-DB/Bank_Loans.sql), with seed records in [bank_loans_data.sql](sources/MySQL-DB/bank_loans_data.sql). It powers the customer portal and is loaded into the warehouse with its customer, branch, loan, payment, product, application, officer, collateral, guarantor, disbursement, repayment schedule, fee, recovery, and audit data.
 4. Foreign-exchange rates retrieved from the Frankfurter REST API by [fetch_rates.py](sources/API/fetch_rates.py).
 
 ## Warehouse Layers
 
 ### Bronze
 
-Raw landing tables preserve source values before transformation:
+Raw landing tables preserve source values before transformation. Portal database customers and branches are merged with the CSV source records; source IDs are normalized for the shared customer dimension.
 
-`bronze_customers`, `bronze_accounts`, `bronze_branches`, `bronze_banking_transactions`, `bronze_exchange_rates`, `bronze_loans`, and `bronze_loan_payments`.
+`bronze_customers`, `bronze_accounts`, `bronze_branches`, `bronze_banking_transactions`, `bronze_exchange_rates`, `bronze_loans`, `bronze_loan_payments`, `bronze_loan_products`, `bronze_loan_officers`, `bronze_loan_applications`, `bronze_loan_collaterals`, `bronze_loan_guarantors`, `bronze_loan_disbursements`, `bronze_loan_repayment_schedules`, `bronze_loan_fees_and_penalties`, `bronze_loan_recovery_actions`, `bronze_loan_audit_log`, and `bronze_loan_payment_audit_log`.
 
 ### Silver
 
-Cleaned and typed tables parse dates, preserve transaction currency and amount, calculate reporting currency, split customer names, and standardize loan relationships.
+Cleaned and typed tables parse dates, preserve transaction currency and amount, calculate reporting currency, split customer names, standardize loan relationships, and remove direct guarantor and officer contact identifiers from Silver and Gold.
 
 ### Gold
 
 The analytical star schema contains:
 
-- Dimensions: `dim_customer`, `dim_account`, `dim_branch`, `dim_date`, `dim_currency`
-- Facts: `fact_transaction`, `fact_exchange_rate`, `fact_loan`, `fact_loan_payment`
+- Dimensions: `dim_customer`, `dim_account`, `dim_branch`, `dim_date`, `dim_currency`, `dim_loan_product`, `dim_loan_officer`
+- Facts: `fact_transaction`, `fact_exchange_rate`, `fact_loan`, `fact_loan_payment`, `fact_loan_application`, `fact_loan_disbursement`, `fact_loan_repayment_schedule`, `fact_loan_collateral`, `fact_loan_guarantor`, `fact_loan_fee`, `fact_loan_recovery_action`, `fact_loan_audit`, and `fact_loan_payment_audit`
 - Views: `vw_transaction_detail`, `vw_daily_transaction_summary`, `vw_loan_portfolio`
 
 Database functions, procedures, and ETL audit logging are defined in [routines.sql](scripts/ddl/routines.sql). Triggers and automatic database events are intentionally not used because the warehouse is batch-loaded and should not refresh Gold while source data is incomplete.
@@ -86,7 +86,7 @@ mysql -u root -p warehouse < scripts/ddl/gold_ddl.sql
 mysql -u root -p warehouse < scripts/ddl/reporting_views.sql
 ```
 
-Before loading, update the CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) for your machine. Configure the database connection in [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
+Before loading, update the CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) for your machine. Set `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` in the environment for [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
 
 ```powershell
 python sources/API/fetch_rates.py

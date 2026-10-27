@@ -45,6 +45,8 @@ Bronze stores source-shaped values. Silver parses dates, retains transaction sou
 - `dim_branch`: branch identity and location attributes.
 - `dim_customer`: customer identity and descriptive attributes.
 - `dim_account`: account identity, owner, branch, type, opening date, and balance.
+- `dim_loan_product`: loan product category, limits, and pricing.
+- `dim_loan_officer`: warehouse-safe officer identifiers and role attributes.
 
 ### Facts and Grain
 
@@ -52,6 +54,14 @@ Bronze stores source-shaped values. Silver parses dates, retains transaction sou
 - `fact_exchange_rate`: one row per target currency and rate date.
 - `fact_loan`: one row per loan facility.
 - `fact_loan_payment`: one row per payment event.
+- `fact_loan_application`: one row per customer portal loan application.
+- `fact_loan_disbursement`: one row per loan disbursement.
+- `fact_loan_repayment_schedule`: one row per scheduled installment.
+- `fact_loan_collateral`: one row per collateral valuation.
+- `fact_loan_guarantor`: one row per loan guarantor relationship.
+- `fact_loan_fee`: one row per loan fee or penalty.
+- `fact_loan_recovery_action`: one row per recovery action.
+- `fact_loan_audit` and `fact_loan_payment_audit`: one row per source audit event.
 
 The Gold physical schema is implemented in [gold_ddl.sql](../scripts/ddl/gold_ddl.sql). The full model documentation is in [DIMENSIONAL_MODEL.md](DIMENSIONAL_MODEL.md).
 
@@ -74,7 +84,7 @@ The backend exposes `POST /api/pipeline/run`, which executes the Bronze, Silver,
 
 The project includes checks for duplicate transaction IDs, duplicate fact grains, unresolved Gold dimension relationships, source-to-Gold row-count reconciliation, and loan relationship coverage. ETL stages write audit records to `warehouse.etl_run_log`.
 
-The synthetic loan source contains identifiers outside the CSV customer and account master ranges. These are intentionally visible as relationship-quality issues rather than being silently mapped to incorrect customers or accounts.
+Portal customers and branches are merged into the shared warehouse masters before Gold is built. Guarantor identity/contact fields and officer contact details stay in Bronze; Gold excludes those fields and operational notes.
 
 ## 7. Business Queries and Group Allocation
 

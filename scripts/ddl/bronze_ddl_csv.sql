@@ -60,6 +60,18 @@ BEGIN
 		payment_status VARCHAR(30)
 	);
 
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_products LIKE banking_loan_source.loan_products;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_officers LIKE banking_loan_source.loan_officers;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_applications LIKE banking_loan_source.loan_applications;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_collaterals LIKE banking_loan_source.loan_collaterals;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_guarantors LIKE banking_loan_source.loan_guarantors;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_disbursements LIKE banking_loan_source.loan_disbursements;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_repayment_schedules LIKE banking_loan_source.loan_repayment_schedules;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_fees_and_penalties LIKE banking_loan_source.loan_fees_and_penalties;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_recovery_actions LIKE banking_loan_source.loan_recovery_actions;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_audit_log LIKE banking_loan_source.loan_audit_log;
+	CREATE TABLE IF NOT EXISTS warehouse.bronze_loan_payment_audit_log LIKE banking_loan_source.loan_payment_audit_log;
+
 	CREATE TABLE IF NOT EXISTS warehouse.bronze_exchange_rates (
 		id INT NOT NULL AUTO_INCREMENT UNIQUE,
 		rate_date varchar(50) NOT NULL,

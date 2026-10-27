@@ -7,12 +7,12 @@ import PipelineRail from './components/dashboard/PipelineRail'
 import VolumeChart from './components/dashboard/VolumeChart'
 import CurrencyMix from './components/dashboard/CurrencyMix'
 import RunLedger from './components/dashboard/RunLedger'
-import { LoansView, QualityView, QueryGroupsView, TransactionsView } from './components/views/DataViews'
+import { LoanOperationsView, LoansView, QualityView, QueryGroupsView, TransactionsView } from './components/views/DataViews'
 import ControlRoomView from './components/views/ControlRoomView'
 import { pipelineLayers } from './data/warehouseData'
 
 function Overview({ isRunning, onNavigate, overview, error }) {
-  return <div className="view-stack">{error && <div className="api-error"><strong>Warehouse connection unavailable</strong><span>{error}</span></div>}<KpiStrip metrics={overview?.metrics} /><PipelineRail layers={overview?.layers || pipelineLayers} isRunning={isRunning} /><div className="dashboard-grid"><VolumeChart volume={overview?.volume} /><CurrencyMix currencies={overview?.currencyMix} /></div><RunLedger runs={overview?.runs} /><div className="overview-footer"><span><i className="footer-dot" /> {overview ? 'Warehouse data loaded' : 'Warehouse data is not loaded'}</span><button onClick={() => onNavigate('quality')}>Open quality center <span>→</span></button></div></div>
+  return <div className="view-stack">{error && <div className="api-error"><strong>Warehouse connection unavailable</strong><span>{error}</span></div>}<KpiStrip metrics={overview?.metrics} /><PipelineRail layers={overview?.layers || pipelineLayers} isRunning={isRunning} lastSync={overview?.lastSync} /><div className="dashboard-grid"><VolumeChart volume={overview?.volume} /><CurrencyMix currencies={overview?.currencyMix} /></div><RunLedger runs={overview?.runs} /><div className="overview-footer"><span><i className="footer-dot" /> {overview ? 'Warehouse data loaded' : 'Warehouse data is not loaded'}</span><button onClick={() => onNavigate('quality')}>Open quality center <span>→</span></button></div></div>
 }
 
 function App() {
@@ -65,7 +65,8 @@ function App() {
 
   const renderView = () => {
     if (activeView === 'transactions') return <TransactionsView />
-    if (activeView === 'loans') return <LoansView />
+    if (activeView === 'loans') return <LoansView refreshKey={analyticsRefresh} />
+    if (activeView === 'loan-operations') return <LoanOperationsView refreshKey={analyticsRefresh} />
     if (activeView === 'quality') return <QualityView />
     if (activeView === 'queries') return <QueryGroupsView />
     if (activeView === 'analytics') return <ControlRoomView refreshKey={analyticsRefresh} />

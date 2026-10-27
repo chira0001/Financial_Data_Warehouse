@@ -450,7 +450,7 @@ BEGIN
     SELECT loan_status INTO v_status FROM loans WHERE loan_id = NEW.loan_id;
     IF v_status IS NULL THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Associated loan facility does not exist.';
-    ELSEIF v_status = 'Closed' THEN
+    ELSEIF v_status = 'Closed' AND COALESCE(@allow_historical_seed, 0) <> 1 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Validation Error: Cannot post payment against an already Closed loan facility.';
     END IF;
 END$$
@@ -913,10 +913,10 @@ GRANT role_loan_officer, role_loan_manager, role_loan_auditor TO CURRENT_USER;
 
 FLUSH PRIVILEGES;
 
-CREATE INDEX IF NOT EXISTS idx_loans_status_enddate ON loans(loan_status, loan_end_date);
-CREATE INDEX IF NOT EXISTS idx_payments_loan_date ON loan_payments(loan_id, payment_date);
-CREATE INDEX IF NOT EXISTS idx_collaterals_loan_val ON loan_collaterals(loan_id, valuation_amount);
-CREATE INDEX IF NOT EXISTS idx_guarantors_loan_nic ON loan_guarantors(loan_id, nic_number);
+CREATE INDEX idx_loans_status_enddate ON loans(loan_status, loan_end_date);
+CREATE INDEX idx_payments_loan_date ON loan_payments(loan_id, payment_date);
+CREATE INDEX idx_collaterals_loan_val ON loan_collaterals(loan_id, valuation_amount);
+CREATE INDEX idx_guarantors_loan_nic ON loan_guarantors(loan_id, nic_number);
 
 SELECT 'Active Facilities Sample' AS report_title;
 SELECT * FROM vw_loan_officer_active_facilities LIMIT 5;

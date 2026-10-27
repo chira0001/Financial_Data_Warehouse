@@ -3,6 +3,7 @@ function Topbar({ activeView, isRunning, onRun, connectionStatus }) {
     overview: ['Warehouse pulse', 'Operational view across every layer'],
     transactions: ['Transaction explorer', 'Trace currency, channel, and reporting value'],
     loans: ['Loan portfolio', 'Follow balances from source to Gold'],
+    'loan-operations': ['Loan operations', 'Applications, servicing, collateral, collections, and audit detail'],
     quality: ['Quality center', 'Checks that keep analytics trustworthy'],
     queries: ['Business queries', 'Run each group against the Gold warehouse'],
     analytics: ['Executive analytics', 'Performance, portfolio, regional, and trend analysis from Gold'],

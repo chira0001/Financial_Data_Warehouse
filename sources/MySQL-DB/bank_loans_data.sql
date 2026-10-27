@@ -2017,6 +2017,7 @@ INSERT INTO loans (loan_id, customer_id, account_id, loan_type, loan_amount, int
 (1999, 999, 1099, 'Education', 768600.00, 8.31, '2024-11-24', '2031-11-23', 'Closed'),
 (2000, 1000, 1100, 'Business', 3980000.00, 17.55, '2023-07-23', '2033-07-20', 'Overdue');
 
+SET @allow_historical_seed = 1;
 INSERT INTO loan_payments (payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status) VALUES
 (5001, 1001, '2024-06-27', 72182.38, 'Bank Transfer', 'Paid'),
 (5002, 1002, '2025-07-29', 70888.24, 'Standing Order', 'Paid'),
@@ -3018,6 +3019,7 @@ INSERT INTO loan_payments (payment_id, loan_id, payment_date, payment_amount, pa
 (5998, 1998, '2024-06-07', 40282.87, 'Cash', 'Paid'),
 (5999, 1999, '2024-04-01', 28628.61, 'Mobile Banking', 'Pending'),
 (6000, 2000, '2025-05-26', 13683.15, 'Debit Card', 'Late');
+SET @allow_historical_seed = 0;
 
 INSERT INTO loan_products (product_id, product_code, product_name, loan_category, min_amount, max_amount, base_interest_rate, max_tenure_months, is_collateral_required, processing_fee_percentage) VALUES
 ('PRD01', 'PERS-STD', 'Standard Personal Flexi Loan', 'Personal', 50000.00, 5000000.00, 13.50, 60, FALSE, 1.00),
@@ -12044,6 +12046,7 @@ INSERT INTO loan_audit_log (audit_id, loan_id, action_type, old_status, new_stat
 (999, 1999, 'DISBURSEMENT', NULL, 'Closed', NULL, 768600.00, NULL, 8.31, 'SYSTEM', '2024-11-24 09:00:00', 'Initial loan disbursement recorded'),
 (1000, 2000, 'DISBURSEMENT', NULL, 'Overdue', NULL, 3980000.00, NULL, 17.55, 'SYSTEM', '2023-07-23 09:00:00', 'Initial loan disbursement recorded');
 
+DELETE FROM loan_payment_audit_log;
 INSERT INTO loan_payment_audit_log (audit_id, payment_id, loan_id, action_type, old_amount, new_amount, old_status, new_status, modified_by, modified_at, notes) VALUES
 (1, 5001, 1001, 'PAYMENT_RECEIVED', NULL, 50000.00, NULL, 'Paid', 'SYSTEM', '2023-01-31 10:30:00', 'Cashier payment collection logged'),
 (2, 5002, 1002, 'PAYMENT_RECEIVED', NULL, 50000.00, NULL, 'Paid', 'SYSTEM', '2021-02-23 10:30:00', 'Cashier payment collection logged'),
