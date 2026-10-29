@@ -13,6 +13,31 @@ INSERT INTO branches (branch_id, branch_name, city, province) VALUES
 ('B009', 'Batticaloa Branch', 'Batticaloa', 'Eastern'),
 ('B010', 'Anuradhapura Branch', 'Anuradhapura', 'North Central');
 
+INSERT INTO branches (branch_id, branch_name, city, province)
+WITH RECURSIVE branch_numbers AS (
+    SELECT 11 AS branch_number
+    UNION ALL
+    SELECT branch_number + 1
+    FROM branch_numbers
+    WHERE branch_number < 1000
+)
+SELECT
+    CONCAT('B', LPAD(branch_number, 3, '0')),
+    CONCAT('Sample Branch ', LPAD(branch_number, 3, '0')),
+    CONCAT('Sample City ', LPAD(branch_number, 3, '0')),
+    CASE MOD(branch_number, 9)
+        WHEN 0 THEN 'Western'
+        WHEN 1 THEN 'Central'
+        WHEN 2 THEN 'Southern'
+        WHEN 3 THEN 'Northern'
+        WHEN 4 THEN 'Eastern'
+        WHEN 5 THEN 'North Western'
+        WHEN 6 THEN 'North Central'
+        WHEN 7 THEN 'Uva'
+        ELSE 'Sabaragamuwa'
+    END
+FROM branch_numbers;
+
 INSERT INTO customers (customer_id, customer_code, customer_name, gender, date_of_birth, city, occupation, branch_id) VALUES
 (1, 'C0001', 'Sahan Jayasinghe', 'Male', '1967-05-11', 'Nuwara Eliya', 'Doctor', 'B008'),
 (2, 'C0002', 'Sahan Karunaratne', 'Male', '1966-04-12', 'Matara', 'IT Professional', 'B007'),
@@ -3027,6 +3052,39 @@ INSERT INTO loan_products (product_id, product_code, product_name, loan_category
 ('PRD03', 'AUTO-DRV', 'DrivePlus Commercial & Personal Vehicle Loan', 'Vehicle', 250000.00, 10000000.00, 14.00, 84, TRUE, 1.25),
 ('PRD04', 'EDU-SCH', 'Higher Education & Scholar Loan', 'Education', 100000.00, 5000000.00, 8.50, 84, FALSE, 0.50),
 ('PRD05', 'BIZ-GROW', 'SME Business Expansion & Working Capital Loan', 'Business', 500000.00, 20000000.00, 12.75, 120, TRUE, 1.50);
+
+INSERT INTO loan_products (product_id, product_code, product_name, loan_category, min_amount, max_amount, base_interest_rate, max_tenure_months, is_collateral_required, processing_fee_percentage)
+WITH RECURSIVE product_numbers AS (
+    SELECT 6 AS product_number
+    UNION ALL
+    SELECT product_number + 1
+    FROM product_numbers
+    WHERE product_number < 1000
+),
+product_categories AS (
+    SELECT
+        product_number,
+        CASE MOD(product_number, 5)
+            WHEN 0 THEN 'Personal'
+            WHEN 1 THEN 'Housing'
+            WHEN 2 THEN 'Vehicle'
+            WHEN 3 THEN 'Education'
+            ELSE 'Business'
+        END AS loan_category
+    FROM product_numbers
+)
+SELECT
+    CONCAT('PRD', LPAD(product_number, 4, '0')),
+    CONCAT('SAMPLE-', LPAD(product_number, 4, '0')),
+    CONCAT('Sample ', loan_category, ' Loan Product ', LPAD(product_number, 4, '0')),
+    loan_category,
+    50000.00 + product_number * 100.00,
+    5000000.00 + product_number * 10000.00,
+    8.00 + MOD(product_number, 100) / 10.00,
+    36 + MOD(product_number, 205),
+    loan_category IN ('Housing', 'Vehicle', 'Business'),
+    0.50 + MOD(product_number, 150) / 100.00
+FROM product_categories;
 
 INSERT INTO loan_officers (officer_id, employee_code, first_name, last_name, email, phone_number, branch_id, role_title, status) VALUES
 (101, 'EMP0101', 'Sunil', 'Perera', 'sunil.perera101@bank.lk', '+94 77 100 0000', 'B001', 'Loan Officer', 'On Leave'),
