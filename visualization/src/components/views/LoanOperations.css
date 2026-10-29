@@ -34,6 +34,28 @@
 .operations-metric-grid span { color: var(--muted); font-size: 9px; }
 .operations-metric-grid strong { overflow: hidden; color: var(--ink); font: 600 17px "Space Grotesk", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .operations-metric-grid small { overflow: hidden; color: var(--faint); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.operations-visualization { padding: 18px 20px 20px; }
+.operations-visualization-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 16px; }
+.operations-visualization-heading h3 { margin: 5px 0 0; color: var(--ink); font: 600 18px "Space Grotesk", sans-serif; letter-spacing: -.025em; }
+.operations-visualization-heading > span { color: var(--faint); font: 9px "DM Mono", monospace; }
+.operations-chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.operations-chart-card { min-width: 0; padding: 16px; border: 1px solid var(--line); background: var(--panel-2); }
+.operations-chart-card h4 { min-height: 20px; margin: 0 0 16px; color: var(--ink); font: 600 13px "Space Grotesk", sans-serif; }
+.operations-chart-bars { display: grid; gap: 10px; min-height: 176px; align-content: start; }
+.operations-chart-row { display: grid; grid-template-columns: minmax(76px, 1fr) minmax(70px, 1.3fr) minmax(62px, auto); align-items: center; gap: 10px; color: var(--muted); font-size: 9px; }
+.operations-chart-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.operations-chart-track { height: 8px; overflow: hidden; background: #e6e9e1; }
+.operations-chart-track i { display: block; height: 100%; background: var(--lime); }
+.operations-chart-row:nth-child(even) .operations-chart-track i { background: var(--cyan); }
+.operations-chart-row strong { color: var(--ink); font: 9px "DM Mono", monospace; text-align: right; white-space: nowrap; }
+.operations-chart-note { margin: 12px 0 0; color: var(--faint); font-size: 8px; }
+.operations-chart-empty { min-height: 176px; display: grid; place-items: center; color: var(--faint); font-size: 10px; }
+.operations-line-chart { width: 100%; overflow: hidden; }
+.operations-line-chart svg { display: block; width: 100%; min-height: 170px; overflow: visible; }
+.operations-line-chart line { stroke: #d7ddd1; stroke-width: 1; }
+.operations-line-chart polyline { fill: none; stroke: var(--cyan); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.operations-line-chart circle { fill: var(--lime); stroke: #fff; stroke-width: 2; }
+.operations-line-chart text { fill: var(--muted); font: 9px "DM Mono", monospace; }
 @media (max-width: 720px) {
   .operations-intro { align-items: flex-start; flex-direction: column; padding: 19px; }
   .operations-grain { width: 100%; }
@@ -42,6 +64,10 @@
   .operations-count { margin-left: auto; }
   .operations-panel { padding: 15px 12px 10px; }
   .operations-metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .operations-visualization { padding: 15px 12px; }
+  .operations-chart-grid { grid-template-columns: 1fr; }
+  .operations-chart-card { padding: 13px; }
+  .operations-chart-row { grid-template-columns: minmax(68px, 1fr) minmax(52px, 1.2fr) minmax(54px, auto); gap: 7px; }
   .operations-pagination { align-items: flex-start; flex-direction: column; }
   .operations-pagination > div { width: 100%; justify-content: space-between; }
 }
