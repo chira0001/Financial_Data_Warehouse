@@ -586,9 +586,13 @@ function QueryLineChart({ points, maxValue, xLabel, ariaLabel }) {
   </div>
 }
 
-function QueryResult({ rows, index, groupId }) {
-  const queryNumber = (groupId - 1) * 4 + index + 1
-  if (!rows.length) return <div className="query-result-empty">Q{String(queryNumber).padStart(2, '0')} returned no rows.</div>
+function QueryResult({ query, index, groupId }) {
+  const rows = query.rows
+  const queryNumber = query.number || (groupId - 1) * 4 + index + 1
+  if (!rows.length) return <div className="query-result">
+    <div className="query-sql"><span>SQL query</span><pre><code>{query.sql}</code></pre></div>
+    <div className="query-result-empty">Q{String(queryNumber).padStart(2, '0')} returned no rows.</div>
+  </div>
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))]
   const measures = columns.filter((column) => {
     if (/(^|_)(id|key)(_|$)|date|year|month|day|week/i.test(column)) return false
@@ -625,6 +629,7 @@ function QueryResult({ rows, index, groupId }) {
   })
 
   return <div className="query-result">
+    <div className="query-sql"><span>SQL query</span><pre><code>{query.sql}</code></pre></div>
     <div className="query-result-heading"><span className="query-result-label">Q{String(queryNumber).padStart(2, '0')} · {rows.length.toLocaleString()} result{rows.length === 1 ? '' : 's'}</span><strong>{columns.filter((column) => !/id|key/i.test(column)).slice(0, 3).map((column) => column.replaceAll('_', ' ')).join(' · ')}</strong></div>
     {rows.length === 1 && measures.length > 0 ? <div className="query-metric-grid">{measures.slice(0, 4).map((measure) => <article className="query-metric" key={measure}><span>{measure.replaceAll('_', ' ')}</span><strong>{formatQueryValue(rows[0][measure], measure)}</strong></article>)}</div> : primaryMeasure ? <>
       {!showDistributionLine && !showMaturityLine && <div className="query-summary"><strong>{formatQueryValue(total, primaryMeasure)}</strong><span>combined {primaryMeasure.replaceAll('_', ' ')} across {rows.length.toLocaleString()} results</span></div>}
@@ -646,5 +651,5 @@ export function QueryGroupsView() {
     }
   }
 
-  return <div className="view-stack"><div className="query-intro"><div><span className="eyebrow">SQL / Gold warehouse</span><h2>Five perspectives, one source of truth.</h2><p>Run each member's four-query group independently. Results are distilled into key metrics, category summaries, and ranked comparisons.</p></div><span className="query-count">20 questions<br /><b>5 groups</b></span></div><div className="query-group-grid">{queryGroups.map((group) => { const state = groupState[group.id] || { loading: false, error: '', results: [] }; return <section className="query-group-card panel" key={group.id}><div className="query-group-top"><span className="query-group-number">0{group.id}</span><span className="query-range">{group.range}</span></div><h3>{group.title}</h3><p>{group.description}</p><button className="query-run-button" onClick={() => runGroup(group.id)} disabled={state.loading}>{state.loading ? 'Running group...' : `Run ${group.range}`}</button>{state.error && <div className="query-error">Warehouse result unavailable: {state.error}</div>}{state.results.length > 0 && <div className="query-results">{state.results.map((rows, index) => <QueryResult key={index} rows={rows} index={index} groupId={group.id} />)}</div>}{!state.loading && !state.error && state.results.length === 0 && <div className="query-not-run">Not run yet</div>}</section> })}</div></div>
+  return <div className="view-stack"><div className="query-intro"><div><span className="eyebrow">SQL / Gold warehouse</span><h2>Five perspectives, one source of truth.</h2><p>Run each member's four-query group independently. Results are distilled into key metrics, category summaries, and ranked comparisons.</p></div><span className="query-count">20 questions<br /><b>5 groups</b></span></div><div className="query-group-grid">{queryGroups.map((group) => { const state = groupState[group.id] || { loading: false, error: '', results: [] }; return <section className="query-group-card panel" key={group.id}><div className="query-group-top"><span className="query-group-number">0{group.id}</span><span className="query-range">{group.range}</span></div><h3>{group.title}</h3><p>{group.description}</p><button className="query-run-button" onClick={() => runGroup(group.id)} disabled={state.loading}>{state.loading ? 'Running group...' : `Run ${group.range}`}</button>{state.error && <div className="query-error">Warehouse result unavailable: {state.error}</div>}{state.results.length > 0 && <div className="query-results">{state.results.map((query, index) => <QueryResult key={query.number || index} query={query} index={index} groupId={group.id} />)}</div>}{!state.loading && !state.error && state.results.length === 0 && <div className="query-not-run">Not run yet</div>}</section> })}</div></div>
 }

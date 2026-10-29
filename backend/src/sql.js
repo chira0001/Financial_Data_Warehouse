@@ -31,5 +31,13 @@ export async function runQueryGroup(connection, groupId) {
   if (!relativePath) throw new Error('Query group must be between 1 and 5')
   const script = await readFile(scriptPath(relativePath), 'utf8')
   const [results] = await connection.query(script)
-  return results.filter((result) => Array.isArray(result))
+  const statements = [...script.matchAll(/--\s*Q(\d+)\.\s*([^\r\n]*)\r?\n([\s\S]*?;)/g)]
+    .map(([, number, title, sql]) => ({ number: Number(number), title: title.trim(), sql: sql.trim() }))
+  const queryResults = results.filter((result) => Array.isArray(result))
+
+  if (statements.length !== queryResults.length) {
+    throw new Error(`Query group ${groupId} has ${statements.length} labeled queries but returned ${queryResults.length} result sets`)
+  }
+
+  return statements.map((statement, index) => ({ ...statement, rows: queryResults[index] }))
 }
