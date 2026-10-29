@@ -209,3 +209,21 @@
   .currency-chart-legend { flex-wrap: wrap; gap: 9px 14px; }
   .trend-period-label { font-size: 8px; }
 }
+
+.quality-summary {
+  background: linear-gradient(105deg, #edf3e8 0%, #fff 58%, #f8eee7 100%);
+}
+.quality-summary h2,
+.quality-summary .quality-score strong { color: var(--ink); }
+.quality-summary .eyebrow,
+.quality-summary p,
+.quality-summary .quality-score > span { color: #596651; }
+.quality-summary .score-ring { border-right-color: #dce3d6; border-bottom-color: #dce3d6; }
+.portfolio-banner {
+  background: linear-gradient(105deg, #edf3e8 0%, #fff 58%, #f8eee7 100%);
+}
+.portfolio-banner h2,
+.portfolio-banner p,
+.portfolio-banner .portfolio-total span { color: var(--ink); }
+.portfolio-banner .eyebrow,
+.portfolio-banner .portfolio-total b { color: #596651; }
