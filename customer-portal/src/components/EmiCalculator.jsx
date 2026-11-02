@@ -11,7 +11,6 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
   const [emiError, setEmiError] = useState('')
   const [isCalculating, setIsCalculating] = useState(false)
 
-  // Ask the database to calculate EMI using fn_calculate_monthly_emi.
   useEffect(() => {
     const P = Number(amount)
     const n = Number(tenureYears) * 12
@@ -58,7 +57,6 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
     }
   }, [amount, tenureYears, monthlyEmi])
 
-  // Month-by-Month Amortization Ledger
   const amortizationSchedule = useMemo(() => {
     const P = Number(amount)
     const annualRate = Number(rate)
@@ -121,7 +119,6 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
 
       <div className="calc-wrapper">
         <div className="calc-controls">
-          {/* Amount Slider */}
           <div className="calc-control">
             <div className="calc-control-head">
               <label>Proposed Principal Amount</label>
@@ -149,7 +146,6 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
             </div>
           </div>
 
-          {/* Tenure Slider */}
           <div className="calc-control">
             <div className="calc-control-head">
               <label>Repayment Term (Years / Months)</label>
@@ -177,7 +173,6 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
             </div>
           </div>
 
-          {/* Interest Rate Selector */}
           <div className="calc-control">
             <div className="calc-control-head">
               <label>Benchmark Annual Percentage Rate (APR)</label>
@@ -206,7 +201,6 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
           </div>
         </div>
 
-        {/* Calculated Result Card */}
         <div className="calc-result-card">
           <div className="emi-main">
             <span>Estimated Equated Monthly Installment</span>
@@ -263,7 +257,6 @@ export default function EmiCalculator({ initialProduct, onApplyWithPlan }) {
         </div>
       </div>
 
-      {/* Amortization Schedule Modal */}
       {showSchedule && (
         <div className="modal-overlay">
           <div className="modal-content print-target" style={{ maxWidth: '820px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>

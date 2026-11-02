@@ -3,6 +3,7 @@ import { warehouseApi } from '../../api/warehouseApi'
 import SectionHeader from '../shared/SectionHeader'
 import StatusPill from '../shared/StatusPill'
 import { sriLankaBoundaryPaths, sriLankaMapBounds, sriLankaMapFrame } from '../../data/sriLankaMap'
+import './LoanOperations.css'
 
 const formatCurrency = (value) => `LKR ${Number(value || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
 const transactionCountFormatter = new Intl.NumberFormat()
@@ -203,11 +204,11 @@ export function TransactionsView() {
   </div>
 }
 
-export function LoansView() {
-  const [state, setState] = useState({ summary: null, products: [], statuses: [], loading: true, error: '' })
+export function LoansView({ refreshKey = 0 }) {
+  const [state, setState] = useState({ summary: null, products: [], statuses: [], operations: {}, loading: true, error: '' })
   useEffect(() => {
-    warehouseApi.loanSummary().then((data) => setState({ summary: data.summary, products: data.products || [], statuses: data.statuses || [], loading: false, error: '' })).catch((error) => setState((current) => ({ ...current, loading: false, error: error.message })))
-  }, [])
+    warehouseApi.loanSummary().then((data) => setState({ summary: data.summary, products: data.products || [], statuses: data.statuses || [], operations: data.operations || {}, loading: false, error: '' })).catch((error) => setState((current) => ({ ...current, loading: false, error: error.message })))
+  }, [refreshKey])
 
   const facilityCount = Number(state.summary?.facility_count || 0)
   const principal = Number(state.summary?.principal || 0)
@@ -222,11 +223,261 @@ export function LoansView() {
         <article className="summary-metric"><span>Payments tracked</span><strong>{formatCurrency(paid)}</strong><small>{principal ? `${((paid / principal) * 100).toFixed(1)}% of principal value` : 'No principal recorded'}</small></article>
         <article className="summary-metric"><span>Average interest rate</span><strong>{averageRate.toFixed(2)}%</strong><small>Across loaded facilities</small></article>
       </div>
+      <section className="operations-metric-grid" aria-label="Customer portal loan operation metrics">
+        <article><span>Applications</span><strong>{Number(state.operations.applications || 0).toLocaleString()}</strong><small>{Number(state.operations.pending_applications || 0).toLocaleString()} pending review</small></article>
+        <article><span>Disbursements</span><strong>{Number(state.operations.disbursements || 0).toLocaleString()}</strong><small>{formatCurrency(state.operations.disbursed_amount)} released</small></article>
+        <article><span>Scheduled installments</span><strong>{Number(state.operations.pending_installments || 0).toLocaleString()}</strong><small>Pending payment</small></article>
+        <article><span>Collateral value</span><strong>{formatCurrency(state.operations.collateral_value)}</strong><small>{Number(state.operations.collateral_records || 0).toLocaleString()} valuations</small></article>
+        <article><span>Open fees & penalties</span><strong>{Number(state.operations.open_fees || 0).toLocaleString()}</strong><small>{formatCurrency(state.operations.open_fee_amount)} outstanding</small></article>
+        <article><span>Recovery actions</span><strong>{Number(state.operations.recovery_actions || 0).toLocaleString()}</strong><small>Collections activity recorded</small></article>
+      </section>
       <div className="summary-grid">
-        <section className="panel summary-panel"><SectionHeader eyebrow="Product exposure / fact_loan" title="Principal by loan product" /><RankedBars rows={state.products} valueKey="principal" valueFormatter={formatCurrency} />{state.products[0] && <p className="summary-note">{state.products[0].label} is the largest product, accounting for {principal ? ((Number(state.products[0].principal) / principal) * 100).toFixed(1) : '0.0'}% of principal across all facilities.</p>}</section>
+        <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio exposure / fact_loan" title="Principal by loan category" /><RankedBars rows={state.products} valueKey="principal" valueFormatter={formatCurrency} />{state.products[0] && <p className="summary-note">{state.products[0].label} is the largest loan category, accounting for {principal ? ((Number(state.products[0].principal) / principal) * 100).toFixed(1) : '0.0'}% of principal across all facilities.</p>}</section>
         <section className="panel summary-panel"><SectionHeader eyebrow="Portfolio health / loan status" title="Facilities by status" /><RankedBars rows={state.statuses} valueKey="loan_count" valueFormatter={(value) => `${value.toLocaleString()} loans`} />{state.statuses[0] && <p className="summary-note">{state.statuses[0].label} is the most common status across all facilities.</p>}</section>
       </div>
     </>}
+  </div>
+}
+
+const loanOperationTabs = [
+  ['facilities', 'Facilities'], ['payments', 'Payments'], ['applications', 'Applications'], ['products', 'Products'], ['officers', 'Officers'],
+  ['disbursements', 'Disbursements'], ['schedules', 'Schedules'], ['collateral', 'Collateral'],
+  ['guarantors', 'Guarantors'], ['fees', 'Fees & penalties'], ['recovery', 'Recovery'],
+  ['loan-audit', 'Loan audit'], ['payment-audit', 'Payment audit'],
+]
+
+const loanOperationCharts = {
+  facilities: [
+    { title: 'Facilities by status', field: 'loan_status', measure: 'count' },
+    { title: 'Principal by loan type', field: 'loan_type', measure: 'sum', valueField: 'loan_amount', format: 'currency' },
+  ],
+  payments: [
+    { title: 'Payment value by month', field: 'payment_date', bucket: 'month', measure: 'sum', valueField: 'payment_amount', format: 'currency', type: 'line' },
+    { title: 'Payments by status', field: 'payment_status', measure: 'count' },
+  ],
+  applications: [
+    { title: 'Applications by decision', field: 'approval_status', measure: 'count' },
+    { title: 'Requested value by loan category', field: 'loan_category', measure: 'sum', valueField: 'applied_amount', format: 'currency' },
+  ],
+  products: [
+    { title: 'Products by loan category', field: 'loan_category', measure: 'count' },
+    { title: 'Average base rate by category', field: 'loan_category', measure: 'average', valueField: 'base_interest_rate', format: 'percent' },
+  ],
+  officers: [
+    { title: 'Officers by role', field: 'role_title', measure: 'count' },
+    { title: 'Officers by status', field: 'status', measure: 'count' },
+  ],
+  disbursements: [
+    { title: 'Disbursed value by month', field: 'disbursement_date', bucket: 'month', measure: 'sum', valueField: 'disbursed_amount', format: 'currency', type: 'line' },
+    { title: 'Disbursements by method', field: 'disbursement_method', measure: 'count' },
+  ],
+  schedules: [
+    { title: 'Installments by status', field: 'status', measure: 'count' },
+    { title: 'Scheduled value by due month', field: 'due_date', bucket: 'month', measure: 'sum', valueField: 'installment_amount', format: 'currency', type: 'line' },
+  ],
+  collateral: [
+    { title: 'Collateral value by type', field: 'collateral_type', measure: 'sum', valueField: 'valuation_amount', format: 'currency' },
+    { title: 'Collateral records by status', field: 'status', measure: 'count' },
+  ],
+  guarantors: [
+    { title: 'Guarantee value by relationship', field: 'relationship_to_borrower', measure: 'sum', valueField: 'guarantee_amount', format: 'currency' },
+    { title: 'Average monthly income by relationship', field: 'relationship_to_borrower', measure: 'average', valueField: 'monthly_income', format: 'currency' },
+  ],
+  fees: [
+    { title: 'Fees and penalties by type', field: 'fee_type', measure: 'sum', valueField: 'amount', format: 'currency' },
+    { title: 'Fees by settlement status', field: 'status', measure: 'count' },
+  ],
+  recovery: [
+    { title: 'Recovery actions by type', field: 'action_type', measure: 'count' },
+    { title: 'Recovery activity by month', field: 'action_date', bucket: 'month', measure: 'count', type: 'line' },
+  ],
+  'loan-audit': [
+    { title: 'Loan audit events by action', field: 'action_type', measure: 'count' },
+    { title: 'Loan audit events by month', field: 'event_date', bucket: 'month', measure: 'count', type: 'line' },
+  ],
+  'payment-audit': [
+    { title: 'Payment audit events by action', field: 'action_type', measure: 'count' },
+    { title: 'Payment audit events by month', field: 'event_date', bucket: 'month', measure: 'count', type: 'line' },
+  ],
+}
+
+async function fetchAllLoanOperationRows(dataset) {
+  const pageSize = 100
+  const firstPage = await warehouseApi.loanOperations(dataset, { limit: pageSize })
+  const pageOffsets = Array.from(
+    { length: Math.ceil(firstPage.total / pageSize) - 1 },
+    (_, index) => (index + 1) * pageSize,
+  )
+  const remainingPages = await Promise.all(pageOffsets.map((offset) =>
+    warehouseApi.loanOperations(dataset, { limit: pageSize, offset })))
+  return [firstPage, ...remainingPages].flatMap((page) => page.rows || [])
+}
+
+function aggregateLoanOperationChart(rows, chart) {
+  const groups = new Map()
+  rows.forEach((row) => {
+    const rawValue = row[chart.field]
+    if (rawValue == null || rawValue === '') return
+
+    let key = String(rawValue)
+    let label = key
+    if (chart.bucket === 'month') {
+      const match = key.match(/^(\d{4})-(\d{2})/)
+      if (!match) return
+      key = `${match[1]}-${match[2]}`
+      label = new Date(`${key}-01T00:00:00`).toLocaleDateString(undefined, { month: 'short', year: '2-digit' })
+    }
+
+    const group = groups.get(key) || { key, label, value: 0, count: 0 }
+    if (chart.measure === 'count') {
+      group.value += 1
+    } else {
+      const value = Number(row[chart.valueField])
+      if (!Number.isFinite(value)) return
+      group.value += value
+      group.count += 1
+    }
+    groups.set(key, group)
+  })
+
+  const aggregated = [...groups.values()].map((group) => ({
+    ...group,
+    value: chart.measure === 'average' && group.count ? group.value / group.count : group.value,
+  }))
+  if (chart.bucket === 'month') return aggregated.sort((left, right) => left.key.localeCompare(right.key)).slice(-12)
+  return aggregated.sort((left, right) => right.value - left.value || left.label.localeCompare(right.label)).slice(0, 8)
+}
+
+function formatLoanOperationChartValue(value, format) {
+  if (format === 'currency') return formatCurrency(value)
+  if (format === 'percent') return `${Number(value).toFixed(2)}%`
+  return Number(value).toLocaleString(undefined, { maximumFractionDigits: 1 })
+}
+
+function LoanOperationChart({ chart, rows }) {
+  const data = aggregateLoanOperationChart(rows, chart)
+  if (!data.length) return <article className="operations-chart-card"><h4>{chart.title}</h4><p className="operations-chart-empty">No data available for this chart.</p></article>
+
+  const maximum = Math.max(...data.map((item) => item.value), 0)
+  if (chart.type === 'line') {
+    const chartWidth = 640
+    const chartHeight = 220
+    const points = data.map((item, index) => ({
+      ...item,
+      x: data.length === 1 ? chartWidth / 2 : 32 + (index / (data.length - 1)) * (chartWidth - 64),
+      y: chartHeight - 48 - (maximum ? item.value / maximum : 0) * (chartHeight - 88),
+    }))
+    const line = points.map((point) => `${point.x},${point.y}`).join(' ')
+    return <article className="operations-chart-card">
+      <h4>{chart.title}</h4>
+      <div className="operations-line-chart">
+        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} role="img" aria-label={chart.title}>
+          <line x1="24" y1={chartHeight - 40} x2={chartWidth - 16} y2={chartHeight - 40} />
+          <polyline points={line} />
+          {points.map((point) => <g key={point.key}>
+            <circle cx={point.x} cy={point.y} r="4"><title>{`${point.label}: ${formatLoanOperationChartValue(point.value, chart.format)}`}</title></circle>
+            <text x={point.x} y={chartHeight - 16} textAnchor="middle">{point.label}</text>
+          </g>)}
+        </svg>
+      </div>
+      <p className="operations-chart-note">Monthly totals · {rows.length.toLocaleString()} records analyzed</p>
+    </article>
+  }
+
+  return <article className="operations-chart-card">
+    <h4>{chart.title}</h4>
+    <div className="operations-chart-bars" role="img" aria-label={chart.title}>
+      {data.map((item) => <div className="operations-chart-row" key={item.key} title={`${item.label}: ${formatLoanOperationChartValue(item.value, chart.format)}`}>
+        <span>{item.label}</span>
+        <div className="operations-chart-track"><i style={{ width: `${maximum ? Math.max((item.value / maximum) * 100, 1) : 0}%` }} /></div>
+        <strong>{formatLoanOperationChartValue(item.value, chart.format)}</strong>
+      </div>)}
+    </div>
+    <p className="operations-chart-note">Top categories · {rows.length.toLocaleString()} records analyzed</p>
+  </article>
+}
+
+const displayColumnName = (column) => column.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+const displayCell = (value, column) => {
+  if (value == null || value === '') return '—'
+  if (column.endsWith('_amount') || ['min_amount', 'max_amount', 'base_interest_rate', 'processing_fee_percentage', 'monthly_income', 'guarantee_amount', 'old_interest_rate', 'new_interest_rate'].includes(column)) {
+    const numeric = Number(value)
+    return Number.isFinite(numeric) ? numeric.toLocaleString(undefined, { maximumFractionDigits: 2 }) : value
+  }
+  if (column.startsWith('is_')) return Number(value) ? 'Required' : 'Optional'
+  if (typeof value === 'number') return value.toLocaleString()
+  return String(value)
+}
+
+export function LoanOperationsView({ refreshKey = 0 }) {
+  const [dataset, setDataset] = useState('applications')
+  const [search, setSearch] = useState('')
+  const [page, setPage] = useState(0)
+  const [state, setState] = useState({ rows: [], columns: [], total: 0, label: '', loading: true, error: '' })
+  const [chartState, setChartState] = useState({ rows: [], loading: true, error: '' })
+  const pageSize = 50
+
+  useEffect(() => {
+    let active = true
+    warehouseApi.loanOperations(dataset, { search, limit: pageSize, offset: page * pageSize })
+      .then((data) => {
+        if (active) setState({ rows: data.rows || [], columns: data.columns || [], total: data.total || 0, label: data.label || '', loading: false, error: '' })
+      })
+      .catch((error) => {
+        if (active) setState((current) => ({ ...current, loading: false, error: error.message }))
+      })
+    return () => { active = false }
+  }, [dataset, search, page, refreshKey])
+
+  useEffect(() => {
+    let active = true
+    fetchAllLoanOperationRows(dataset)
+      .then((rows) => {
+        if (active) setChartState({ rows, loading: false, error: '' })
+      })
+      .catch((error) => {
+        if (active) setChartState({ rows: [], loading: false, error: error.message })
+      })
+    return () => { active = false }
+  }, [dataset, refreshKey])
+
+  const selectDataset = (nextDataset) => {
+    setState((current) => ({ ...current, loading: true, error: '' }))
+    setChartState({ rows: [], loading: true, error: '' })
+    setDataset(nextDataset)
+    setSearch('')
+    setPage(0)
+  }
+  const pageCount = Math.max(1, Math.ceil(state.total / pageSize))
+
+  return <div className="view-stack loan-operations-view">
+    <section className="operations-intro">
+      <div><span className="eyebrow">Gold / customer portal warehouse</span><h2>Loan servicing, end to end.</h2><p>Explore applications, product rules, servicing events, collateral, collections, and audit history from the analytical layer.</p></div>
+      <div className="operations-grain"><span>Current dataset</span><strong>{loanOperationTabs.find(([id]) => id === dataset)?.[1]}</strong><small>One row per source event or reference record</small></div>
+    </section>
+    <nav className="operations-tabs" aria-label="Loan operation datasets">
+      {loanOperationTabs.map(([id, label]) => <button key={id} type="button" className={dataset === id ? 'active' : ''} aria-current={dataset === id ? 'page' : undefined} onClick={() => selectDataset(id)}>{label}</button>)}
+    </nav>
+    <section className="panel operations-visualization" aria-labelledby="operations-visualization-title">
+      <div className="operations-visualization-heading">
+        <div><span className="eyebrow">Full dataset visualizations</span><h3 id="operations-visualization-title">{loanOperationTabs.find(([id]) => id === dataset)?.[1]} analytics</h3></div>
+        {!chartState.loading && !chartState.error && <span>{chartState.rows.length.toLocaleString()} records analyzed</span>}
+      </div>
+      {chartState.error ? <EmptyResults error={chartState.error} message="Unable to load chart data for this dataset." /> : chartState.loading ? <EmptyResults loading message="Loading all records for category charts." /> : chartState.rows.length === 0 ? <EmptyResults message="This dataset has no records to chart." /> : <div className="operations-chart-grid">
+        {loanOperationCharts[dataset].map((chart) => <LoanOperationChart key={chart.title} chart={chart} rows={chartState.rows} />)}
+      </div>}
+    </section>
+    <section className="panel operations-panel">
+      <div className="operations-toolbar">
+        <div><span className="eyebrow">Gold records</span><h3>{state.label || loanOperationTabs.find(([id]) => id === dataset)?.[1]}</h3></div>
+        <label className="operations-search"><span aria-hidden="true">⌕</span><input value={search} onChange={(event) => { setState((current) => ({ ...current, loading: true, error: '' })); setSearch(event.target.value); setPage(0) }} placeholder="Search this dataset" aria-label="Search this dataset" /></label>
+        <span className="operations-count">{state.total.toLocaleString()} records</span>
+      </div>
+      {state.error ? <EmptyResults loading={state.loading} error={state.error} message="Load the Gold customer portal tables to view these records." /> : state.loading && state.rows.length === 0 ? <EmptyResults loading message="Loading Gold loan operation records." /> : state.rows.length === 0 ? <EmptyResults message={search ? 'No records match this search.' : 'This Gold dataset has no records yet.'} /> : <>
+        <div className="operations-table-wrap"><table className="operations-table"><thead><tr>{state.columns.map((column) => <th key={column}>{displayColumnName(column)}</th>)}</tr></thead><tbody>{state.rows.map((row, index) => <tr key={`${row[state.columns[0]] ?? index}-${index}`}>{state.columns.map((column) => <td key={column} title={row[column] == null ? '' : String(row[column])}>{displayCell(row[column], column)}</td>)}</tr>)}</tbody></table></div>
+        <footer className="operations-pagination"><span>Showing {(page * pageSize + 1).toLocaleString()}–{Math.min((page + 1) * pageSize, state.total).toLocaleString()} of {state.total.toLocaleString()}</span><div><button type="button" onClick={() => { setState((current) => ({ ...current, loading: true })); setPage((current) => Math.max(0, current - 1)) }} disabled={page === 0}>Previous</button><b>Page {page + 1} of {pageCount}</b><button type="button" onClick={() => { setState((current) => ({ ...current, loading: true })); setPage((current) => Math.min(pageCount - 1, current + 1)) }} disabled={page + 1 >= pageCount}>Next</button></div></footer>
+      </>}
+    </section>
   </div>
 }
 
@@ -236,7 +487,7 @@ export function QualityView() {
     warehouseApi.quality().then((data) => setState({ checks: data.checks || [], score: data.score, loading: false, error: '' })).catch((error) => setState({ checks: [], score: null, loading: false, error: error.message }))
   }, [])
   const passed = state.checks.filter((check) => check.result === 'Passed').length
-  return <div className="view-stack"><div className="quality-summary"><div><span className="eyebrow">Validation status</span><h2>{state.error ? 'Validation unavailable.' : state.checks.length ? 'Trust, with receipts.' : 'Quality awaits a load.'}</h2><p>Gold checks run after every full refresh and leave an auditable trail in the warehouse.</p></div><div className="quality-score"><strong>{state.score == null ? '—' : state.score}</strong><span>/ 100</span><div className={`score-ring ${state.score == null ? 'empty-ring' : ''}`}><i /></div></div></div><section className="panel checks-panel"><SectionHeader eyebrow="Validation suite" title={state.checks.length ? `${passed} checks passed` : 'No checks recorded'} action="Run checks" />{state.checks.length === 0 ? <div className="empty-data"><strong>{state.loading ? 'Loading quality results' : 'No warehouse quality results yet'}</strong><span>{state.error || 'Run the Gold validation procedure after loading the warehouse.'}</span></div> : <div className="checks-list">{state.checks.map((check) => <div className="check-row" key={check.label}><div className={`check-icon ${check.result === 'Passed' ? 'passed' : 'review'}`}>{check.result === 'Passed' ? '✓' : '!'}</div><div className="check-copy"><strong>{check.label}</strong><span>{check.detail}</span></div><div className="check-bar"><i style={{ width: `${check.score}%` }} /></div><b className="check-score">{check.score}%</b><StatusPill tone={check.result === 'Passed' ? 'success' : 'warning'}>{check.result}</StatusPill></div>)}</div>}</section></div>
+  return <div className="view-stack"><div className="quality-summary"><div><span className="eyebrow">Validation status</span><h2>{state.error ? 'Validation unavailable.' : state.checks.length ? 'Trust, with receipts.' : 'Quality awaits a load.'}</h2><p>Gold checks run after every full refresh and leave an auditable trail in the warehouse.</p></div><div className="quality-score"><strong>{state.score == null ? '—' : state.score}</strong><span>/ 100</span><div className={`score-ring ${state.score == null ? 'empty-ring' : ''}`}><i /></div></div></div><section className="panel checks-panel"><SectionHeader eyebrow="Validation suite" title={state.checks.length ? `${passed} checks passed` : 'No checks recorded'} action="Run checks" />{state.checks.length === 0 ? <div className="empty-data"><strong>{state.loading ? 'Loading quality results' : 'No warehouse quality results yet'}</strong><span>{state.error || 'Run the Gold validation procedure after loading the warehouse.'}</span></div> : <div className="checks-list">{state.checks.map((check) => <div className="check-row" key={check.label}><div className={`check-icon ${check.result === 'Passed' ? 'passed' : 'review'}`}>{check.result}</div><div className="check-copy"><strong>{check.label}</strong><span>{check.detail}</span></div><div className="check-bar"><i style={{ width: `${check.score}%` }} /></div><b className="check-score">{check.score}%</b><StatusPill tone={check.result === 'Passed' ? 'success' : 'warning'}>{check.result}</StatusPill></div>)}</div>}</section></div>
 }
 
 const queryGroups = [
@@ -335,9 +586,13 @@ function QueryLineChart({ points, maxValue, xLabel, ariaLabel }) {
   </div>
 }
 
-function QueryResult({ rows, index, groupId }) {
-  const queryNumber = (groupId - 1) * 4 + index + 1
-  if (!rows.length) return <div className="query-result-empty">Q{String(queryNumber).padStart(2, '0')} returned no rows.</div>
+function QueryResult({ query, index, groupId }) {
+  const rows = query.rows
+  const queryNumber = query.number || (groupId - 1) * 4 + index + 1
+  if (!rows.length) return <div className="query-result">
+    <div className="query-sql"><span>SQL query</span><pre><code>{query.sql}</code></pre></div>
+    <div className="query-result-empty">Q{String(queryNumber).padStart(2, '0')} returned no rows.</div>
+  </div>
   const columns = [...new Set(rows.flatMap((row) => Object.keys(row)))]
   const measures = columns.filter((column) => {
     if (/(^|_)(id|key)(_|$)|date|year|month|day|week/i.test(column)) return false
@@ -374,6 +629,7 @@ function QueryResult({ rows, index, groupId }) {
   })
 
   return <div className="query-result">
+    <div className="query-sql"><span>SQL query</span><pre><code>{query.sql}</code></pre></div>
     <div className="query-result-heading"><span className="query-result-label">Q{String(queryNumber).padStart(2, '0')} · {rows.length.toLocaleString()} result{rows.length === 1 ? '' : 's'}</span><strong>{columns.filter((column) => !/id|key/i.test(column)).slice(0, 3).map((column) => column.replaceAll('_', ' ')).join(' · ')}</strong></div>
     {rows.length === 1 && measures.length > 0 ? <div className="query-metric-grid">{measures.slice(0, 4).map((measure) => <article className="query-metric" key={measure}><span>{measure.replaceAll('_', ' ')}</span><strong>{formatQueryValue(rows[0][measure], measure)}</strong></article>)}</div> : primaryMeasure ? <>
       {!showDistributionLine && !showMaturityLine && <div className="query-summary"><strong>{formatQueryValue(total, primaryMeasure)}</strong><span>combined {primaryMeasure.replaceAll('_', ' ')} across {rows.length.toLocaleString()} results</span></div>}
@@ -395,5 +651,5 @@ export function QueryGroupsView() {
     }
   }
 
-  return <div className="view-stack"><div className="query-intro"><div><span className="eyebrow">SQL / Gold warehouse</span><h2>Five perspectives, one source of truth.</h2><p>Run each member's four-query group independently. Results are distilled into key metrics, category summaries, and ranked comparisons.</p></div><span className="query-count">20 questions<br /><b>5 groups</b></span></div><div className="query-group-grid">{queryGroups.map((group) => { const state = groupState[group.id] || { loading: false, error: '', results: [] }; return <section className="query-group-card panel" key={group.id}><div className="query-group-top"><span className="query-group-number">0{group.id}</span><span className="query-range">{group.range}</span></div><h3>{group.title}</h3><p>{group.description}</p><button className="query-run-button" onClick={() => runGroup(group.id)} disabled={state.loading}>{state.loading ? 'Running group...' : `Run ${group.range}`}<span>{state.loading ? '◌' : '▶'}</span></button>{state.error && <div className="query-error">Warehouse result unavailable: {state.error}</div>}{state.results.length > 0 && <div className="query-results">{state.results.map((rows, index) => <QueryResult key={index} rows={rows} index={index} groupId={group.id} />)}</div>}{!state.loading && !state.error && state.results.length === 0 && <div className="query-not-run">Not run yet</div>}</section> })}</div></div>
+  return <div className="view-stack"><div className="query-intro"><div><span className="eyebrow">SQL / Gold warehouse</span><h2>Five perspectives, one source of truth.</h2><p>Run each member's four-query group independently. Results are distilled into key metrics, category summaries, and ranked comparisons.</p></div><span className="query-count">20 questions<br /><b>5 groups</b></span></div><div className="query-group-grid">{queryGroups.map((group) => { const state = groupState[group.id] || { loading: false, error: '', results: [] }; return <section className="query-group-card panel" key={group.id}><div className="query-group-top"><span className="query-group-number">0{group.id}</span><span className="query-range">{group.range}</span></div><h3>{group.title}</h3><p>{group.description}</p><button className="query-run-button" onClick={() => runGroup(group.id)} disabled={state.loading}>{state.loading ? 'Running group...' : `Run ${group.range}`}</button>{state.error && <div className="query-error">Warehouse result unavailable: {state.error}</div>}{state.results.length > 0 && <div className="query-results">{state.results.map((query, index) => <QueryResult key={query.number || index} query={query} index={index} groupId={group.id} />)}</div>}{!state.loading && !state.error && state.results.length === 0 && <div className="query-not-run">Not run yet</div>}</section> })}</div></div>
 }
