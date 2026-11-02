@@ -35,7 +35,6 @@ INSERT INTO warehouse.silver_banking_transactions (
     description
 )
 WITH parsed_transactions AS (
-    -- Parse dates once
     SELECT
         t.transaction_id,
         t.account_id,
@@ -48,7 +47,6 @@ WITH parsed_transactions AS (
     FROM warehouse.bronze_banking_transactions AS t
 ),
 exchange_rate_intervals AS (
-    -- Create date ranges [valid_from, valid_to) for each exchange rate
     SELECT
         target_currency,
         rate,
@@ -124,6 +122,32 @@ insert into warehouse.silver_loan_payments
 		payment_method,
 		payment_status
 	from warehouse.bronze_loan_payments;
+
+DELETE FROM warehouse.silver_loan_products;
+INSERT INTO warehouse.silver_loan_products SELECT * FROM warehouse.bronze_loan_products;
+DELETE FROM warehouse.silver_loan_officers;
+INSERT INTO warehouse.silver_loan_officers (officer_id, employee_code, branch_id, role_title, status)
+SELECT officer_id, employee_code, branch_id, role_title, status FROM warehouse.bronze_loan_officers;
+DELETE FROM warehouse.silver_loan_applications;
+INSERT INTO warehouse.silver_loan_applications SELECT * FROM warehouse.bronze_loan_applications;
+DELETE FROM warehouse.silver_loan_collaterals;
+INSERT INTO warehouse.silver_loan_collaterals SELECT * FROM warehouse.bronze_loan_collaterals;
+DELETE FROM warehouse.silver_loan_guarantors;
+INSERT INTO warehouse.silver_loan_guarantors (guarantor_id, loan_id, relationship_to_borrower, monthly_income, employer_name, guarantee_amount)
+SELECT guarantor_id, loan_id, relationship_to_borrower, monthly_income, employer_name, guarantee_amount
+FROM warehouse.bronze_loan_guarantors;
+DELETE FROM warehouse.silver_loan_disbursements;
+INSERT INTO warehouse.silver_loan_disbursements SELECT * FROM warehouse.bronze_loan_disbursements;
+DELETE FROM warehouse.silver_loan_repayment_schedules;
+INSERT INTO warehouse.silver_loan_repayment_schedules SELECT * FROM warehouse.bronze_loan_repayment_schedules;
+DELETE FROM warehouse.silver_loan_fees_and_penalties;
+INSERT INTO warehouse.silver_loan_fees_and_penalties SELECT * FROM warehouse.bronze_loan_fees_and_penalties;
+DELETE FROM warehouse.silver_loan_recovery_actions;
+INSERT INTO warehouse.silver_loan_recovery_actions SELECT * FROM warehouse.bronze_loan_recovery_actions;
+DELETE FROM warehouse.silver_loan_audit_log;
+INSERT INTO warehouse.silver_loan_audit_log SELECT * FROM warehouse.bronze_loan_audit_log;
+DELETE FROM warehouse.silver_loan_payment_audit_log;
+INSERT INTO warehouse.silver_loan_payment_audit_log SELECT * FROM warehouse.bronze_loan_payment_audit_log;
 
 COMMIT;
 CALL warehouse.sp_log_etl_run('SILVER', 'SUCCESS', @silver_started_at, NOW(), 'Silver load completed');

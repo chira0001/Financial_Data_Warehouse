@@ -41,33 +41,6 @@ export const loanApi = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.error || 'Payment transaction rejected by core ledger.')
-/*
-  async pay(paymentData, role = null) {
-    try {
-      const headers = { 'Content-Type': 'application/json' }
-      if (role) headers['X-Database-Role'] = role
-      const res = await fetch(`${BASE_URL}/api/customer/loans/pay`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(paymentData),
-      })
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || errData.message || 'Payment processing failed')
-      }
-      return await res.json()
-    } catch (err) {
-      if (err.message && !err.message.includes('fetch')) {
-        throw err
-      }
-      const mockPayId = Math.floor(Math.random() * 900) + 3100
-      return {
-        success: true,
-        paymentId: mockPayId,
-        receiptNo: `RCP-${new Date().getFullYear()}-${mockPayId}`,
-        message: 'Installment payment recorded successfully (Simulated mode)',
-      }
-*/
     }
     return await res.json()
   },

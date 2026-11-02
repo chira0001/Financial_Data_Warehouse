@@ -7,7 +7,6 @@ Standalone Express API for the customer loan portal. It serves the customer-loan
 ```powershell
 cd customer-portal-backend
 Copy-Item .env.example .env
-# Set MYSQL_PASSWORD and any other local connection values in .env
 npm install
 npm run dev
 ```

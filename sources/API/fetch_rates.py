@@ -1,12 +1,14 @@
 
 import requests
 import mysql.connector
+import os
+import sys
 from datetime import datetime
 
-host = "localhost"
-user = "root"
-password = "1234"
-database = "warehouse"
+host = os.environ.get("MYSQL_HOST", "localhost")
+user = os.environ.get("MYSQL_USER", "root")
+password = os.environ.get("MYSQL_PASSWORD", "")
+database = os.environ.get("MYSQL_DATABASE", "warehouse")
 tableName = "bronze_exchange_rates"
 
 start_year = 2026
@@ -107,6 +109,7 @@ except (
         conn.rollback()
 
     print(f"ETL failed: {e}")
+    sys.exit(1)
 
 finally:
     if cursor:

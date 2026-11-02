@@ -209,3 +209,25 @@
   .currency-chart-legend { flex-wrap: wrap; gap: 9px 14px; }
   .trend-period-label { font-size: 8px; }
 }
+
+.quality-summary {
+  background: linear-gradient(105deg, #edf3e8 0%, #fff 58%, #f8eee7 100%);
+}
+.quality-summary h2,
+.quality-summary .quality-score strong { color: var(--ink); }
+.quality-summary .eyebrow,
+.quality-summary p,
+.quality-summary .quality-score > span { color: #596651; }
+.quality-summary .score-ring { border-right-color: #dce3d6; border-bottom-color: #dce3d6; }
+.portfolio-banner {
+  background: linear-gradient(105deg, #edf3e8 0%, #fff 58%, #f8eee7 100%);
+}
+.portfolio-banner h2,
+.portfolio-banner p,
+.portfolio-banner .portfolio-total span { color: var(--ink); }
+.portfolio-banner .eyebrow,
+.portfolio-banner .portfolio-total b { color: #596651; }
+.query-sql { margin: 12px 0; }
+.query-sql > span { display: block; margin-bottom: 5px; color: var(--faint); font: 9px "DM Mono", monospace; text-transform: uppercase; letter-spacing: .08em; }
+.query-sql pre { max-width: 100%; overflow-x: auto; margin: 0; padding: 11px 12px; border: 1px solid var(--line); background: #f3f5ef; color: #263445; font: 9px/1.6 "DM Mono", monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.query-sql code { font: inherit; }
