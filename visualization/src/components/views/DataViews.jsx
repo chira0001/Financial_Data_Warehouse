@@ -642,14 +642,32 @@ export function QueryGroupsView() {
   const [groupState, setGroupState] = useState({})
 
   const runGroup = async (groupId) => {
-    setGroupState((current) => ({ ...current, [groupId]: { loading: true, error: '', results: [] } }))
+    const currentState = groupState[groupId] || { loading: false, error: '', results: [], hasRun: false, expanded: false }
+    if (currentState.hasRun) {
+      setGroupState((current) => ({
+        ...current,
+        [groupId]: { ...current[groupId], expanded: !currentState.expanded },
+      }))
+      return
+    }
+
+    setGroupState((current) => ({
+      ...current,
+      [groupId]: { ...currentState, loading: true, error: '', results: [] },
+    }))
     try {
       const data = await warehouseApi.runQueryGroup(groupId)
-      setGroupState((current) => ({ ...current, [groupId]: { loading: false, error: '', results: data.results || [] } }))
+      setGroupState((current) => ({
+        ...current,
+        [groupId]: { loading: false, error: '', results: data.results || [], hasRun: true, expanded: true },
+      }))
     } catch (error) {
-      setGroupState((current) => ({ ...current, [groupId]: { loading: false, error: error.message, results: [] } }))
+      setGroupState((current) => ({
+        ...current,
+        [groupId]: { loading: false, error: error.message, results: [], hasRun: false, expanded: false },
+      }))
     }
   }
 
-  return <div className="view-stack"><div className="query-intro"><div><span className="eyebrow">SQL / Gold warehouse</span><h2>Five perspectives, one source of truth.</h2><p>Run each member's four-query group independently. Results are distilled into key metrics, category summaries, and ranked comparisons.</p></div><span className="query-count">20 questions<br /><b>5 groups</b></span></div><div className="query-group-grid">{queryGroups.map((group) => { const state = groupState[group.id] || { loading: false, error: '', results: [] }; return <section className="query-group-card panel" key={group.id}><div className="query-group-top"><span className="query-group-number">0{group.id}</span><span className="query-range">{group.range}</span></div><h3>{group.title}</h3><p>{group.description}</p><button className="query-run-button" onClick={() => runGroup(group.id)} disabled={state.loading}>{state.loading ? 'Running group...' : `Run ${group.range}`}</button>{state.error && <div className="query-error">Warehouse result unavailable: {state.error}</div>}{state.results.length > 0 && <div className="query-results">{state.results.map((query, index) => <QueryResult key={query.number || index} query={query} index={index} groupId={group.id} />)}</div>}{!state.loading && !state.error && state.results.length === 0 && <div className="query-not-run">Not run yet</div>}</section> })}</div></div>
+  return <div className="view-stack"><div className="query-intro"><div><span className="eyebrow">SQL / Gold warehouse</span><h2>Five perspectives, one source of truth.</h2><p>Run each member's four-query group independently. Results are distilled into key metrics, category summaries, and ranked comparisons.</p></div><span className="query-count">20 questions<br /><b>5 groups</b></span></div><div className="query-group-grid">{queryGroups.map((group) => { const state = groupState[group.id] || { loading: false, error: '', results: [], hasRun: false, expanded: false }; const resultsId = `query-results-${group.id}`; return <section className="query-group-card panel" key={group.id}><div className="query-group-top"><span className="query-group-number">0{group.id}</span><span className="query-range">{group.range}</span></div><h3>{group.title}</h3><p>{group.description}</p><button className="query-run-button" type="button" onClick={() => runGroup(group.id)} disabled={state.loading} aria-expanded={state.expanded} aria-controls={resultsId}>{state.loading ? 'Running group...' : state.expanded ? `Hide ${group.range}` : state.hasRun ? `Show ${group.range}` : `Run ${group.range}`}</button>{state.expanded && <div id={resultsId} className="query-results">{state.results.length > 0 ? state.results.map((query, index) => <QueryResult key={query.number || index} query={query} index={index} groupId={group.id} />) : <div className="query-result-empty">No results returned for this group.</div>}</div>}{state.error && <div className="query-error">Warehouse result unavailable: {state.error}</div>}{!state.loading && !state.hasRun && !state.error && <div className="query-not-run">Not run yet</div>}</section> })}</div></div>
 }
