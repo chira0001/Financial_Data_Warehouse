@@ -2,6 +2,8 @@ delimiter &&
 DROP PROCEDURE IF EXISTS warehouse.silver_build&&
 create procedure warehouse.silver_build()
 begin
+    DECLARE index_exists INT DEFAULT 0;
+
 	create table if not exists warehouse.silver_accounts(
 		account_id varchar(50) primary key,
 		customer_id varchar(50),	
@@ -82,11 +84,32 @@ begin
 	create table if not exists warehouse.silver_loan_audit_log LIKE warehouse.bronze_loan_audit_log;
 	create table if not exists warehouse.silver_loan_payment_audit_log LIKE warehouse.bronze_loan_payment_audit_log;
 	
-	create index idx_target_currency_rate_date on warehouse.silver_exchange_rates(target_currency,rate_date);
-    
-	CREATE INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates (target_currency, rate_date);
-    
-    CREATE INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions (currency);
+    SELECT COUNT(*) INTO index_exists
+    FROM information_schema.statistics
+    WHERE table_schema = 'warehouse'
+      AND table_name = 'silver_exchange_rates'
+      AND index_name = 'idx_target_currency_rate_date';
+    IF index_exists = 0 THEN
+        CREATE INDEX idx_target_currency_rate_date ON warehouse.silver_exchange_rates(target_currency, rate_date);
+    END IF;
+
+    SELECT COUNT(*) INTO index_exists
+    FROM information_schema.statistics
+    WHERE table_schema = 'warehouse'
+      AND table_name = 'bronze_exchange_rates'
+      AND index_name = 'idx_exchange_rates';
+    IF index_exists = 0 THEN
+        CREATE INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates(target_currency, rate_date);
+    END IF;
+
+    SELECT COUNT(*) INTO index_exists
+    FROM information_schema.statistics
+    WHERE table_schema = 'warehouse'
+      AND table_name = 'bronze_banking_transactions'
+      AND index_name = 'idx_bronze_txns';
+    IF index_exists = 0 THEN
+        CREATE INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions(currency);
+    END IF;
     
 end&&
 delimiter ;
