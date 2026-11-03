@@ -32,10 +32,12 @@ export const loanApi = {
     return await res.json()
   },
 
-  async pay(paymentData) {
+  async pay(paymentData, role = null) {
+    const headers = { 'Content-Type': 'application/json' }
+    if (role) headers['X-Database-Role'] = role
     const res = await fetch(`${BASE_URL}/api/customer/loans/pay`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(paymentData),
     })
     if (!res.ok) {

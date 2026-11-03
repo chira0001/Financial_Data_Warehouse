@@ -401,7 +401,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                     style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontSize: '0.74rem', cursor: 'pointer' }}
                     title="Execute sp_disburse_new_loan as role_loan_officer to trigger and demonstrate real MySQL Database RBAC rejection"
                   >
-                     Test sp_disburse_new_loan (Trigger RBAC Deny)
+                    Test sp_disburse_new_loan (Trigger RBAC Deny)
                   </button>
                   <button
                     type="button"
@@ -411,7 +411,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                     style={{ borderColor: 'rgba(239, 68, 68, 0.4)', color: '#fca5a5', fontSize: '0.74rem', cursor: 'pointer' }}
                     title="Execute sp_restructure_loan as role_loan_officer to trigger and demonstrate real MySQL Database RBAC rejection"
                   >
-                     Test sp_restructure_loan (Trigger RBAC Deny)
+                    Test sp_restructure_loan (Trigger RBAC Deny)
                   </button>
                 </div>
               </div>
