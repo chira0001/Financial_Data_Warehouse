@@ -133,7 +133,7 @@ The API runs at `http://127.0.0.1:4000` and provides:
 - `POST /api/query-groups/:groupId/run` where `groupId` is `1` through `5`
 - `POST /api/pipeline/run`
 
-The pipeline endpoint executes Bronze, Silver, and Gold loading in order and returns an error if MySQL or any ETL statement fails.
+The pipeline endpoint applies the warehouse DDL scripts in dependency order, then executes the Bronze, Silver, and Gold data-load scripts. Table creation is idempotent, and the pipeline returns an error if MySQL or any setup/load statement fails.
 
 The warehouse API on port `4000` is dedicated to the visualization dashboard. The customer portal uses its own backend on port `4001`:
 

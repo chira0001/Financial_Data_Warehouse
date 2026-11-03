@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs'
-import { basename, dirname, relative, resolve } from 'node:path'
+import { basename, dirname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mysql from 'mysql2/promise'
 import { config } from './config.js'
@@ -21,7 +21,9 @@ export const pool = mysql.createPool({
   multipleStatements: true,
   flags: '+LOCAL_FILES',
   infileStreamFactory: (requestedPath) => {
-    const filePath = resolve(requestedPath)
+    const filePath = isAbsolute(requestedPath)
+      ? resolve(requestedPath)
+      : resolve(fileURLToPath(config.repoRoot), requestedPath)
     const relativePath = relative(csvDirectory, filePath)
     const isInsideCsvDirectory = relativePath && !relativePath.startsWith('..') && !relativePath.includes(':')
     const isExpectedCsv = allowedCsvFiles.has(basename(filePath).toLowerCase())

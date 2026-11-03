@@ -654,15 +654,16 @@ app.post('/api/query-groups/:groupId/run', async (request, response) => {
 app.post('/api/pipeline/run', async (_request, response) => {
   if (pipelineRunning) return response.status(409).json({ error: 'Pipeline is already running' })
   pipelineRunning = true
-  const connection = await pool.getConnection()
+  let connection
   try {
+    connection = await pool.getConnection()
     await runPipeline(connection)
-    response.json({ status: 'success', message: 'Bronze, Silver, and Gold loads completed' })
+    response.json({ status: 'success', message: 'Warehouse schema setup and Bronze, Silver, and Gold loads completed' })
   } catch (error) {
     console.error(error)
     response.status(500).json({ status: 'error', error: 'Pipeline failed', detail: error.message })
   } finally {
-    connection.release()
+    connection?.release()
     pipelineRunning = false
   }
 })
