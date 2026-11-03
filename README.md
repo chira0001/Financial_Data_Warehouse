@@ -86,7 +86,7 @@ mysql -u root -p warehouse < scripts/ddl/gold_ddl.sql
 mysql -u root -p warehouse < scripts/ddl/reporting_views.sql
 ```
 
-Before loading, update the CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) for your machine. Set `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` in the environment for [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
+The CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) are relative to the repository root. Run the load commands below from the repository root so `LOAD DATA LOCAL INFILE` can find the files. Set `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` in the environment for [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
 
 ```powershell
 python sources/API/fetch_rates.py

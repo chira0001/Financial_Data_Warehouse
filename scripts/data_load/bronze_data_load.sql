@@ -6,7 +6,7 @@ START TRANSACTION;
 
 DELETE FROM warehouse.bronze_accounts;
 LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/accounts.csv'
+'sources/CSV/accounts.csv'
 INTO TABLE warehouse.bronze_accounts
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -16,7 +16,7 @@ IGNORE 1 ROWS
 
 DELETE FROM warehouse.bronze_banking_transactions;
 LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/banking_transactions.csv'
+'sources/CSV/banking_transactions.csv'
 INTO TABLE warehouse.bronze_banking_transactions
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -26,7 +26,7 @@ IGNORE 1 ROWS
 
 DELETE FROM warehouse.bronze_branches;
 LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/branches.csv'
+'sources/CSV/branches.csv'
 INTO TABLE warehouse.bronze_branches
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
@@ -36,7 +36,7 @@ IGNORE 1 ROWS
 
 DELETE FROM warehouse.bronze_customers;
 LOAD DATA LOCAL INFILE
-'E:/E Drive/University Project/L3S2/Financial_Data_Warehouse/sources/CSV/customers.csv'
+'sources/CSV/customers.csv'
 INTO TABLE warehouse.bronze_customers
 FIELDS TERMINATED BY ','
 OPTIONALLY ENCLOSED BY '"'
