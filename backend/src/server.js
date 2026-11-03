@@ -655,15 +655,25 @@ app.post('/api/pipeline/run', async (_request, response) => {
   if (pipelineRunning) return response.status(409).json({ error: 'Pipeline is already running' })
   pipelineRunning = true
   let connection
+  let connectionReusable = true
   try {
     connection = await pool.getConnection()
     await runPipeline(connection)
     response.json({ status: 'success', message: 'Warehouse schema setup and Bronze, Silver, and Gold loads completed' })
   } catch (error) {
     console.error(error)
+    if (connection) {
+      try {
+        await connection.rollback()
+      } catch (rollbackError) {
+        connectionReusable = false
+        connection.destroy()
+        console.error('Failed to roll back the pipeline transaction; discarded its database connection:', rollbackError)
+      }
+    }
     response.status(500).json({ status: 'error', error: 'Pipeline failed', detail: error.message })
   } finally {
-    connection?.release()
+    if (connectionReusable) connection?.release()
     pipelineRunning = false
   }
 })
