@@ -2,6 +2,8 @@ delimiter &&
 DROP PROCEDURE IF EXISTS warehouse.silver_build&&
 create procedure warehouse.silver_build()
 begin
+    DECLARE index_exists INT DEFAULT 0;
+
 	create table if not exists warehouse.silver_accounts(
 		account_id varchar(50) primary key,
 		customer_id varchar(50),	
@@ -29,10 +31,6 @@ begin
 		channel varchar(50),
 		description varchar(50)
 	);
-	/* ALTER TABLE warehouse.silver_banking_transactions
-		ADD COLUMN amount decimal(18, 2),
-		ADD COLUMN currency char(3);
-        */
 	create table if not exists warehouse.silver_branches(
 		branch_id varchar(50) primary key,
 		branch_name varchar(50),
@@ -70,15 +68,48 @@ begin
 		payment_method varchar(30),
 		payment_status varchar(30)
 	);
+	create table if not exists warehouse.silver_loan_products LIKE warehouse.bronze_loan_products;
+	create table if not exists warehouse.silver_loan_officers (
+		officer_id INT PRIMARY KEY, employee_code VARCHAR(20), branch_id VARCHAR(10), role_title VARCHAR(50), status VARCHAR(20)
+	);
+	create table if not exists warehouse.silver_loan_applications LIKE warehouse.bronze_loan_applications;
+	create table if not exists warehouse.silver_loan_collaterals LIKE warehouse.bronze_loan_collaterals;
+	create table if not exists warehouse.silver_loan_guarantors (
+		guarantor_id INT PRIMARY KEY, loan_id INT, relationship_to_borrower VARCHAR(50), monthly_income DECIMAL(15,2), employer_name VARCHAR(100), guarantee_amount DECIMAL(15,2)
+	);
+	create table if not exists warehouse.silver_loan_disbursements LIKE warehouse.bronze_loan_disbursements;
+	create table if not exists warehouse.silver_loan_repayment_schedules LIKE warehouse.bronze_loan_repayment_schedules;
+	create table if not exists warehouse.silver_loan_fees_and_penalties LIKE warehouse.bronze_loan_fees_and_penalties;
+	create table if not exists warehouse.silver_loan_recovery_actions LIKE warehouse.bronze_loan_recovery_actions;
+	create table if not exists warehouse.silver_loan_audit_log LIKE warehouse.bronze_loan_audit_log;
+	create table if not exists warehouse.silver_loan_payment_audit_log LIKE warehouse.bronze_loan_payment_audit_log;
 	
-    #drop index idx_target_currency_rate_date on warehouse.silver_exchange_rates;
-	create index idx_target_currency_rate_date on warehouse.silver_exchange_rates(target_currency,rate_date);
-    
-	#drop INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates;
-	CREATE INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates (target_currency, rate_date);
-    
-	#drop INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions;
-    CREATE INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions (currency);
+    SELECT COUNT(*) INTO index_exists
+    FROM information_schema.statistics
+    WHERE table_schema = 'warehouse'
+      AND table_name = 'silver_exchange_rates'
+      AND index_name = 'idx_target_currency_rate_date';
+    IF index_exists = 0 THEN
+        CREATE INDEX idx_target_currency_rate_date ON warehouse.silver_exchange_rates(target_currency, rate_date);
+    END IF;
+
+    SELECT COUNT(*) INTO index_exists
+    FROM information_schema.statistics
+    WHERE table_schema = 'warehouse'
+      AND table_name = 'bronze_exchange_rates'
+      AND index_name = 'idx_exchange_rates';
+    IF index_exists = 0 THEN
+        CREATE INDEX idx_exchange_rates ON warehouse.bronze_exchange_rates(target_currency, rate_date);
+    END IF;
+
+    SELECT COUNT(*) INTO index_exists
+    FROM information_schema.statistics
+    WHERE table_schema = 'warehouse'
+      AND table_name = 'bronze_banking_transactions'
+      AND index_name = 'idx_bronze_txns';
+    IF index_exists = 0 THEN
+        CREATE INDEX idx_bronze_txns ON warehouse.bronze_banking_transactions(currency);
+    END IF;
     
 end&&
 delimiter ;

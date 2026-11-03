@@ -52,6 +52,8 @@ The Gold model uses conformed dimensions shared by analytical facts:
 - `dim_branch`: branch master data.
 - `dim_customer`: customer identity and descriptive attributes.
 - `dim_account`: account, customer, branch, account type, opening date, and balance.
+- `dim_loan_product`: loan product category, limits, and pricing.
+- `dim_loan_officer`: source officer key and role attributes without contact details.
 
 Fact grains are:
 
@@ -59,6 +61,14 @@ Fact grains are:
 - `fact_exchange_rate`: one row per exchange-rate currency and date.
 - `fact_loan`: one row per loan facility.
 - `fact_loan_payment`: one row per loan payment.
+- `fact_loan_application`: one row per customer portal application.
+- `fact_loan_disbursement`: one row per disbursement.
+- `fact_loan_repayment_schedule`: one row per scheduled installment.
+- `fact_loan_collateral`: one row per collateral valuation.
+- `fact_loan_guarantor`: one row per guarantor relationship.
+- `fact_loan_fee`: one row per assessed fee or penalty.
+- `fact_loan_recovery_action`: one row per recovery action.
+- `fact_loan_audit` and `fact_loan_payment_audit`: one row per source audit event.
 
 The physical MySQL implementation is defined in [gold_ddl.sql](../scripts/ddl/gold_ddl.sql). The logical and physical model details are documented in [DIMENSIONAL_MODEL.md](DIMENSIONAL_MODEL.md).
 
@@ -78,7 +88,7 @@ The Node API exposes the same process through `POST /api/pipeline/run`. ETL stag
 
 ## 6. Data Quality and Limitations
 
-The warehouse includes duplicate, relationship, row-count, exchange-rate, and dimension-key checks. Loan-to-master relationships should be reviewed because the synthetic loan source contains customer and account identifiers beyond the CSV master-data ranges.
+The warehouse includes duplicate, relationship, row-count, exchange-rate, and dimension-key checks. Portal customers and branches are merged into the shared warehouse masters. Guarantor identity/contact data and officer contact details are restricted to Bronze and omitted from Silver and Gold; operational notes are omitted from Gold.
 
 The numeric results in a final submission must be generated from the populated MySQL instance. This repository does not hard-code analytical results into the report or dashboard.
 

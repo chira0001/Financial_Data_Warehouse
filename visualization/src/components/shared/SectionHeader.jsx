@@ -5,7 +5,7 @@ function SectionHeader({ eyebrow, title, action, onAction }) {
         {eyebrow && <span className="eyebrow">{eyebrow}</span>}
         <h2>{title}</h2>
       </div>
-      {action && <button className="text-button" onClick={onAction}>{action} <span>↗</span></button>}
+      {action && <button className="text-button" onClick={onAction}>{action}</button>}
     </div>
   )
 }

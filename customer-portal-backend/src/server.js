@@ -16,6 +16,28 @@ const handleError = (response, error) => {
   console.error(error)
   response.status(503).json({ error: 'Customer loan database unavailable', detail: error.message })
 }
+
+const allowedDatabaseRoles = new Set([
+  'role_loan_officer',
+  'role_loan_manager',
+  'role_loan_auditor',
+])
+
+const setDatabaseRole = async (connection, request, defaultRole = 'role_loan_manager') => {
+  const role = request.get('X-Database-Role') || defaultRole
+  if (!allowedDatabaseRoles.has(role)) {
+    throw new Error(`Unsupported database role: ${role}`)
+  }
+  await connection.query(`SET ROLE ${role}`)
+}
+
+const resetDatabaseRole = async (connection) => {
+  try {
+    await connection.query('SET ROLE DEFAULT')
+  } catch (error) {
+    console.warn('Could not reset MySQL session role before releasing connection:', error.message)
+  }
+}
 const fallbackLoanProducts = [
   {
     id: 'personal',
@@ -212,7 +234,6 @@ app.post('/api/customer/loans/apply', async (request, response) => {
     const cleanNic = (nic || '').trim().toUpperCase()
     const cleanPhone = (phone || '').trim()
 
-    // Strict Backend Validation
     if (!cleanName || cleanName.length < 3) {
       return response.status(400).json({ error: 'Applicant full legal name is required (minimum 3 characters).' })
     }
@@ -234,7 +255,6 @@ app.post('/api/customer/loans/apply', async (request, response) => {
 
     const parsedRate = Number(interestRate) || 12.5
 
-    // Guarantor Validation for High-Value Facilities (>= LKR 1.5M) or when Guarantor is provided
     const cleanGName = (guarantorName || '').trim()
     const cleanGNic = (guarantorNic || '').trim().toUpperCase()
     const gRel = (guarantorRelationship || 'Parent').trim()
@@ -262,11 +282,9 @@ app.post('/api/customer/loans/apply', async (request, response) => {
       }
     }
 
-    // 1. Manage Customer record: Ensure unique applicant profile without fallback hijacking
     let targetCustomerId = null
     let targetCustomerCode = null
 
-    // Check if a customer already exists with this name (case-insensitive)
     const [existing] = await connection.query(
       'SELECT customer_id, customer_code FROM banking_loan_source.customers WHERE LOWER(customer_name) = LOWER(?) LIMIT 1',
       [cleanName]
@@ -279,7 +297,6 @@ app.post('/api/customer/loans/apply', async (request, response) => {
         [city || 'Colombo', occupation || 'IT Professional', branchId || 'B001', targetCustomerId]
       )
     } else {
-      // Find next customer_id
       const [maxCus] = await connection.query('SELECT COALESCE(MAX(customer_id), 500) AS max_c FROM banking_loan_source.customers')
       targetCustomerId = Math.max((maxCus[0]?.max_c || 500) + 1, 501)
       targetCustomerCode = 'C' + String(targetCustomerId).padStart(4, '0')
@@ -300,11 +317,9 @@ app.post('/api/customer/loans/apply', async (request, response) => {
     }
     const mappedProduct = productMap[loanType] || 'PRD01'
 
-    // Compute credit score based on applicant declared income
     const incomeNum = Number(monthlyIncome) || 85000
     const calculatedCreditScore = incomeNum >= 150000 ? 765 : incomeNum >= 75000 ? 720 : 650
 
-    // Record formal application into loan_applications table with status 'Pending'
     const [appMax] = await connection.query('SELECT COALESCE(MAX(application_id), 7000) AS max_app FROM banking_loan_source.loan_applications')
     const newAppId = (appMax[0]?.max_app || 7000) + 1
 
@@ -387,7 +402,6 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
     `, [numParam, numParam, rawParam])
 
     let application = null
-    // If no direct active loan found, or if searching an application ID:
     if (!loans.length && numParam > 0) {
       const appRows = await query(`
         SELECT a.application_id, a.customer_id, a.product_id, a.applied_amount,
@@ -403,7 +417,6 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
 
       if (appRows.length) {
         application = appRows[0]
-        // If the application was approved, find the newly disbursed loan facility for this customer:
         if (application.approval_status === 'Approved') {
           loans = await query(`
             SELECT l.loan_id, l.customer_id, l.account_id, l.loan_type, l.loan_amount,
@@ -422,7 +435,6 @@ app.get('/api/customer/loans/lookup/:query', async (request, response) => {
         }
       }
     } else if (loans.length > 0) {
-      // Direct loan found: also fetch any originating application for complete audit lineage
       try {
         const appRows = await query(`
           SELECT a.application_id, a.customer_id, a.product_id, a.applied_amount,
@@ -564,7 +576,6 @@ app.post('/api/customer/loans/pay', async (request, response) => {
       `, [newPaymentId, targetLoanId, parsedAmount, paymentMethod || 'Online Transfer'])
     }
 
-    // Record audit trail entry for ADBMS compliance logging
     try {
       await connection.query(`
         INSERT INTO banking_loan_source.loan_audit_log
@@ -606,13 +617,11 @@ app.get('/api/customer/loans/applications', async (request, response) => {
   }
 })
 
-// ==========================================
-// ADBMS LIVE PLAYGROUND & EXECUTION CONSOLE
-// ==========================================
 app.post('/api/customer/loans/adbms/execute-procedure', async (request, response) => {
   const connection = await pool.getConnection()
+  const start = performance.now()
   try {
-    const start = performance.now()
+    await setDatabaseRole(connection, request)
     const procedure = request.body.procedure
     const params = request.body.params || request.body || {}
 
@@ -706,7 +715,6 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       const applicationId = Number(params.applicationId) || 7103
       const officerId = Number(params.officerId) || 101
 
-      // 1. Fetch application details BEFORE running procedure so we do not lose applicant & guarantor notes
       let appPre = null
       let guarantorInfo = null
       try {
@@ -789,7 +797,6 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
             `, [generatedLoanId, app.customer_id, numericAccId, lType, app.applied_amount, lRate, tenure])
             disbursementMsg = `Facility #${generatedLoanId} disbursed successfully into core ledger.`
 
-            // If an endorsed guarantor was attached, insert into loan_guarantors
             if (guarantorInfo && generatedLoanId) {
               try {
                 const [maxG] = await connection.query(
@@ -839,7 +846,6 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
               }
             }
 
-            // Preserve full application lineage & guarantor note in decision_notes
             if (appPre && appPre.decision_notes) {
               try {
                 const baseNote = appPre.decision_notes.replace('• Awaiting Underwriting Review', '').trim()
@@ -894,6 +900,7 @@ app.post('/api/customer/loans/adbms/execute-procedure', async (request, response
       transactionStatus: 'ROLLED_BACK',
     })
   } finally {
+    await resetDatabaseRole(connection)
     connection.release()
   }
 })
@@ -922,6 +929,7 @@ app.get('/api/customer/loans/adbms/explain-analyze', async (request, response) =
 
 app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) => {
   const start = performance.now()
+  let connection
   try {
     const { viewName } = request.params
     const allowedViews = [
@@ -936,7 +944,9 @@ app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) =
       return response.status(400).json({ error: `Unsupported view: ${viewName}` })
     }
 
-    const [rows] = await pool.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
+    connection = await pool.getConnection()
+    await setDatabaseRole(connection, request)
+    const [rows] = await connection.query(`SELECT * FROM banking_loan_source.${viewName} LIMIT 30;`)
     const execTime = (performance.now() - start).toFixed(2)
 
     response.json({
@@ -952,6 +962,11 @@ app.get('/api/customer/loans/adbms/views/:viewName', async (request, response) =
   } catch (error) {
     const execTime = (performance.now() - start).toFixed(2)
     response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  } finally {
+    if (connection) {
+      await resetDatabaseRole(connection)
+      connection.release()
+    }
   }
 })
 
@@ -978,43 +993,46 @@ app.get('/api/customer/loans/adbms/audit-log', async (request, response) => {
 
 app.post('/api/customer/loans/adbms/execute-function', async (request, response) => {
   const start = performance.now()
+  let connection
   try {
-    const { functionName, params } = request.body
+    const { functionName } = request.body
+    const params = request.body.params || {}
     let sql = ''
     let queryParams = []
 
     if (functionName === 'fn_calculate_monthly_emi') {
-      const principal = Number(params.principal) || 1500000
-      const rate = Number(params.rate) || 12.5
-      const tenure = Number(params.tenure) || 36
+      const principal = Number(params.principal ?? 1500000)
+      const rate = Number(params.rate ?? 12.5)
+      const tenure = Number(params.tenure ?? 36)
       sql = `SELECT banking_loan_source.fn_calculate_monthly_emi(?, ?, ?) AS result;`
       queryParams = [principal, rate, tenure]
     } else if (functionName === 'fn_loan_outstanding_balance') {
-      const loanId = Number(params.loanId) || 2008
+      const loanId = Number(params.loanId ?? 2008)
       sql = `SELECT banking_loan_source.fn_loan_outstanding_balance(?) AS result;`
       queryParams = [loanId]
     } else if (functionName === 'fn_days_overdue') {
-      const loanId = Number(params.loanId) || 2008
+      const loanId = Number(params.loanId ?? 2008)
       sql = `SELECT banking_loan_source.fn_days_overdue(?) AS result;`
       queryParams = [loanId]
     } else if (functionName === 'fn_loan_risk_tier') {
-      const loanId = Number(params.loanId) || 2008
+      const loanId = Number(params.loanId ?? 2008)
       sql = `SELECT banking_loan_source.fn_loan_risk_tier(?) AS result;`
       queryParams = [loanId]
     } else if (functionName === 'fn_calculate_total_interest') {
-      const principal = Number(params.principal) || 1500000
-      const rate = Number(params.rate) || 12.5
-      const tenure = Number(params.tenure) || 36
+      const principal = Number(params.principal ?? 1500000)
+      const rate = Number(params.rate ?? 12.5)
+      const tenure = Number(params.tenure ?? 36)
       sql = `SELECT banking_loan_source.fn_calculate_total_interest(?, ?, ?) AS result;`
       queryParams = [principal, rate, tenure]
     } else {
       return response.status(400).json({ error: `Unsupported function: ${functionName}` })
     }
 
-    const [rows] = await pool.query(sql, queryParams)
+    connection = await pool.getConnection()
+    await setDatabaseRole(connection, request)
+    const [rows] = await connection.query(sql, queryParams)
     const execTime = (performance.now() - start).toFixed(2)
 
-    // Build human readable SQL with interpolated parameters
     let displaySql = sql
     queryParams.forEach((p) => {
       displaySql = displaySql.replace('?', typeof p === 'string' ? `'${p}'` : p)
@@ -1032,6 +1050,11 @@ app.post('/api/customer/loans/adbms/execute-function', async (request, response)
   } catch (error) {
     const execTime = (performance.now() - start).toFixed(2)
     response.status(500).json({ error: error.message, executionTimeMs: execTime })
+  } finally {
+    if (connection) {
+      await resetDatabaseRole(connection)
+      connection.release()
+    }
   }
 })
 

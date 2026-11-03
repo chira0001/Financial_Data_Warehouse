@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { DatabaseIcon, ClockIcon, CheckIcon, ShieldCheckIcon, SearchIcon } from './Icons'
 import { loanApi } from '../api/loanApi'
 
 export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFacility }) {
@@ -7,14 +6,14 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
   const [activeTab, setActiveTab] = useState('overview')
   const [feedback, setFeedback] = useState(null)
   const [error, setError] = useState('')
+  const [officerPaymentNotice, setOfficerPaymentNotice] = useState(null)
+  const [restructureNotice, setRestructureNotice] = useState(null)
 
-  // Officer States
   const [officerLoanId, setOfficerLoanId] = useState('2008')
   const [officerAmount, setOfficerAmount] = useState('25000')
   const [officerMethod, setOfficerMethod] = useState('LankaPay Real-Time Transfer')
   const [activeFacilities, setActiveFacilities] = useState([])
 
-  // Manager States
   const [underwriteAppId, setUnderwriteAppId] = useState('7103')
   const [restructureLoanId, setRestructureLoanId] = useState('2008')
   const [restructureRate, setRestructureRate] = useState('7.25')
@@ -23,7 +22,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
   const [portfolioMetrics, setPortfolioMetrics] = useState([])
   const [applications, setApplications] = useState([])
 
-  // Auditor States
   const [auditLogs, setAuditLogs] = useState([])
   const [overdueQueue, setOverdueQueue] = useState([])
 
@@ -34,7 +32,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     return 'role_loan_officer'
   }
 
-  // Load relevant data on mount and role change
   useEffect(() => {
     loadRoleData()
   }, [currentRole])
@@ -74,11 +71,11 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     }
   }
 
-  // Officer Action: Post Payment
   const handleOfficerPayment = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setOfficerPaymentNotice(null)
     setFeedback(null)
     const dbRole = getDbRole(currentRole)
     try {
@@ -87,6 +84,13 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         paymentAmount: Number(officerAmount),
         paymentMethod: officerMethod,
       }, dbRole)
+      if (!res.success) {
+        throw new Error(res.message || 'The installment could not be posted.')
+      }
+      setOfficerPaymentNotice({
+        type: 'success',
+        message: `Installment posted successfully. Receipt ${res.receiptNo || `RCP-${res.paymentId}`}.`,
+      })
       setFeedback({
         type: 'SUCCESS',
         title: 'Payment Successfully Processed via sp_process_loan_payment',
@@ -94,13 +98,15 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
       })
       loadRoleData()
     } catch (err) {
-      setError(err.message || 'Payment processing failed')
+      setOfficerPaymentNotice({
+        type: 'error',
+        message: err.message || 'Payment processing failed. The installment was not posted.',
+      })
     } finally {
       setLoading(false)
     }
   }
 
-  // Officer Action: Test Unauthorized Action to prove MySQL Engine RBAC Denial
   const handleTestRestrictedAction = async (actionType) => {
     setLoading(true)
     setError('')
@@ -130,7 +136,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     }
   }
 
-  // Manager Action: Underwrite Application
   const handleUnderwriteApp = async (e, customAppId = null) => {
     if (e && e.preventDefault) e.preventDefault()
     const targetAppId = customAppId || underwriteAppId
@@ -162,11 +167,11 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
     }
   }
 
-  // Manager Action: Restructure Loan
   const handleRestructureLoan = async (e) => {
     e.preventDefault()
     setLoading(true)
     setError('')
+    setRestructureNotice(null)
     setFeedback(null)
     const dbRole = getDbRole(currentRole)
     try {
@@ -179,13 +184,23 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           officerReason: restructureReason,
         },
       }, dbRole)
+      if (!res.success || res.statusCode !== 'SUCCESS') {
+        throw new Error(res.statusMessage || 'The restructure was not committed.')
+      }
+      setRestructureNotice({
+        type: 'success',
+        message: `Loan #${restructureLoanId} updated to ${restructureRate}% p.a. New maturity: ${restructureDate}.`,
+      })
       setFeedback({
         type: 'SUCCESS',
         title: `Loan #${restructureLoanId} Successfully Restructured`,
         message: `${res.statusMessage} • New Rate: ${restructureRate}% • Execution: ${res.executionTimeMs} ms`,
       })
     } catch (err) {
-      setError(err.message || 'Restructuring failed')
+      setRestructureNotice({
+        type: 'error',
+        message: err.message || 'Restructuring failed. No changes were committed.',
+      })
     } finally {
       setLoading(false)
     }
@@ -193,7 +208,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
-      {/* Role Context Bar */}
       <div 
         style={{ 
           background: currentRole === 'officer' 
@@ -254,7 +268,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         </div>
       </div>
 
-      {/* Global Alerts */}
       {feedback && (
         <div style={{
           background: feedback.type === 'RBAC_DENIED' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(16, 185, 129, 0.15)',
@@ -271,7 +284,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           gap: '10px'
         }}>
           <div>
-            <strong>{feedback.type === 'RBAC_DENIED' ? '🛡️ ' : '✓ '}{feedback.title}:</strong> {feedback.message}
+            <strong>{feedback.title}:</strong> {feedback.message}
           </div>
           {feedback.disbursedLoanId && onTrackFacility && (
             <button
@@ -280,7 +293,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
               onClick={() => onTrackFacility(feedback.applicationId || feedback.disbursedLoanId)}
               style={{ fontSize: '0.78rem', padding: '6px 14px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', color: '#ffffff', cursor: 'pointer', borderRadius: '6px', fontWeight: 'bold' }}
             >
-              🔍 Track Facility #{feedback.disbursedLoanId} (App #{feedback.applicationId}) ➔
+               Track Facility #{feedback.disbursedLoanId} (App #{feedback.applicationId})
             </button>
           )}
         </div>
@@ -288,19 +301,17 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
 
       {error && (
         <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '12px 16px', borderRadius: '8px', marginBottom: '18px', fontSize: '0.85rem' }}>
-          ⚠️ {error}
+           {error}
         </div>
       )}
 
-      {/* ROLE 1: LOAN OFFICER WORKSTATION */}
       {currentRole === 'officer' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-            {/* Payment Terminal */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#93c5fd' }}>
-                  💳 Teller Repayment Posting Terminal
+                   Teller Repayment Posting Terminal
                 </h3>
                 <span style={{ fontSize: '0.7rem', background: 'rgba(59, 130, 246, 0.2)', color: '#60a5fa', padding: '2px 8px', borderRadius: '4px' }}>
                   sp_process_loan_payment
@@ -351,14 +362,31 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 >
                   {loading ? 'Posting to MySQL...' : 'Post Installment via Stored Procedure'}
                 </button>
+                {officerPaymentNotice && (
+                  <div
+                    role={officerPaymentNotice.type === 'success' ? 'status' : 'alert'}
+                    aria-live={officerPaymentNotice.type === 'success' ? 'polite' : 'assertive'}
+                    style={{
+                      marginTop: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                      background: officerPaymentNotice.type === 'success' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(239, 68, 68, 0.14)',
+                      border: `1px solid ${officerPaymentNotice.type === 'success' ? 'rgba(16, 185, 129, 0.55)' : 'rgba(239, 68, 68, 0.55)'}`,
+                      color: officerPaymentNotice.type === 'success' ? '#6ee7b7' : '#fca5a5',
+                    }}
+                  >
+                    <strong>{officerPaymentNotice.type === 'success' ? 'Payment successful' : 'Payment failed'}</strong>
+                    <div>{officerPaymentNotice.message}</div>
+                  </div>
+                )}
               </form>
             </div>
 
-            {/* Access Restriction Notice */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: '10px', padding: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#f87171', fontWeight: '600', marginBottom: '6px', fontSize: '0.9rem' }}>
-                  <span>🔒</span>
                   <span>Restricted Actions (role_loan_officer)</span>
                 </div>
                 <p style={{ fontSize: '0.78rem', color: '#cbd5e1', margin: '0 0 10px', lineHeight: 1.5 }}>
@@ -393,15 +421,14 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                   Authorized Operational Views
                 </h4>
                 <div style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.6 }}>
-                  ✓ vw_loan_officer_active_facilities<br/>
-                  ✓ vw_customer_loan_statement<br/>
-                  ✓ vw_daily_payment_reconciliation
+                  vw_loan_officer_active_facilities<br/>
+                  vw_customer_loan_statement<br/>
+                  vw_daily_payment_reconciliation
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Active Facilities Table */}
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
             <h3 style={{ fontSize: '1rem', color: '#f8fafc', margin: '0 0 12px' }}>
               Active Facilities Worklist (vw_loan_officer_active_facilities)
@@ -442,15 +469,13 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         </div>
       )}
 
-      {/* ROLE 2: LOAN MANAGER CONSOLE */}
       {currentRole === 'manager' && (
         <div>
-          {/* Live Underwriting Worklist Queue */}
           <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '18px', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <div>
                 <h3 style={{ fontSize: '1.05rem', color: '#f8fafc', margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span>📋 Live Underwriting Worklist (loan_applications Queue)</span>
+                  <span> Live Underwriting Worklist (loan_applications Queue)</span>
                   <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.25)', color: '#d8b4fe', padding: '2px 8px', borderRadius: '4px' }}>
                     {applications.filter(a => a.approval_status === 'Pending').length} Pending Committee Review
                   </span>
@@ -465,7 +490,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 className="btn-secondary"
                 style={{ fontSize: '0.75rem', padding: '6px 12px' }}
               >
-                🔄 Refresh Worklist
+                 Refresh Worklist
               </button>
             </div>
 
@@ -509,7 +534,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                           {app.decision_notes?.includes('Endorsed Guarantor:') ? (
                             <div>
                               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontSize: '0.68rem', padding: '1px 6px', borderRadius: '4px', marginBottom: '2px', fontWeight: '600' }}>
-                                🛡️ Guarantor Endorsed
+                                 Guarantor Endorsed
                               </span>
                               <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {app.decision_notes.split('Endorsed Guarantor:')[1]?.split('•')[0]?.trim()}
@@ -550,7 +575,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                           ) : (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                               <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '600' }}>
-                                ✓ Approved
+                                Approved
                               </span>
                               {onTrackFacility && (
                                 <button
@@ -560,7 +585,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                                   style={{ fontSize: '0.7rem', padding: '3px 8px', borderColor: '#38bdf8', color: '#38bdf8' }}
                                   title="Track this facility in Customer Portal"
                                 >
-                                  Track ➔
+                                  Track
                                 </button>
                               )}
                             </div>
@@ -575,23 +600,20 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-            {/* 1. Underwriting Card */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#d8b4fe' }}>
-                  ⚖️ Credit Underwriting & Application Decisioning
+                   Credit Underwriting & Application Decisioning
                 </h3>
                 <span style={{ fontSize: '0.7rem', background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', padding: '2px 8px', borderRadius: '4px' }}>
                   sp_underwrite
                 </span>
               </div>
 
-              {/* Step-by-Step Educational Guide */}
               <div style={{ background: 'rgba(88, 28, 135, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#e9d5ff', marginBottom: '14px', lineHeight: '1.5' }}>
-                <strong>💡 What happens here:</strong> When an online loan application is submitted, the Credit Manager assesses it. If the Credit Score is <strong>≥ 620</strong>, the procedure marks it <strong>APPROVED</strong> and automatically triggers <code>sp_disburse_new_loan</code> to generate an active Loan Account in the <code>loans</code> table and disburse the funds. If score &lt; 620, it is <strong>REJECTED</strong>.
+                <strong> What happens here:</strong> When an online loan application is submitted, the Credit Manager assesses it. If the Credit Score is <strong>≥ 620</strong>, the procedure marks it <strong>APPROVED</strong> and automatically triggers <code>sp_disburse_new_loan</code> to generate an active Loan Account in the <code>loans</code> table and disburse the funds. If score &lt; 620, it is <strong>REJECTED</strong>.
               </div>
 
-              {/* Quick Select Pending Applications */}
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
                   Quick Select Pending Application from Queue:
@@ -611,7 +633,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 </div>
               </div>
 
-              {/* Live Selected Application Preview */}
               {(() => {
                 const sel = applications.find(a => String(a.application_id) === String(underwriteAppId))
                 if (!sel) return null
@@ -621,7 +642,7 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                       <span style={{ color: '#cbd5e1' }}>Applicant: <strong>{sel.customer_name}</strong> ({sel.customer_code})</span>
                       <span style={{ fontWeight: 'bold', color: willApprove ? '#4ade80' : '#f87171' }}>
-                        {willApprove ? '✓ Will be APPROVED' : '⚠️ Will be REJECTED (< 620)'}
+                        {willApprove ? 'Will be APPROVED' : 'Will be REJECTED (< 620)'}
                       </span>
                     </div>
                     <div style={{ color: '#94a3b8', fontSize: '0.74rem' }}>
@@ -653,23 +674,20 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
               </form>
             </div>
 
-            {/* 2. Restructuring Card */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <h3 style={{ fontSize: '1.05rem', margin: 0, color: '#d8b4fe' }}>
-                  🔄 Facility Restructuring (Distressed Relief)
+                   Facility Restructuring (Distressed Relief)
                 </h3>
                 <span style={{ fontSize: '0.7rem', background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', padding: '2px 8px', borderRadius: '4px' }}>
                   sp_restructure
                 </span>
               </div>
 
-              {/* Step-by-Step Educational Guide */}
               <div style={{ background: 'rgba(88, 28, 135, 0.15)', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '8px', padding: '10px 14px', fontSize: '0.78rem', color: '#e9d5ff', marginBottom: '14px', lineHeight: '1.5' }}>
-                <strong>💡 What happens here:</strong> When a borrower has trouble paying due to hardship, the bank prevents default by <strong>lowering the interest rate</strong> and <strong>extending the loan maturity</strong>. Executes <code>sp_restructure_loan</code>, updates <code>loans</code> table, and records the justification in <code>loan_audit_log</code>.
+                <strong> What happens here:</strong> When a borrower has trouble paying due to hardship, the bank prevents default by <strong>lowering the interest rate</strong> and <strong>extending the loan maturity</strong>. Executes <code>sp_restructure_loan</code>, updates <code>loans</code> table, and records the justification in <code>loan_audit_log</code>.
               </div>
 
-              {/* Sample Struggling / Distressed Loans Presets */}
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ fontSize: '0.74rem', color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
                   Select Sample Distressed Facility to Restructure:
@@ -750,11 +768,29 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
                 >
                   {loading ? 'Executing Restructure in MySQL...' : 'Execute Restructure & Commit Transaction (sp_restructure)'}
                 </button>
+                {restructureNotice && (
+                  <div
+                    role={restructureNotice.type === 'success' ? 'status' : 'alert'}
+                    aria-live={restructureNotice.type === 'success' ? 'polite' : 'assertive'}
+                    style={{
+                      marginTop: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      fontSize: '0.86rem',
+                      lineHeight: 1.5,
+                      background: restructureNotice.type === 'success' ? 'rgba(16, 185, 129, 0.14)' : 'rgba(239, 68, 68, 0.14)',
+                      border: `1px solid ${restructureNotice.type === 'success' ? 'rgba(16, 185, 129, 0.55)' : 'rgba(239, 68, 68, 0.55)'}`,
+                      color: restructureNotice.type === 'success' ? '#6ee7b7' : '#fca5a5',
+                    }}
+                  >
+                    <strong>{restructureNotice.type === 'success' ? 'Restructure successful' : 'Restructure failed'}</strong>
+                    <div>{restructureNotice.message}</div>
+                  </div>
+                )}
               </form>
             </div>
           </div>
 
-          {/* Portfolio Health Overview */}
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
             <h3 style={{ fontSize: '1rem', color: '#f8fafc', margin: '0 0 12px' }}>
               Portfolio Health & Risk Summary (vw_loan_portfolio_health_metrics)
@@ -793,13 +829,10 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
         </div>
       )}
 
-      {/* ROLE 3: COMPLIANCE AUDITOR WORKSTATION */}
       {currentRole === 'auditor' && (
         <div>
-          {/* Read Only Compliance Notice */}
           <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.4)', borderRadius: '10px', padding: '14px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#fbbf24', fontSize: '0.85rem' }}>
-              <span>🛡️</span>
               <span><strong>Regulatory Read-Only Audit Station:</strong> All database transactions and writes are blocked by MySQL privileges. Access restricted strictly to audit logs and compliance queues.</span>
             </div>
             <button
@@ -808,15 +841,13 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
               className="btn-secondary"
               style={{ fontSize: '0.75rem', padding: '5px 12px' }}
             >
-              🔄 Refresh Audit Logs
+               Refresh Audit Logs
             </button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-            {/* Event Scheduler Monitor */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
               <h4 style={{ fontSize: '0.92rem', color: '#f59e0b', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>⏱️</span>
                 <span>Automated Background Event Monitor</span>
               </h4>
               <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.6 }}>
@@ -827,10 +858,8 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
               </div>
             </div>
 
-            {/* Delinquency Queue Preview */}
             <div style={{ background: 'rgba(15, 23, 42, 0.7)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
               <h4 style={{ fontSize: '0.92rem', color: '#f59e0b', margin: '0 0 10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>⚠️</span>
                 <span>Overdue Collections Queue (vw_overdue_collections_queue)</span>
               </h4>
               <div style={{ fontSize: '0.78rem', color: '#cbd5e1', lineHeight: 1.6 }}>
@@ -841,7 +870,6 @@ export default function RoleWorkstation({ currentRole, onSwitchRole, onTrackFaci
             </div>
           </div>
 
-          {/* Immutable Audit Ledger Table */}
           <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: '10px', padding: '18px' }}>
             <h3 style={{ fontSize: '1rem', color: '#f8fafc', margin: '0 0 12px' }}>
               Immutable Database Change Ledger (loan_audit_log populated via Triggers)

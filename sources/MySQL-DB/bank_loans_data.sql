@@ -1,5 +1,3 @@
--- Seed data for the banking_loan_source database.
--- Run Bank_Loans.sql first to create the database schema.
 
 USE banking_loan_source;
 
@@ -14,6 +12,31 @@ INSERT INTO branches (branch_id, branch_name, city, province) VALUES
 ('B008', 'Nuwara Eliya Branch', 'Nuwara Eliya', 'Central'),
 ('B009', 'Batticaloa Branch', 'Batticaloa', 'Eastern'),
 ('B010', 'Anuradhapura Branch', 'Anuradhapura', 'North Central');
+
+INSERT INTO branches (branch_id, branch_name, city, province)
+WITH RECURSIVE branch_numbers AS (
+    SELECT 11 AS branch_number
+    UNION ALL
+    SELECT branch_number + 1
+    FROM branch_numbers
+    WHERE branch_number < 1000
+)
+SELECT
+    CONCAT('B', LPAD(branch_number, 3, '0')),
+    CONCAT('Sample Branch ', LPAD(branch_number, 3, '0')),
+    CONCAT('Sample City ', LPAD(branch_number, 3, '0')),
+    CASE MOD(branch_number, 9)
+        WHEN 0 THEN 'Western'
+        WHEN 1 THEN 'Central'
+        WHEN 2 THEN 'Southern'
+        WHEN 3 THEN 'Northern'
+        WHEN 4 THEN 'Eastern'
+        WHEN 5 THEN 'North Western'
+        WHEN 6 THEN 'North Central'
+        WHEN 7 THEN 'Uva'
+        ELSE 'Sabaragamuwa'
+    END
+FROM branch_numbers;
 
 INSERT INTO customers (customer_id, customer_code, customer_name, gender, date_of_birth, city, occupation, branch_id) VALUES
 (1, 'C0001', 'Sahan Jayasinghe', 'Male', '1967-05-11', 'Nuwara Eliya', 'Doctor', 'B008'),
@@ -2019,6 +2042,7 @@ INSERT INTO loans (loan_id, customer_id, account_id, loan_type, loan_amount, int
 (1999, 999, 1099, 'Education', 768600.00, 8.31, '2024-11-24', '2031-11-23', 'Closed'),
 (2000, 1000, 1100, 'Business', 3980000.00, 17.55, '2023-07-23', '2033-07-20', 'Overdue');
 
+SET @allow_historical_seed = 1;
 INSERT INTO loan_payments (payment_id, loan_id, payment_date, payment_amount, payment_method, payment_status) VALUES
 (5001, 1001, '2024-06-27', 72182.38, 'Bank Transfer', 'Paid'),
 (5002, 1002, '2025-07-29', 70888.24, 'Standing Order', 'Paid'),
@@ -3020,6 +3044,7 @@ INSERT INTO loan_payments (payment_id, loan_id, payment_date, payment_amount, pa
 (5998, 1998, '2024-06-07', 40282.87, 'Cash', 'Paid'),
 (5999, 1999, '2024-04-01', 28628.61, 'Mobile Banking', 'Pending'),
 (6000, 2000, '2025-05-26', 13683.15, 'Debit Card', 'Late');
+SET @allow_historical_seed = 0;
 
 INSERT INTO loan_products (product_id, product_code, product_name, loan_category, min_amount, max_amount, base_interest_rate, max_tenure_months, is_collateral_required, processing_fee_percentage) VALUES
 ('PRD01', 'PERS-STD', 'Standard Personal Flexi Loan', 'Personal', 50000.00, 5000000.00, 13.50, 60, FALSE, 1.00),
@@ -3027,6 +3052,39 @@ INSERT INTO loan_products (product_id, product_code, product_name, loan_category
 ('PRD03', 'AUTO-DRV', 'DrivePlus Commercial & Personal Vehicle Loan', 'Vehicle', 250000.00, 10000000.00, 14.00, 84, TRUE, 1.25),
 ('PRD04', 'EDU-SCH', 'Higher Education & Scholar Loan', 'Education', 100000.00, 5000000.00, 8.50, 84, FALSE, 0.50),
 ('PRD05', 'BIZ-GROW', 'SME Business Expansion & Working Capital Loan', 'Business', 500000.00, 20000000.00, 12.75, 120, TRUE, 1.50);
+
+INSERT INTO loan_products (product_id, product_code, product_name, loan_category, min_amount, max_amount, base_interest_rate, max_tenure_months, is_collateral_required, processing_fee_percentage)
+WITH RECURSIVE product_numbers AS (
+    SELECT 6 AS product_number
+    UNION ALL
+    SELECT product_number + 1
+    FROM product_numbers
+    WHERE product_number < 1000
+),
+product_categories AS (
+    SELECT
+        product_number,
+        CASE MOD(product_number, 5)
+            WHEN 0 THEN 'Personal'
+            WHEN 1 THEN 'Housing'
+            WHEN 2 THEN 'Vehicle'
+            WHEN 3 THEN 'Education'
+            ELSE 'Business'
+        END AS loan_category
+    FROM product_numbers
+)
+SELECT
+    CONCAT('PRD', LPAD(product_number, 4, '0')),
+    CONCAT('SAMPLE-', LPAD(product_number, 4, '0')),
+    CONCAT('Sample ', loan_category, ' Loan Product ', LPAD(product_number, 4, '0')),
+    loan_category,
+    50000.00 + product_number * 100.00,
+    5000000.00 + product_number * 10000.00,
+    8.00 + MOD(product_number, 100) / 10.00,
+    36 + MOD(product_number, 205),
+    loan_category IN ('Housing', 'Vehicle', 'Business'),
+    0.50 + MOD(product_number, 150) / 100.00
+FROM product_categories;
 
 INSERT INTO loan_officers (officer_id, employee_code, first_name, last_name, email, phone_number, branch_id, role_title, status) VALUES
 (101, 'EMP0101', 'Sunil', 'Perera', 'sunil.perera101@bank.lk', '+94 77 100 0000', 'B001', 'Loan Officer', 'On Leave'),
@@ -12046,6 +12104,7 @@ INSERT INTO loan_audit_log (audit_id, loan_id, action_type, old_status, new_stat
 (999, 1999, 'DISBURSEMENT', NULL, 'Closed', NULL, 768600.00, NULL, 8.31, 'SYSTEM', '2024-11-24 09:00:00', 'Initial loan disbursement recorded'),
 (1000, 2000, 'DISBURSEMENT', NULL, 'Overdue', NULL, 3980000.00, NULL, 17.55, 'SYSTEM', '2023-07-23 09:00:00', 'Initial loan disbursement recorded');
 
+DELETE FROM loan_payment_audit_log;
 INSERT INTO loan_payment_audit_log (audit_id, payment_id, loan_id, action_type, old_amount, new_amount, old_status, new_status, modified_by, modified_at, notes) VALUES
 (1, 5001, 1001, 'PAYMENT_RECEIVED', NULL, 50000.00, NULL, 'Paid', 'SYSTEM', '2023-01-31 10:30:00', 'Cashier payment collection logged'),
 (2, 5002, 1002, 'PAYMENT_RECEIVED', NULL, 50000.00, NULL, 'Paid', 'SYSTEM', '2021-02-23 10:30:00', 'Cashier payment collection logged'),

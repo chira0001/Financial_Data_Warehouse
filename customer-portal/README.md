@@ -103,7 +103,6 @@ The Customer Loan Portal communicates with the backend Express server over the f
 cd backend
 npm install
 npm run dev
-# Warehouse API runs on http://127.0.0.1:4000
 ```
 
 ### Step 2: Start Customer Portal API
@@ -111,7 +110,6 @@ npm run dev
 cd customer-portal-backend
 npm install
 npm run dev
-# API runs on http://127.0.0.1:4001
 ```
 
 ### Step 3: Start Customer Loan Portal
@@ -119,7 +117,6 @@ npm run dev
 cd customer-portal
 npm install
 npm run dev
-# Portal runs on http://localhost:5174
 ```
 
 ### Step 4: Start Internal BI Warehouse Dashboard (Optional)
@@ -127,7 +124,6 @@ npm run dev
 cd visualization
 npm install
 npm run dev
-# Dashboard runs on http://localhost:5173
 ```
 
 ---

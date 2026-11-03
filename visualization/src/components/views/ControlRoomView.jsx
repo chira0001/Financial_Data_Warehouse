@@ -16,15 +16,15 @@ function MetricCard({ label, value, detail, tone }) {
 }
 
 function PortfolioTreemap({ rows }) {
-  const total = rows.reduce((sum, row) => sum + Number(row.principal || 0), 0)
+  const total = rows.reduce((sum, row) => sum + Number(row.applied_amount || 0), 0)
   return (
     <section className="panel control-panel">
-      <SectionHeader eyebrow="Product performance / fact_loan" title="Loan portfolio by product" />
-      {rows.length === 0 ? <div className="empty-data"><strong>No loan product data yet</strong><span>Load the Gold warehouse to populate this view.</span></div> : <div className="portfolio-treemap" role="img" aria-label="Treemap of loan principal by product">
+      <SectionHeader eyebrow="Application demand / fact_loan_application" title="Applications by loan product" />
+      {rows.length === 0 ? <div className="empty-data"><strong>No product application data yet</strong><span>Load Gold loan application facts to populate this view.</span></div> : <div className="portfolio-treemap" role="img" aria-label="Treemap of applied amounts by loan product">
         {rows.map((row, index) => {
-          const principal = Number(row.principal || 0)
-          return <div className={`treemap-tile tile-${index % 5}`} key={row.label} style={{ flexGrow: Math.max(principal, 1) }} title={`${row.label}: ${currency(principal)} · ${Number(row.loan_count || 0)} loans`}>
-            <strong>{row.label || 'Unspecified'}</strong><span>{currency(principal, true)}</span><small>{Number(row.loan_count || 0).toLocaleString()} loans · {total ? ((principal / total) * 100).toFixed(1) : '0.0'}%</small>
+          const amount = Number(row.applied_amount || 0)
+          return <div className={`treemap-tile tile-${index % 5}`} key={row.label} style={{ flexGrow: Math.max(amount, 1) }} title={`${row.label}: ${currency(amount)} · ${Number(row.application_count || 0)} applications`}>
+            <strong>{row.label || 'Unspecified'}</strong><span>{currency(amount, true)}</span><small>{Number(row.application_count || 0).toLocaleString()} applications · {total ? ((amount / total) * 100).toFixed(1) : '0.0'}%</small>
           </div>
         })}
       </div>}
@@ -155,7 +155,7 @@ function ControlRoomView({ refreshKey }) {
       </section>
       <TrendPanel rows={data?.monthlyTrend || []} />
       {data && <section className="control-insights" aria-label="Key business insights">
-        <div><span className="eyebrow">Portfolio leader</span><strong>{data.loanProducts?.[0]?.label || 'No product data'}</strong><small>{data.loanProducts?.[0] ? `${currency(data.loanProducts[0].principal, true)} principal across ${Number(data.loanProducts[0].loan_count).toLocaleString()} loans` : 'Load Gold loan facts to summarize products'}</small></div>
+        <div><span className="eyebrow">Top requested product</span><strong>{data.loanProducts?.[0]?.label || 'No product data'}</strong><small>{data.loanProducts?.[0] ? `${currency(data.loanProducts[0].applied_amount, true)} requested across ${Number(data.loanProducts[0].application_count).toLocaleString()} applications` : 'Load Gold application facts to summarize demand'}</small></div>
         <div><span className="eyebrow">Top region</span><strong>{data.regions?.[0]?.label || 'No region data'}</strong><small>{data.regions?.[0] ? `${currency(data.regions[0].reporting_volume, true)} transaction volume` : 'Load branch transaction facts to summarize regions'}</small></div>
         <div><span className="eyebrow">Leading channel</span><strong>{data.channels?.[0]?.label || 'No channel data'}</strong><small>{data.channels?.[0] ? `${Number(data.channels[0].transaction_count).toLocaleString()} transactions` : 'Load transaction facts to summarize channels'}</small></div>
       </section>}

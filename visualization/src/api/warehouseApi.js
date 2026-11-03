@@ -11,6 +11,7 @@ export const warehouseApi = {
   analytics: () => request('/api/warehouse/analytics'),
   transactionSummary: (search = '') => request(`/api/warehouse/transaction-summary?search=${encodeURIComponent(search)}`),
   loanSummary: () => request('/api/warehouse/loan-summary'),
+  loanOperations: (dataset, { search = '', limit = 50, offset = 0 } = {}) => request(`/api/warehouse/loan-operations/${encodeURIComponent(dataset)}?search=${encodeURIComponent(search)}&limit=${limit}&offset=${offset}`),
   transactions: (search = '') => request(`/api/warehouse/transactions?search=${encodeURIComponent(search)}`),
   loans: () => request('/api/warehouse/loans'),
   quality: () => request('/api/warehouse/quality'),

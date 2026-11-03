@@ -2,9 +2,10 @@ const navItems = [
   { id: 'overview', label: 'Overview', mark: '01' },
   { id: 'transactions', label: 'Transactions', mark: '02' },
   { id: 'loans', label: 'Loan portfolio', mark: '03' },
-  { id: 'quality', label: 'Data quality', mark: '04' },
-  { id: 'queries', label: 'Business queries', mark: '05' },
-  { id: 'analytics', label: 'Executive analytics', mark: '06' },
+  { id: 'loan-operations', label: 'Loan operations', mark: '04' },
+  { id: 'quality', label: 'Data quality', mark: '05' },
+  { id: 'queries', label: 'Business queries', mark: '06' },
+  { id: 'analytics', label: 'Executive analytics', mark: '07' },
 ]
 
 function Sidebar({ activeView, onNavigate, connectionStatus }) {
