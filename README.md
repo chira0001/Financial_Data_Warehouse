@@ -86,7 +86,7 @@ mysql -u root -p warehouse < scripts/ddl/gold_ddl.sql
 mysql -u root -p warehouse < scripts/ddl/reporting_views.sql
 ```
 
-Before loading, update the CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) for your machine. Set `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` in the environment for [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
+The CSV paths in [bronze_data_load.sql](scripts/data_load/bronze_data_load.sql) are relative to the repository root. Run the load commands below from the repository root so `LOAD DATA LOCAL INFILE` can find the files. Set `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE` in the environment for [fetch_rates.py](sources/API/fetch_rates.py), then fetch the exchange rates:
 
 ```powershell
 python sources/API/fetch_rates.py
@@ -133,7 +133,7 @@ The API runs at `http://127.0.0.1:4000` and provides:
 - `POST /api/query-groups/:groupId/run` where `groupId` is `1` through `5`
 - `POST /api/pipeline/run`
 
-The pipeline endpoint executes Bronze, Silver, and Gold loading in order and returns an error if MySQL or any ETL statement fails.
+The pipeline endpoint applies the warehouse DDL scripts in dependency order, then executes the Bronze, Silver, and Gold data-load scripts. Table creation is idempotent, and the pipeline returns an error if MySQL or any setup/load statement fails.
 
 The warehouse API on port `4000` is dedicated to the visualization dashboard. The customer portal uses its own backend on port `4001`:
 
